@@ -1,0 +1,7 @@
+<svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="4" width="32" height="32" rx="7" fill="#11131A" stroke="#252936" stroke-width="1.5" />
+  <path d="M14 15L9 20L14 25" stroke="#00F0FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M26 15L31 20L26 25" stroke="#00F0FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M22 14L18 26" stroke="#39FF14" stroke-width="2" stroke-linecap="round" />
+  <text x="46" y="26" fill="#F5F7FA" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="20" font-weight="700" letter-spacing="-0.5">insid<tspan fill="#00F0FF">code</tspan></text>
+</svg>

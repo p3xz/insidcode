@@ -1,0 +1,257 @@
+import NextAuth, { DefaultSession } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
+import { connectToDatabase } from "./mongodb";
+import { User } from "@/models/User";
+import { generateUniqueUsername } from "./username";
+import { IUser } from "@/types";
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      username: string;
+      role: "user" | "admin";
+      xp: number;
+      currentStreak: number;
+      isBanned: boolean;
+    } & DefaultSession["user"];
+  }
+}
+
+function checkIsAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const adminEmailEnv = (process.env.ADMIN_EMAIL || "").toLowerCase().trim();
+  if (!adminEmailEnv) return false;
+  const normalized = email.toLowerCase().trim();
+  return normalized === adminEmailEnv;
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID || "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  callbacks: {
+    async signIn({ user, account }) {
+      if (!account || !account.provider || !account.providerAccountId) {
+        console.warn("[Auth] Sign-in rejected: Missing account provider metadata.");
+        return false;
+      }
+
+      try {
+        await connectToDatabase();
+
+        const userEmail = user.email ? user.email.toLowerCase().trim() : undefined;
+        const isAdmin = checkIsAdminEmail(userEmail);
+
+        // Find existing user by provider account ID or email
+        let dbUser = await User.findOne({
+          $or: [
+            { provider: account.provider, providerAccountId: account.providerAccountId },
+            ...(userEmail ? [{ email: userEmail }] : []),
+          ],
+        });
+
+        if (!dbUser) {
+          const rawName = user.name || (userEmail ? userEmail.split("@")[0] : "coder");
+          const username = await generateUniqueUsername(rawName);
+
+          dbUser = await User.create({
+            username,
+            usernameNormalized: username.toLowerCase(),
+            displayName: user.name || username,
+            email: userEmail,
+            image: user.image || undefined,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            role: isAdmin ? "admin" : "user",
+            xp: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            solvedProblems: [],
+            attemptedProblems: [],
+            totalSubmissions: 0,
+            acceptedSubmissions: 0,
+            leaderboardVisible: true,
+            isBanned: false,
+            preferences: {
+              editorFontSize: 14,
+              minimap: false,
+              defaultLanguage: "python",
+              reducedMotion: false,
+              soundEnabled: false,
+            },
+          });
+          console.log(`[Auth] Created new user: ${dbUser.username} (Role: ${dbUser.role})`);
+        } else {
+          let hasUpdates = false;
+
+          // Link provider info if matched via email
+          if (dbUser.provider !== account.provider || dbUser.providerAccountId !== account.providerAccountId) {
+            dbUser.provider = account.provider;
+            dbUser.providerAccountId = account.providerAccountId;
+            hasUpdates = true;
+          }
+
+          // Ensure admin status is assigned
+          if (isAdmin && dbUser.role !== "admin") {
+            dbUser.role = "admin";
+            hasUpdates = true;
+            console.log(`[Auth] Promoted user ${dbUser.username} (${userEmail}) to admin role.`);
+          }
+
+          if (user.image && dbUser.image !== user.image) {
+            dbUser.image = user.image;
+            hasUpdates = true;
+          }
+
+          if (hasUpdates) {
+            await dbUser.save();
+          }
+        }
+
+        return true;
+      } catch (error) {
+        console.error("[Auth] Sign-in database sync error:", error);
+        return false;
+      }
+    },
+    async jwt({ token, account, user, trigger, session }) {
+      if (account && user) {
+        try {
+          await connectToDatabase();
+          const userEmail = user.email ? user.email.toLowerCase().trim() : undefined;
+
+          const dbUser = await User.findOne({
+            $or: [
+              { provider: account.provider, providerAccountId: account.providerAccountId },
+              ...(userEmail ? [{ email: userEmail }] : []),
+            ],
+          });
+
+          if (dbUser) {
+            token.userId = dbUser._id.toString();
+            token.username = dbUser.username;
+            token.role = dbUser.role;
+            token.xp = dbUser.xp;
+            token.currentStreak = dbUser.currentStreak;
+            token.isBanned = dbUser.isBanned;
+          }
+        } catch (error) {
+          console.error("[Auth] JWT database sync error:", error);
+        }
+      }
+
+      // Handle session update triggers (e.g. when username is changed)
+      if (trigger === "update") {
+        if (session?.username && typeof session.username === "string") {
+          token.username = session.username;
+        }
+
+        if (token.userId) {
+          try {
+            await connectToDatabase();
+            const dbUser = await User.findById(token.userId);
+            if (dbUser) {
+              token.username = dbUser.username;
+              token.role = dbUser.role;
+              token.xp = dbUser.xp;
+              token.currentStreak = dbUser.currentStreak;
+              token.isBanned = dbUser.isBanned;
+            }
+          } catch (error) {
+            console.error("[Auth] JWT session refresh error:", error);
+          }
+        }
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = (token.userId as string) || "";
+        session.user.username = (token.username as string) || "";
+        session.user.role = (token.role as "user" | "admin") || "user";
+        session.user.xp = (token.xp as number) || 0;
+        session.user.currentStreak = (token.currentStreak as number) || 0;
+        session.user.isBanned = (token.isBanned as boolean) || false;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
+});
+
+export async function getAuthenticatedUser(): Promise<{
+  user: IUser | null;
+  error?: string;
+  status: number;
+}> {
+  try {
+    const session = await auth();
+
+    if (!session || !session.user || !session.user.id) {
+      return { user: null, error: "Unauthorized. Please sign in.", status: 401 };
+    }
+
+    await connectToDatabase();
+    const dbUser = await User.findById(session.user.id);
+
+    if (!dbUser) {
+      return { user: null, error: "User record not found.", status: 404 };
+    }
+
+    if (dbUser.isBanned) {
+      if (dbUser.bannedUntil && new Date() > new Date(dbUser.bannedUntil)) {
+        // Temporary ban expired
+        dbUser.isBanned = false;
+        dbUser.banReason = undefined;
+        dbUser.bannedUntil = undefined;
+        await dbUser.save();
+      } else {
+        const reason = dbUser.banReason ? `: ${dbUser.banReason}` : "";
+        return {
+          user: null,
+          error: `Your account has been suspended${reason}`,
+          status: 403,
+        };
+      }
+    }
+
+    return { user: dbUser, status: 200 };
+  } catch (error) {
+    console.error("[Auth] Verification error:", error);
+    return { user: null, error: "Authentication check failed.", status: 500 };
+  }
+}
+
+export async function requireAdminUser(): Promise<{
+  admin: IUser | null;
+  error?: string;
+  status: number;
+}> {
+  const authResult = await getAuthenticatedUser();
+  if (!authResult.user) {
+    return { admin: null, error: authResult.error, status: authResult.status };
+  }
+
+  if (authResult.user.role !== "admin") {
+    return { admin: null, error: "Forbidden. Admin access required.", status: 403 };
+  }
+
+  return { admin: authResult.user, status: 200 };
+}
