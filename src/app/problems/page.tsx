@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Search,
   CheckCircle2,
   Circle,
-  Flame,
-  Zap,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -42,7 +40,6 @@ export default function ProblemsDirectoryPage() {
   const [problems, setProblems] = useState<ProblemRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters and pagination
   const [search, setSearch] = useState("");
   const [selectedPhase, setSelectedPhase] = useState<string>("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
@@ -50,13 +47,12 @@ export default function ProblemsDirectoryPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Stats
   const [phaseStats, setPhaseStats] = useState<PhaseStat[]>([]);
   const [totalSolved, setTotalSolved] = useState(0);
   const [totalPublished, setTotalPublished] = useState(0);
   const [overallPercentage, setOverallPercentage] = useState(0);
 
-  const fetchProblems = async () => {
+  const fetchProblems = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -72,7 +68,6 @@ export default function ProblemsDirectoryPage() {
         const data = await res.json();
         setProblems(data.questions || []);
         setTotalPages(data.pagination?.totalPages || 1);
-
         if (data.stats) {
           setPhaseStats(data.stats.phases || []);
           setTotalSolved(data.stats.totalSolved || 0);
@@ -85,223 +80,285 @@ export default function ProblemsDirectoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, selectedPhase, selectedDifficulty, selectedStatus, page]);
 
   useEffect(() => {
     fetchProblems();
-  }, [search, selectedPhase, selectedDifficulty, selectedStatus, page]);
+  }, [fetchProblems]);
+
+  const diffColor = (d: string) =>
+    d === "Easy" ? "var(--easy)" : d === "Medium" ? "var(--medium)" : "var(--hard)";
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-8">
-      {/* Top Progress Dashboard */}
-      <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#252936] pb-5">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#F5F7FA]">Problems Directory</h1>
-            <p className="text-xs text-[#8B93A7]">
-              Master logic building through 250+ structured challenges across six essential phases.
-            </p>
-          </div>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
 
-          {/* User Quick Metrics */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#181B24] px-3.5 py-1.5 text-xs font-mono font-medium text-[#F59E0B]">
-              <Flame className="h-4 w-4" />
-              <span>{session?.user?.currentStreak || 0} Day Streak</span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#181B24] px-3.5 py-1.5 text-xs font-mono font-medium text-[#00F0FF]">
-              <Zap className="h-4 w-4" />
-              <span>{session?.user?.xp || 0} XP</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Overall Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-[#F5F7FA]">Curriculum Completion</span>
-            <span className="font-mono text-[#8B93A7]">
-              {totalSolved} / {totalPublished} Solved ({overallPercentage}%)
-            </span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-[#181B24]">
-            <div
-              className="h-full bg-gradient-to-r from-[#00F0FF] to-[#39FF14] transition-all duration-500"
-              style={{ width: `${overallPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Six Phase Progress Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
-          {CURRICULUM_PHASES.map((phase) => {
-            const stat = phaseStats.find((s) => s.phaseId === phase.id) || {
-              solved: 0,
-              total: 0,
-              percentage: 0,
-            };
-            const isSelected = selectedPhase === phase.id.toString();
-
-            return (
-              <button
-                key={phase.id}
-                onClick={() => {
-                  setSelectedPhase(isSelected ? "" : phase.id.toString());
-                  setPage(1);
-                }}
-                className={`rounded-lg border p-3 text-left transition ${
-                  isSelected
-                    ? "border-[#00F0FF] bg-[#181B24]"
-                    : "border-[#252936] bg-[#090A0F] hover:border-[#363C4E]"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-bold text-[#00F0FF]">Phase {phase.id}</span>
-                  <span className="font-mono text-[10px] text-[#8B93A7]">{stat.percentage}%</span>
-                </div>
-                <h4 className="text-xs font-semibold text-[#F5F7FA] truncate">{phase.title}</h4>
-                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[#181B24]">
-                  <div
-                    className="h-full bg-[#39FF14] transition-all"
-                    style={{ width: `${stat.percentage}%` }}
-                  />
-                </div>
-              </button>
-            );
-          })}
+      {/* ── Page Header ────────────────────────────────────────────── */}
+      <div className="mb-8" style={{ borderBottom: "1px solid var(--border)", paddingBottom: "1.5rem" }}>
+        <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--fg)" }}>
+          Problems Directory
+        </h1>
+        <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1 text-[13px]">
+          <span style={{ color: "var(--fg-muted)" }}>
+            <span className="font-semibold" style={{ color: "var(--fg)" }}>{totalSolved}</span>
+            {" / "}{totalPublished} solved
+          </span>
+          {session?.user && (
+            <>
+              <span style={{ color: "var(--fg-dimmed)" }}>·</span>
+              <span style={{ color: "var(--fg-muted)" }}>
+                <span className="font-semibold" style={{ color: "var(--fg)" }}>
+                  {session.user.currentStreak || 0}
+                </span>{" "}day streak
+              </span>
+              <span style={{ color: "var(--fg-dimmed)" }}>·</span>
+              <span className="mono" style={{ color: "var(--fg-muted)" }}>
+                <span className="font-semibold" style={{ color: "var(--fg)" }}>
+                  {session.user.xp || 0}
+                </span>{" "}XP
+              </span>
+            </>
+          )}
+          <span style={{ color: "var(--fg-dimmed)" }}>·</span>
+          <span style={{ color: "var(--fg-muted)" }}>
+            <span className="font-semibold" style={{ color: "var(--fg)" }}>{overallPercentage}%</span>{" "}complete
+          </span>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-5 relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8B93A7]" />
+      {/* ── Overall Progress Bar ─────────────────────────────────── */}
+      <div className="mb-6 space-y-1.5">
+        <p className="section-label">Overall curriculum completion</p>
+        <div
+          className="h-1.5 w-full overflow-hidden"
+          style={{ backgroundColor: "var(--bg-elevated)", borderRadius: "2px" }}
+        >
+          <div
+            className="h-full transition-all duration-500"
+            style={{ width: `${overallPercentage}%`, backgroundColor: "var(--success)" }}
+          />
+        </div>
+      </div>
+
+      {/* ── Phase Progress Grid ──────────────────────────────────── */}
+      <div
+        className="mb-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px"
+        style={{ backgroundColor: "var(--border)", border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}
+      >
+        {CURRICULUM_PHASES.map((phase) => {
+          const stat = phaseStats.find((s) => s.phaseId === phase.id) || {
+            solved: 0, total: 0, percentage: 0,
+          };
+          const isSelected = selectedPhase === phase.id.toString();
+
+          return (
+            <button
+              key={phase.id}
+              onClick={() => {
+                setSelectedPhase(isSelected ? "" : phase.id.toString());
+                setPage(1);
+              }}
+              className="text-left p-3 transition-colors"
+              style={{
+                backgroundColor: isSelected ? "var(--bg-elevated)" : "var(--bg)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isSelected) e.currentTarget.style.backgroundColor = "var(--bg-subtle)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isSelected ? "var(--bg-elevated)" : "var(--bg)";
+              }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span
+                  className="mono text-[10px] font-bold"
+                  style={{ color: isSelected ? "var(--accent)" : "var(--fg-dimmed)" }}
+                >
+                  P{phase.id}
+                </span>
+                <span className="mono text-[10px]" style={{ color: "var(--fg-dimmed)" }}>
+                  {stat.percentage}%
+                </span>
+              </div>
+              <p className="text-[11px] font-medium truncate" style={{ color: "var(--fg)" }}>
+                {phase.title}
+              </p>
+              <div className="mt-2 h-0.5 w-full" style={{ backgroundColor: "var(--bg-elevated)" }}>
+                <div
+                  className="h-full transition-all"
+                  style={{ width: `${stat.percentage}%`, backgroundColor: "var(--success)" }}
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Filter Row ───────────────────────────────────────────── */}
+      <div
+        className="flex flex-wrap items-center gap-2 mb-4 pb-4"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        {/* Search */}
+        <div className="relative flex-1 min-w-[180px]">
+          <Search
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5"
+            style={{ color: "var(--fg-dimmed)" }}
+          />
           <input
             type="text"
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search problems..."
+            className="w-full py-1.5 pl-8 pr-3 text-[12px] bg-transparent focus:outline-none"
+            style={{
+              border: "1px solid var(--border-strong)",
+              borderRadius: "3px",
+              color: "var(--fg)",
             }}
-            placeholder="Search problems by name, ID, or tag..."
-            className="w-full rounded-lg border border-[#252936] bg-[#11131A] py-2 pl-9 pr-4 text-xs text-[#F5F7FA] placeholder-[#5E667B] focus:border-[#00F0FF] focus:outline-none"
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-strong)")}
           />
         </div>
 
-        <div className="sm:col-span-3">
+        {[
+          {
+            value: selectedPhase,
+            onChange: (v: string) => { setSelectedPhase(v); setPage(1); },
+            options: [
+              { value: "", label: "All Phases" },
+              ...CURRICULUM_PHASES.map((p) => ({ value: String(p.id), label: `Phase ${p.id}: ${p.title}` })),
+            ],
+          },
+          {
+            value: selectedDifficulty,
+            onChange: (v: string) => { setSelectedDifficulty(v); setPage(1); },
+            options: [
+              { value: "", label: "All Difficulties" },
+              { value: "Easy", label: "Easy" },
+              { value: "Medium", label: "Medium" },
+              { value: "Hard", label: "Hard" },
+            ],
+          },
+          {
+            value: selectedStatus,
+            onChange: (v: string) => { setSelectedStatus(v); setPage(1); },
+            options: [
+              { value: "all", label: "All Status" },
+              { value: "solved", label: "Solved" },
+              { value: "unsolved", label: "Unsolved" },
+            ],
+          },
+        ].map((sel, i) => (
           <select
-            value={selectedPhase}
-            onChange={(e) => {
-              setSelectedPhase(e.target.value);
-              setPage(1);
+            key={i}
+            value={sel.value}
+            onChange={(e) => sel.onChange(e.target.value)}
+            className="py-1.5 px-2.5 text-[12px] cursor-pointer focus:outline-none"
+            style={{
+              border: "1px solid var(--border-strong)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+              color: "var(--fg)",
             }}
-            className="w-full rounded-lg border border-[#252936] bg-[#11131A] py-2 px-3 text-xs text-[#F5F7FA] focus:border-[#00F0FF] focus:outline-none cursor-pointer"
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-strong)")}
           >
-            <option value="">All Phases</option>
-            {CURRICULUM_PHASES.map((p) => (
-              <option key={p.id} value={p.id}>
-                Phase {p.id}: {p.title}
+            {sel.options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="sm:col-span-2">
-          <select
-            value={selectedDifficulty}
-            onChange={(e) => {
-              setSelectedDifficulty(e.target.value);
-              setPage(1);
-            }}
-            className="w-full rounded-lg border border-[#252936] bg-[#11131A] py-2 px-3 text-xs text-[#F5F7FA] focus:border-[#00F0FF] focus:outline-none cursor-pointer"
-          >
-            <option value="">All Difficulties</option>
-            <option value="Easy">Easy (10 XP)</option>
-            <option value="Medium">Medium (20 XP)</option>
-            <option value="Hard">Hard (30 XP)</option>
-          </select>
-        </div>
-
-        <div className="sm:col-span-2">
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setPage(1);
-            }}
-            className="w-full rounded-lg border border-[#252936] bg-[#11131A] py-2 px-3 text-xs text-[#F5F7FA] focus:border-[#00F0FF] focus:outline-none cursor-pointer"
-          >
-            <option value="all">All Status</option>
-            <option value="solved">Solved</option>
-            <option value="unsolved">Unsolved</option>
-          </select>
-        </div>
+        ))}
       </div>
 
-      {/* Problems Clean Directory Table */}
-      <div className="rounded-xl border border-[#252936] bg-[#11131A] overflow-hidden shadow-xl">
+      {/* ── Problems Table ───────────────────────────────────────── */}
+      <div
+        style={{ border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}
+      >
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-[#00F0FF]" />
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
           </div>
         ) : problems.length === 0 ? (
-          <div className="py-20 text-center text-xs text-[#8B93A7]">
+          <div className="py-16 text-center text-[12px]" style={{ color: "var(--fg-muted)" }}>
             No problems found matching your filters.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-[#252936] bg-[#181B24]/70 font-mono text-[#8B93A7]">
-                <tr>
-                  <th className="px-4 py-3 w-12 text-center">Status</th>
-                  <th className="px-4 py-3 w-16">ID</th>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Phase</th>
-                  <th className="px-4 py-3">Difficulty</th>
-                  <th className="px-4 py-3 text-right">Reward</th>
+            <table className="w-full text-left text-[12px]">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-subtle)" }}>
+                  {["", "ID", "Title", "Phase", "Difficulty", "XP"].map((col, i) => (
+                    <th
+                      key={i}
+                      className={`px-4 py-3 section-label ${i === 5 ? "text-right" : i === 0 ? "w-10 text-center" : ""}`}
+                    >
+                      {col}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#252936]/60 text-[#F5F7FA]">
-                {problems.map((prob) => (
-                  <tr key={prob.problemId} className="hover:bg-[#181B24]/40 transition group">
-                    <td className="px-4 py-3.5 text-center">
+              <tbody>
+                {problems.map((prob, i) => (
+                  <tr
+                    key={prob.problemId}
+                    style={{ borderBottom: i < problems.length - 1 ? "1px solid var(--border)" : "none" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    {/* Status icon */}
+                    <td className="px-4 py-3 text-center w-10">
                       {prob.isSolved ? (
-                        <CheckCircle2 className="h-4 w-4 text-[#39FF14] mx-auto" />
+                        <CheckCircle2 className="h-4 w-4 mx-auto" style={{ color: "var(--success)" }} />
                       ) : prob.isAttempted ? (
-                        <Circle className="h-4 w-4 text-[#F59E0B] mx-auto stroke-2" />
+                        <Circle className="h-4 w-4 mx-auto stroke-2" style={{ color: "var(--warning)" }} />
                       ) : (
-                        <Circle className="h-4 w-4 text-[#5E667B] mx-auto opacity-40" />
+                        <Circle className="h-4 w-4 mx-auto opacity-25" style={{ color: "var(--fg-dimmed)" }} />
                       )}
                     </td>
-                    <td className="px-4 py-3.5 font-mono text-[#00F0FF]">{prob.problemId}</td>
-                    <td className="px-4 py-3.5 font-medium">
+
+                    {/* ID */}
+                    <td className="px-4 py-3 mono" style={{ color: "var(--fg-dimmed)" }}>
+                      {prob.problemId}
+                    </td>
+
+                    {/* Title */}
+                    <td className="px-4 py-3 font-medium">
                       <Link
                         href={`/problems/${prob.problemId}`}
-                        className="hover:text-[#00F0FF] transition flex items-center gap-2"
+                        className="transition-colors"
+                        style={{ color: "var(--fg)" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg)")}
                       >
-                        <span>{prob.title}</span>
+                        {prob.title}
                       </Link>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className="rounded bg-[#181B24] px-2 py-0.5 text-[11px] text-[#8B93A7]">
-                        Phase {prob.phase}
-                      </span>
+
+                    {/* Phase */}
+                    <td className="px-4 py-3 mono" style={{ color: "var(--fg-dimmed)" }}>
+                      Ph.{prob.phase}
                     </td>
-                    <td className="px-4 py-3.5">
+
+                    {/* Difficulty */}
+                    <td className="px-4 py-3">
                       <span
-                        className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                          prob.difficulty === "Easy"
-                            ? "text-[#39FF14] bg-[#39FF14]/10"
-                            : prob.difficulty === "Medium"
-                            ? "text-[#F59E0B] bg-[#F59E0B]/10"
-                            : "text-[#FF4D6D] bg-[#FF4D6D]/10"
-                        }`}
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                          color: diffColor(prob.difficulty),
+                        }}
                       >
                         {prob.difficulty}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[#00F0FF]">
-                      +{prob.xp} XP
+
+                    {/* XP */}
+                    <td className="px-4 py-3 text-right mono" style={{ color: "var(--fg-muted)" }}>
+                      +{prob.xp}
                     </td>
                   </tr>
                 ))}
@@ -310,26 +367,36 @@ export default function ProblemsDirectoryPage() {
           </div>
         )}
 
-        {/* Pagination Bar */}
-        <div className="flex items-center justify-between border-t border-[#252936] bg-[#181B24]/50 px-4 py-3 text-xs text-[#8B93A7]">
+        {/* Pagination */}
+        <div
+          className="flex items-center justify-between px-4 py-3 text-[12px]"
+          style={{ borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-subtle)", color: "var(--fg-muted)" }}
+        >
           <span>
-            Page <strong className="text-[#F5F7FA]">{page}</strong> of{" "}
-            <strong className="text-[#F5F7FA]">{totalPages}</strong>
+            Page{" "}
+            <span className="font-semibold" style={{ color: "var(--fg)" }}>{page}</span>
+            {" "}of{" "}
+            <span className="font-semibold" style={{ color: "var(--fg)" }}>{totalPages}</span>
           </span>
-
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="flex items-center gap-1 rounded border border-[#252936] bg-[#11131A] px-2.5 py-1 disabled:opacity-40 hover:text-[#F5F7FA]"
+              className="flex items-center gap-1 px-2.5 py-1 transition-colors disabled:opacity-30"
+              style={{ border: "1px solid var(--border-strong)", borderRadius: "3px", color: "var(--fg-muted)" }}
+              onMouseEnter={(e) => { if (page > 1) e.currentTarget.style.color = "var(--fg)"; }}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
-              Previous
+              Prev
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="flex items-center gap-1 rounded border border-[#252936] bg-[#11131A] px-2.5 py-1 disabled:opacity-40 hover:text-[#F5F7FA]"
+              className="flex items-center gap-1 px-2.5 py-1 transition-colors disabled:opacity-30"
+              style={{ border: "1px solid var(--border-strong)", borderRadius: "3px", color: "var(--fg-muted)" }}
+              onMouseEnter={(e) => { if (page < totalPages) e.currentTarget.style.color = "var(--fg)"; }}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
             >
               Next
               <ChevronRight className="h-3.5 w-3.5" />

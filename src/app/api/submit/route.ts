@@ -4,7 +4,7 @@ import { checkRateLimit, acquireSubmissionLock, releaseSubmissionLock } from "@/
 import { CodeSubmissionSchema } from "@/lib/validations";
 import { Question } from "@/models/Question";
 import { Submission } from "@/models/Submission";
-import { executeCodeWithPiston } from "@/lib/piston";
+import { executeCodeOnlineCompilerSync } from "@/lib/onlinecompiler";
 import { calculateStreak } from "@/lib/streak";
 import { checkAndAwardAchievements } from "@/lib/achievements";
 import { SubmissionStatus } from "@/types";
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       const testCase = testSuite[i];
       const startTime = performance.now();
 
-      const execResult = await executeCodeWithPiston(
+      const execResult = await executeCodeOnlineCompilerSync(
         language,
         code,
         testCase.input
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
       if (execResult.systemError) {
         status = "System Error";
-        errorDetails = "Execution service error occurred.";
+        errorDetails = execResult.systemError || "Execution service error occurred.";
         break;
       }
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
       if (execResult.isTimeout) {
         status = "Time Limit Exceeded";
-        errorDetails = "Time Limit Exceeded (10s)";
+        errorDetails = "Time Limit Exceeded (30s)";
         break;
       }
 

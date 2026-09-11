@@ -233,7 +233,7 @@ export default function SettingsPage() {
 
   if (!settings) {
     return (
-      <div className="mx-auto max-w-2xl py-20 text-center text-xs text-[#8B93A7]">
+      <div className="mx-auto max-w-2xl py-20 text-center text-xs text-[var(--fg-muted)]">
         Please sign in to manage your account settings.
       </div>
     );
@@ -244,9 +244,9 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 space-y-8">
       {/* Header */}
-      <div className="border-b border-[#252936] pb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-[#F5F7FA]">Account & Preferences</h1>
-        <p className="text-xs text-[#8B93A7]">
+      <div className="border-b border-[var(--border)] pb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--fg)]">Account & Preferences</h1>
+        <p className="text-xs text-[var(--fg-muted)]">
           Customize your coding environment, profile display, and account preferences.
         </p>
       </div>
@@ -260,19 +260,19 @@ export default function SettingsPage() {
       )}
 
       {/* Profile Details Card */}
-      <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-5">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 space-y-5">
         <div className="flex items-center gap-2">
           <User className="h-4 w-4 text-[#00F0FF]" />
-          <h3 className="text-sm font-bold text-[#F5F7FA]">Profile Identity</h3>
+          <h3 className="text-sm font-bold text-[var(--fg)]">Profile Identity</h3>
         </div>
 
         {/* Username Editing Section */}
-        <div className="rounded-lg border border-[#252936] bg-[#141721] p-4 space-y-3">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <label className="text-xs font-semibold text-[#F5F7FA]">Username</label>
-              <p className="text-[11px] text-[#8B93A7]">
-                Your unique developer handle displayed across leaderboards, submissions, and friends.
+              <label className="text-xs font-semibold text-[var(--fg)]">Username</label>
+              <p className="text-[11px] text-[var(--fg-muted)]">
+                Your unique developer handle displayed across leaderboards and submissions.
               </p>
             </div>
 
@@ -280,7 +280,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={handleStartEditUsername}
-                className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#181B24] px-3 py-1.5 text-xs font-medium text-[#F5F7FA] hover:border-[#00F0FF] hover:text-[#00F0FF] transition"
+                className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--fg)] hover:border-[#00F0FF] hover:text-[#00F0FF] transition"
               >
                 <Edit3 className="h-3 w-3" />
                 Edit Username
@@ -290,17 +290,17 @@ export default function SettingsPage() {
 
           {!isEditingUsername ? (
             <div className="flex items-center gap-2 pt-1">
-              <span className="flex items-center gap-1.5 rounded-md border border-[#252936] bg-[#181B24] px-3 py-1.5 font-mono text-xs font-bold text-[#00F0FF]">
-                <AtSign className="h-3.5 w-3.5 text-[#8B93A7]" />
+              <span className="flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 font-mono text-xs font-bold text-[#00F0FF]">
+                <AtSign className="h-3.5 w-3.5 text-[var(--fg-muted)]" />
                 {settings.username}
               </span>
-              <span className="text-[11px] text-[#5E667B]">Case-insensitive uniqueness</span>
+              <span className="text-[11px] text-[var(--fg-dimmed)]">Case-insensitive uniqueness</span>
             </div>
           ) : (
             <div className="space-y-3 pt-1">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="relative flex-1">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B93A7]">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--fg-muted)]">
                     <AtSign className="h-3.5 w-3.5" />
                   </div>
                   <input
@@ -322,9 +322,9 @@ export default function SettingsPage() {
                     placeholder="Enter new username"
                     autoFocus
                     disabled={usernameLoading}
-                    className="w-full rounded-md border border-[#00F0FF]/50 bg-[#181B24] py-2 pl-9 pr-14 font-mono text-xs text-[#F5F7FA] placeholder-[#5E667B] focus:border-[#00F0FF] focus:outline-none focus:ring-1 focus:ring-[#00F0FF]"
+                    className="w-full rounded-md border border-[#00F0FF]/50 bg-[var(--bg-elevated)] py-2 pl-9 pr-14 font-mono text-xs text-[var(--fg)] placeholder-[#5E667B] focus:border-[#00F0FF] focus:outline-none focus:ring-1 focus:ring-[#00F0FF]"
                   />
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-mono text-[10px] text-[#8B93A7]">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-mono text-[10px] text-[var(--fg-muted)]">
                     {editUsernameInput.length}/20
                   </div>
                 </div>
@@ -357,7 +357,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={handleCancelEditUsername}
                     disabled={usernameLoading}
-                    className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#181B24] px-3.5 py-2 text-xs text-[#8B93A7] hover:text-[#F5F7FA] hover:border-[#363C4E] disabled:opacity-50 transition"
+                    className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3.5 py-2 text-xs text-[var(--fg-muted)] hover:text-[var(--fg)] hover:border-[var(--border-strong)] disabled:opacity-50 transition"
                   >
                     <X className="h-3.5 w-3.5" />
                     Cancel
@@ -377,7 +377,7 @@ export default function SettingsPage() {
                   {usernameValidationError}
                 </p>
               ) : (
-                <p className="text-[11px] text-[#8B93A7]">
+                <p className="text-[11px] text-[var(--fg-muted)]">
                   3–20 characters. Only letters, numbers, and underscores allowed.
                 </p>
               )}
@@ -387,28 +387,28 @@ export default function SettingsPage() {
 
         {/* Display Name Input */}
         <div className="pt-2">
-          <label className="block mb-1 text-xs text-[#8B93A7]">Display Name (max 40 chars)</label>
+          <label className="block mb-1 text-xs text-[var(--fg-muted)]">Display Name (max 40 chars)</label>
           <input
             type="text"
             value={settings.displayName}
             onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
             maxLength={40}
-            className="w-full rounded-md border border-[#252936] bg-[#181B24] p-2 text-xs text-[#F5F7FA] focus:border-[#00F0FF] focus:outline-none"
+            className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-2 text-xs text-[var(--fg)] focus:border-[#00F0FF] focus:outline-none"
           />
         </div>
       </div>
 
       <form onSubmit={handleSaveSettings} className="space-y-8">
         {/* Editor Preferences */}
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-4">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Sliders className="h-4 w-4 text-[#39FF14]" />
-            <h3 className="text-sm font-bold text-[#F5F7FA]">Code Editor Preferences</h3>
+            <h3 className="text-sm font-bold text-[var(--fg)]">Code Editor Preferences</h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block mb-1 text-xs text-[#8B93A7]">Font Size (px)</label>
+              <label className="block mb-1 text-xs text-[var(--fg-muted)]">Font Size (px)</label>
               <input
                 type="number"
                 min={11}
@@ -423,12 +423,12 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full rounded-md border border-[#252936] bg-[#181B24] p-2 text-xs font-mono text-[#F5F7FA] focus:border-[#00F0FF] focus:outline-none"
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-2 text-xs font-mono text-[var(--fg)] focus:border-[#00F0FF] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block mb-1 text-xs text-[#8B93A7]">Default Language</label>
+              <label className="block mb-1 text-xs text-[var(--fg-muted)]">Default Language</label>
               <select
                 value={settings.preferences.defaultLanguage || "python"}
                 onChange={(e) =>
@@ -440,7 +440,7 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full rounded-md border border-[#252936] bg-[#181B24] p-2 text-xs text-[#F5F7FA] focus:border-[#00F0FF] focus:outline-none"
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-2 text-xs text-[var(--fg)] focus:border-[#00F0FF] focus:outline-none"
               >
                 <option value="python">Python 3</option>
                 <option value="javascript">JavaScript</option>
@@ -464,19 +464,19 @@ export default function SettingsPage() {
                       },
                     })
                   }
-                  className="rounded border-[#252936] bg-[#181B24] text-[#00F0FF] focus:ring-0"
+                  className="rounded border-[var(--border)] bg-[var(--bg-elevated)] text-[#00F0FF] focus:ring-0"
                 />
-                <span className="text-xs text-[#F5F7FA]">Show Code Minimap</span>
+                <span className="text-xs text-[var(--fg)]">Show Code Minimap</span>
               </label>
             </div>
           </div>
         </div>
 
         {/* Privacy & Social */}
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-4">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-[#00F0FF]" />
-            <h3 className="text-sm font-bold text-[#F5F7FA]">Privacy & Leaderboard Visibility</h3>
+            <h3 className="text-sm font-bold text-[var(--fg)]">Privacy & Leaderboard Visibility</h3>
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer">
@@ -484,19 +484,19 @@ export default function SettingsPage() {
               type="checkbox"
               checked={settings.leaderboardVisible}
               onChange={(e) => setSettings({ ...settings, leaderboardVisible: e.target.checked })}
-              className="rounded border-[#252936] bg-[#181B24] text-[#00F0FF] focus:ring-0"
+              className="rounded border-[var(--border)] bg-[var(--bg-elevated)] text-[#00F0FF] focus:ring-0"
             />
             <div>
-              <span className="text-xs font-semibold text-[#F5F7FA]">Show on Public Leaderboard</span>
-              <p className="text-[11px] text-[#8B93A7]">
-                When disabled, your rank and score are hidden from public and friends rankings.
+              <span className="text-xs font-semibold text-[var(--fg)]">Show on Public Leaderboard</span>
+              <p className="text-[11px] text-[var(--fg-muted)]">
+                When disabled, your rank and score are hidden from public rankings.
               </p>
             </div>
           </label>
         </div>
 
         {/* Submit Bar */}
-        <div className="flex items-center justify-between border-t border-[#252936] pt-6">
+        <div className="flex items-center justify-between border-t border-[var(--border)] pt-6">
           {statusMessage && (
             <p className="text-xs font-medium text-[#39FF14]">{statusMessage}</p>
           )}
@@ -513,24 +513,24 @@ export default function SettingsPage() {
       </form>
 
       {/* Account Info */}
-      <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-3">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 space-y-3">
         <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-[#8B93A7]" />
-          <h3 className="text-sm font-bold text-[#F5F7FA]">OAuth Provider Linkage</h3>
+          <Shield className="h-4 w-4 text-[var(--fg-muted)]" />
+          <h3 className="text-sm font-bold text-[var(--fg)]">OAuth Provider Linkage</h3>
         </div>
-        <p className="text-xs text-[#8B93A7]">
-          Authenticated via <strong className="text-[#F5F7FA] capitalize">{settings.provider}</strong> OAuth. No password is stored or required.
+        <p className="text-xs text-[var(--fg-muted)]">
+          Authenticated via <strong className="text-[var(--fg)] capitalize">{settings.provider}</strong> OAuth. No password is stored or required.
         </p>
       </div>
 
       {/* Danger Zone */}
-      <div className="rounded-xl border border-[#FF4D6D]/30 bg-[#11131A] p-6 space-y-4">
+      <div className="rounded-xl border border-[#FF4D6D]/30 bg-[var(--bg-surface)] p-6 space-y-4">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-[#FF4D6D]" />
           <h3 className="text-sm font-bold text-[#FF4D6D]">Danger Zone</h3>
         </div>
-        <p className="text-xs text-[#8B93A7] leading-relaxed">
-          Permanently remove your account, practice history, XP, streaks, and friendships. This operation is immediate and irreversible.
+        <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+          Permanently remove your account, practice history, XP, and streaks. This operation is immediate and irreversible.
         </p>
         <button
           onClick={() => {
@@ -548,12 +548,12 @@ export default function SettingsPage() {
       {/* Account Deletion Confirmation Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-[#FF4D6D]/40 bg-[#11131A] p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md rounded-xl border border-[#FF4D6D]/40 bg-[var(--bg-surface)] p-6 shadow-2xl space-y-4">
             <h3 className="text-sm font-bold text-[#FF4D6D]">
               Confirm Permanent Account Deletion
             </h3>
-            <p className="text-xs text-[#8B93A7] leading-relaxed">
-              All personal data, progress, and submissions will be deleted. To proceed, please type <strong className="text-[#F5F7FA] font-mono">DELETE</strong> in the box below:
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+              All personal data, progress, and submissions will be deleted. To proceed, please type <strong className="text-[var(--fg)] font-mono">DELETE</strong> in the box below:
             </p>
 
             <input
@@ -561,7 +561,7 @@ export default function SettingsPage() {
               value={deleteConfirmationInput}
               onChange={(e) => setDeleteConfirmationInput(e.target.value)}
               placeholder="Type DELETE"
-              className="w-full rounded-md border border-[#252936] bg-[#181B24] p-2 text-xs font-mono text-[#FF4D6D] focus:border-[#FF4D6D] focus:outline-none"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-2 text-xs font-mono text-[#FF4D6D] focus:border-[#FF4D6D] focus:outline-none"
             />
 
             {deleteError && (
@@ -571,14 +571,14 @@ export default function SettingsPage() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="rounded-lg border border-[#252936] bg-[#181B24] px-3.5 py-1.5 text-xs text-[#8B93A7] hover:text-[#F5F7FA]"
+                className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3.5 py-1.5 text-xs text-[var(--fg-muted)] hover:text-[var(--fg)]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleteLoading || deleteConfirmationInput !== "DELETE"}
-                className="rounded-lg bg-[#FF4D6D] px-4 py-1.5 text-xs font-bold text-[#F5F7FA] hover:bg-[#FF4D6D]/90 disabled:opacity-50 transition"
+                className="rounded-lg bg-[#FF4D6D] px-4 py-1.5 text-xs font-bold text-[var(--fg)] hover:bg-[#FF4D6D]/90 disabled:opacity-50 transition"
               >
                 {deleteLoading ? "Deleting..." : "Permanently Delete"}
               </button>

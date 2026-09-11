@@ -1,233 +1,341 @@
 import React from "react";
 import Link from "next/link";
-import {
-  Code2,
-  Terminal,
-  Play,
-  Send,
-  Zap,
-  CheckCircle2,
-  ArrowRight,
-  Layers,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { CURRICULUM_PHASES } from "@/lib/constants";
 
+const HOW_IT_WORKS = [
+  {
+    num: "01",
+    title: "Structured Phases",
+    desc: "Six sequential logic phases — from conditionals to recursion and arrays — before any DSA.",
+  },
+  {
+    num: "02",
+    title: "Monaco Workspace",
+    desc: "Full syntax highlighting in Python, JavaScript, C, C++, or Java.",
+  },
+  {
+    num: "03",
+    title: "Isolated Execution",
+    desc: "Run code against custom inputs in a sandboxed environment with strict timeouts.",
+  },
+  {
+    num: "04",
+    title: "Hidden Test Suite",
+    desc: "Submissions evaluated server-side against test cases without exposing them.",
+  },
+  {
+    num: "05",
+    title: "XP & Streaks",
+    desc: "First-solve XP, daily practice streaks, and complete activity history.",
+  },
+];
+
 export default function LandingPage() {
-  const steps = [
-    {
-      num: "01",
-      title: "Structured Phases",
-      desc: "Progress through six sequential logic-building phases from conditionals to recursion and arrays.",
-      icon: Layers,
-    },
-    {
-      num: "02",
-      title: "Monaco Workspace",
-      desc: "Write clean solutions with full syntax highlighting in Python, JavaScript, C, C++, or Java.",
-      icon: Code2,
-    },
-    {
-      num: "03",
-      title: "Isolated Execution",
-      desc: "Run code against custom inputs using the Piston sandbox with strict execution timeouts.",
-      icon: Play,
-    },
-    {
-      num: "04",
-      title: "Server Hidden Tests",
-      desc: "Submissions are evaluated against server-side test suites without exposing test vectors.",
-      icon: Send,
-    },
-    {
-      num: "05",
-      title: "XP & Streaks",
-      desc: "Earn first-solve XP, maintain daily practice streaks, and track your activity history.",
-      icon: Zap,
-    },
-  ];
-
   return (
-    <div className="flex flex-col min-h-screen bg-[#090A0F] text-[#F5F7FA]">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-16 sm:pt-16 sm:pb-20 border-b border-[#252936]">
+    <div className="flex flex-col w-full" style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}>
+
+      {/* ─── Hero ─────────────────────────────────────────────────── */}
+      <section
+        className="pt-14 pb-16 sm:pt-20 sm:pb-20"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mx-auto max-w-3xl text-center space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-md border border-[#252936] bg-[#11131A] px-3 py-1 text-xs font-mono text-[#00F0FF]">
-              <Terminal className="h-3.5 w-3.5" />
-              <span>Logic Building & Code Practice</span>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
 
-            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F7FA] leading-tight">
-              Master Programming Logic{" "}
-              <span className="text-[#00F0FF]">Before DSA</span>
-            </h1>
-
-            <p className="text-xs sm:text-sm text-[#8B93A7] leading-relaxed max-w-2xl mx-auto">
-              A private, focused coding practice platform. Solve structured challenges across six foundational phases with isolated execution, automated hidden test evaluation, and social rankings.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <Link
-                href="/problems"
-                className="flex items-center gap-2 rounded-lg bg-[#00F0FF] px-5 py-2.5 text-xs font-bold text-[#090A0F] hover:bg-[#00F0FF]/90 transition shadow-md"
-              >
-                Browse Problems
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/leaderboard"
-                className="rounded-lg border border-[#252936] bg-[#11131A] px-5 py-2.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#363C4E] hover:bg-[#181B24] transition"
-              >
-                View Leaderboard
-              </Link>
-            </div>
-          </div>
-
-          {/* Interactive Workspace Preview */}
-          <div className="mt-12 mx-auto max-w-4xl rounded-xl border border-[#252936] bg-[#11131A] shadow-2xl overflow-hidden font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-[#252936] bg-[#181B24] px-4 py-2">
-              <div className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-[#FF4D6D]/80" />
-                <div className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]/80" />
-                <div className="h-2.5 w-2.5 rounded-full bg-[#39FF14]/80" />
-                <span className="ml-2 text-[11px] text-[#8B93A7]">problem_001.py</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-[#39FF14]">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Accepted (4/4 Hidden Tests)</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 p-4 gap-4 bg-[#090A0F]">
-              <div className="md:col-span-5 border-b md:border-b-0 md:border-r border-[#252936] pb-4 md:pb-0 md:pr-4 space-y-2.5 font-sans">
-                <div className="flex items-center gap-2">
-                  <span className="rounded bg-[#181B24] px-2 py-0.5 text-[10px] font-bold text-[#8B93A7]">#001</span>
-                  <span className="rounded bg-[#39FF14]/10 text-[#39FF14] px-2 py-0.5 text-[10px] font-semibold border border-[#39FF14]/20">Easy</span>
-                  <span className="text-[10px] text-[#8B93A7]">Phase 1</span>
-                </div>
-                <h3 className="font-bold text-[#F5F7FA] text-xs">Positive, Negative, or Zero</h3>
-                <p className="text-xs text-[#8B93A7] leading-relaxed">
-                  Given an integer input from standard in, print whether the number is Positive, Negative, or Zero.
-                </p>
-                <div className="rounded bg-[#11131A] p-2 border border-[#252936] font-mono text-[11px]">
-                  <span className="text-[#8B93A7]">Input: </span>
-                  <span className="text-[#F5F7FA]">5</span>
-                  <br />
-                  <span className="text-[#8B93A7]">Output: </span>
-                  <span className="text-[#39FF14]">Positive</span>
-                </div>
-              </div>
-
-              <div className="md:col-span-7 space-y-1.5">
-                <div className="text-[#5E667B]"># Python 3 Solution</div>
-                <div className="text-[#F5F7FA]">
-                  <span className="text-[#00F0FF]">import</span> sys
-                </div>
-                <div className="text-[#F5F7FA]">
-                  <span className="text-[#00F0FF]">def</span> <span className="text-[#F59E0B]">solve</span>():
-                </div>
-                <div className="text-[#F5F7FA] pl-4">
-                  n = <span className="text-[#00F0FF]">int</span>(sys.stdin.read().strip())
-                </div>
-                <div className="text-[#F5F7FA] pl-4">
-                  <span className="text-[#00F0FF]">if</span> n &gt; 0: <span className="text-[#00F0FF]">print</span>(<span className="text-[#39FF14]">&quot;Positive&quot;</span>)
-                </div>
-                <div className="text-[#F5F7FA] pl-4">
-                  <span className="text-[#00F0FF]">elif</span> n &lt; 0: <span className="text-[#00F0FF]">print</span>(<span className="text-[#39FF14]">&quot;Negative&quot;</span>)
-                </div>
-                <div className="text-[#F5F7FA] pl-4">
-                  <span className="text-[#00F0FF]">else</span>: <span className="text-[#00F0FF]">print</span>(<span className="text-[#39FF14]">&quot;Zero&quot;</span>)
-                </div>
-                <div className="text-[#F5F7FA]">
-                  solve()
-                </div>
-
-                <div className="mt-3 rounded-lg border border-[#39FF14]/30 bg-[#39FF14]/10 p-2 flex items-center justify-between text-[#39FF14] font-sans text-xs">
-                  <span>Execution Runtime: 0.042s</span>
-                  <span className="font-bold text-[#00F0FF]">+10 XP</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The Core Architecture Workflow */}
-      <section className="py-16 border-b border-[#252936] bg-[#090A0F]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center max-w-xl mx-auto mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F5F7FA]">
-              Platform Workflow
-            </h2>
-            <p className="mt-1 text-xs text-[#8B93A7]">
-              Engineered for developer clarity and accurate logic verification.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3.5">
-            {steps.map((step) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={step.num}
-                  className="rounded-xl border border-[#252936] bg-[#11131A] p-4 space-y-2.5 hover:border-[#363C4E] transition"
+            {/* Left — editorial headline */}
+            <div className="lg:col-span-5 xl:col-span-5 space-y-7">
+              <div>
+                <p className="section-label mb-4">Logic Building · Code Practice</p>
+                <h1
+                  className="font-bold leading-none tracking-tight"
+                  style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-[#00F0FF]">{step.num}</span>
-                    <Icon className="h-4 w-4 text-[#8B93A7]" />
+                  Master
+                  <br />
+                  Programming
+                  <br />
+                  <span style={{ color: "var(--fg-muted)" }}>Logic.</span>
+                </h1>
+              </div>
+
+              <p className="text-[14px] leading-relaxed" style={{ color: "var(--fg-muted)", maxWidth: "34ch" }}>
+                A private, structured coding platform. Solve 330+ challenges across
+                six foundational phases with isolated execution, hidden test evaluation,
+                and social rankings.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Link href="/problems" className="btn btn-primary">
+                  Browse Problems
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <Link href="/leaderboard" className="btn btn-secondary">
+                  View Leaderboard
+                </Link>
+              </div>
+
+              {/* Quick stats */}
+              <div
+                className="flex items-center gap-6 pt-2"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                {[
+                  { value: "330+", label: "Problems" },
+                  { value: "6", label: "Phases" },
+                  { value: "5", label: "Languages" },
+                ].map(({ value, label }) => (
+                  <div key={label}>
+                    <div className="text-[22px] font-bold tracking-tight mono" style={{ color: "var(--fg)" }}>
+                      {value}
+                    </div>
+                    <div className="section-label mt-0.5">{label}</div>
                   </div>
-                  <h3 className="text-xs font-bold text-[#F5F7FA]">{step.title}</h3>
-                  <p className="text-xs text-[#8B93A7] leading-relaxed">{step.desc}</p>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — code workspace preview */}
+            <div className="lg:col-span-7 xl:col-span-7">
+              <div
+                className="overflow-hidden mono text-[12px]"
+                style={{
+                  border: "1px solid var(--border-strong)",
+                  borderRadius: "4px",
+                  backgroundColor: "var(--bg-subtle)",
+                }}
+              >
+                {/* Terminal titlebar */}
+                <div
+                  className="flex items-center justify-between px-4 py-2.5"
+                  style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "var(--danger)", opacity: 0.7 }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "var(--warning)", opacity: 0.7 }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "var(--success)", opacity: 0.7 }} />
+                    <span className="ml-3 text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+                      problem_001.py
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--success)" }}>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Accepted (4/4 Tests)</span>
+                  </div>
                 </div>
-              );
-            })}
+
+                {/* Split pane */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
+                  {/* Problem statement */}
+                  <div
+                    className="md:col-span-5 p-4 space-y-2.5 font-sans text-[12px]"
+                    style={{ borderRight: "1px solid var(--border)" }}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className="mono px-1.5 py-0.5 text-[10px]"
+                        style={{ backgroundColor: "var(--bg-elevated)", color: "var(--fg-dimmed)", borderRadius: "2px" }}
+                      >
+                        #001
+                      </span>
+                      <span
+                        className="px-1.5 py-0.5 text-[10px] font-semibold"
+                        style={{
+                          color: "var(--easy)",
+                          backgroundColor: "color-mix(in srgb, var(--easy) 12%, transparent)",
+                          borderRadius: "2px",
+                        }}
+                      >
+                        Easy
+                      </span>
+                      <span className="text-[10px]" style={{ color: "var(--fg-dimmed)" }}>
+                        Phase 1
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-[13px]" style={{ color: "var(--fg)" }}>
+                      Positive, Negative, or Zero
+                    </h3>
+                    <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+                      Given an integer from stdin, print whether it is Positive,
+                      Negative, or Zero.
+                    </p>
+                    <div
+                      className="mono p-2.5 text-[11px]"
+                      style={{
+                        backgroundColor: "var(--bg)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "3px",
+                      }}
+                    >
+                      <span style={{ color: "var(--fg-muted)" }}>Input: </span>
+                      <span style={{ color: "var(--fg)" }}>5</span>
+                      <br />
+                      <span style={{ color: "var(--fg-muted)" }}>Output: </span>
+                      <span style={{ color: "var(--success)" }}>Positive</span>
+                    </div>
+                  </div>
+
+                  {/* Code editor */}
+                  <div className="md:col-span-7 p-4 mono space-y-0.5 text-[12px]">
+                    <div style={{ color: "var(--fg-dimmed)" }}># Python 3 Solution</div>
+                    <div>
+                      <span style={{ color: "var(--accent)" }}>import</span>
+                      <span style={{ color: "var(--fg)" }}> sys</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--accent)" }}>def</span>
+                      <span style={{ color: "var(--warning)" }}> solve</span>
+                      <span style={{ color: "var(--fg)" }}>():</span>
+                    </div>
+                    <div className="pl-4">
+                      <span style={{ color: "var(--fg)" }}>n = </span>
+                      <span style={{ color: "var(--accent)" }}>int</span>
+                      <span style={{ color: "var(--fg)" }}>(sys.stdin.read().strip())</span>
+                    </div>
+                    <div className="pl-4">
+                      <span style={{ color: "var(--accent)" }}>if</span>
+                      <span style={{ color: "var(--fg)" }}> n &gt; 0: </span>
+                      <span style={{ color: "var(--accent)" }}>print</span>
+                      <span style={{ color: "var(--success)" }}>(&#34;Positive&#34;)</span>
+                    </div>
+                    <div className="pl-4">
+                      <span style={{ color: "var(--accent)" }}>elif</span>
+                      <span style={{ color: "var(--fg)" }}> n &lt; 0: </span>
+                      <span style={{ color: "var(--accent)" }}>print</span>
+                      <span style={{ color: "var(--success)" }}>(&#34;Negative&#34;)</span>
+                    </div>
+                    <div className="pl-4">
+                      <span style={{ color: "var(--accent)" }}>else</span>
+                      <span style={{ color: "var(--fg)" }}>: </span>
+                      <span style={{ color: "var(--accent)" }}>print</span>
+                      <span style={{ color: "var(--success)" }}>(&#34;Zero&#34;)</span>
+                    </div>
+                    <div style={{ color: "var(--fg)" }}>solve()</div>
+
+                    <div
+                      className="mt-4 flex items-center justify-between px-3 py-2 text-[11px]"
+                      style={{
+                        border: "1px solid color-mix(in srgb, var(--success) 30%, transparent)",
+                        backgroundColor: "color-mix(in srgb, var(--success) 8%, transparent)",
+                        borderRadius: "2px",
+                        color: "var(--success)",
+                      }}
+                    >
+                      <span>Runtime: 0.042s</span>
+                      <span className="font-semibold" style={{ color: "var(--fg-muted)" }}>+10 XP</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Curriculum Phases Overview */}
-      <section className="py-16 bg-[#090A0F]">
+      {/* ─── How It Works ──────────────────────────────────────────── */}
+      <section
+        className="py-14"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center max-w-xl mx-auto mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F5F7FA]">
-              Six-Phase Curriculum
+          <div className="mb-8">
+            <p className="section-label mb-1">How It Works</p>
+            <h2 className="text-[20px] font-bold tracking-tight">
+              Platform workflow
             </h2>
-            <p className="mt-1 text-xs text-[#8B93A7]">
-              Step-by-step logic progression before advanced data structures.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {CURRICULUM_PHASES.map((p) => (
+          {/* Numbered feature rows — dense, not card grid */}
+          <div style={{ borderTop: "1px solid var(--border)" }}>
+            {HOW_IT_WORKS.map((step, i) => (
+              <div
+                key={step.num}
+                className="grid grid-cols-12 items-baseline gap-4 py-4"
+                style={{ borderBottom: i < HOW_IT_WORKS.length - 1 ? "1px solid var(--border)" : "none" }}
+              >
+                <span className="col-span-1 mono text-[11px] font-bold" style={{ color: "var(--fg-dimmed)" }}>
+                  {step.num}
+                </span>
+                <span className="col-span-3 sm:col-span-2 text-[13px] font-semibold" style={{ color: "var(--fg)" }}>
+                  {step.title}
+                </span>
+                <p className="col-span-8 sm:col-span-9 text-[13px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Curriculum Phases ─────────────────────────────────────── */}
+      <section className="py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-8">
+            <p className="section-label mb-1">Curriculum</p>
+            <h2 className="text-[20px] font-bold tracking-tight">
+              Six-phase progression
+            </h2>
+          </div>
+
+          {/* Phase table-list — not card grid */}
+          <div style={{ border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}>
+            {/* Column headers */}
+            <div
+              className="hidden sm:grid grid-cols-12 px-4 py-2.5 text-[11px] font-semibold"
+              style={{
+                borderBottom: "1px solid var(--border)",
+                backgroundColor: "var(--bg-subtle)",
+                color: "var(--fg-dimmed)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
+              <span className="col-span-1">#</span>
+              <span className="col-span-3">Phase</span>
+              <span className="col-span-6">Description</span>
+              <span className="col-span-2 text-right">View</span>
+            </div>
+
+            {CURRICULUM_PHASES.map((p, i) => (
               <Link
                 key={p.id}
                 href={`/problems?phase=${p.id}`}
-                className="rounded-xl border border-[#252936] bg-[#11131A] p-4 space-y-2 hover:border-[#00F0FF]/50 transition block"
+                className="grid grid-cols-12 items-center px-4 py-4 transition-colors group hover:bg-[var(--bg-subtle)]"
+                style={{
+                  borderBottom: i < CURRICULUM_PHASES.length - 1 ? "1px solid var(--border)" : "none",
+                  color: "inherit",
+                  textDecoration: "none",
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-semibold text-[#00F0FF]">
-                    Phase {p.id}
-                  </span>
-                  <span className="text-[10px] text-[#5E667B]">View Problems &rarr;</span>
-                </div>
-                <h3 className="text-xs font-bold text-[#F5F7FA]">{p.title}</h3>
-                <p className="text-xs text-[#8B93A7] leading-relaxed">{p.description}</p>
+                <span className="col-span-1 mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+                  {String(p.id).padStart(2, "0")}
+                </span>
+                <span className="col-span-4 sm:col-span-3 text-[13px] font-semibold" style={{ color: "var(--fg)" }}>
+                  {p.title}
+                </span>
+                <p className="hidden sm:block col-span-6 text-[12px]" style={{ color: "var(--fg-muted)" }}>
+                  {p.description}
+                </p>
+                <span
+                  className="col-span-7 sm:col-span-2 text-right text-[12px] font-medium transition-colors"
+                  style={{ color: "var(--fg-dimmed)" }}
+                >
+                  Problems →
+                </span>
               </Link>
             ))}
           </div>
 
-          <div className="mt-10 text-center">
-            <Link
-              href="/problems"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#00F0FF] px-5 py-2.5 text-xs font-bold text-[#090A0F] hover:bg-[#00F0FF]/90 transition"
-            >
+          <div className="mt-8">
+            <Link href="/problems" className="btn btn-primary">
               Open Problems Directory
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
       </section>
+
     </div>
   );
 }

@@ -1,16 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  BarChart3,
-  CheckCircle2,
-  Flame,
-  Zap,
-  Send,
-  Loader2,
-  Calendar,
-  Layers,
-} from "lucide-react";
+import { Flame, Zap, Send, Loader2, CheckCircle2 } from "lucide-react";
 
 interface UserStatsData {
   totalSolved: number;
@@ -46,6 +37,26 @@ interface UserStatsData {
   }>;
 }
 
+function ProgressBar({ value, max, color = "var(--success)" }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="flex-1 h-1.5 overflow-hidden"
+        style={{ backgroundColor: "var(--bg-elevated)", borderRadius: "2px" }}
+      >
+        <div
+          className="h-full transition-all duration-500"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+      <span className="mono text-[11px] w-8 text-right tabular-nums" style={{ color: "var(--fg-dimmed)" }}>
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
 export default function UserStatsPage() {
   const [stats, setStats] = useState<UserStatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,20 +81,20 @@ export default function UserStatsPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00F0FF]" />
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
       </div>
     );
   }
 
   if (!stats) {
     return (
-      <div className="mx-auto max-w-4xl py-20 text-center text-xs text-[#8B93A7]">
-        Please sign in to inspect your personal practice statistics and heatmap.
+      <div className="mx-auto max-w-4xl py-20 text-center text-[12px]" style={{ color: "var(--fg-muted)" }}>
+        Please sign in to inspect your personal practice statistics.
       </div>
     );
   }
 
-  // Generate 52-week activity grid
+  // 52-week heatmap
   const days: { dateStr: string; count: number }[] = [];
   const today = new Date();
   for (let i = 364; i >= 0; i--) {
@@ -93,143 +104,266 @@ export default function UserStatsPage() {
     days.push({ dateStr, count: stats.heatmap[dateStr] || 0 });
   }
 
+  const totalHeatmapSolves = Object.values(stats.heatmap).reduce((a, b) => a + b, 0);
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#252936] pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="h-5 w-5 text-[#00F0FF]" />
-            <h1 className="text-2xl font-bold tracking-tight text-[#F5F7FA]">Performance Statistics</h1>
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-0">
+
+      {/* ── Page Header ────────────────────────────────────────────── */}
+      <div
+        className="pb-6"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <p className="section-label mb-1">Analytics</p>
+        <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--fg)" }}>
+          Performance Statistics
+        </h1>
+        <p className="mt-1 text-[12px]" style={{ color: "var(--fg-muted)" }}>
+          Real-time telemetry tracking problem resolution, accuracy, and practice momentum.
+        </p>
+      </div>
+
+      {/* ── Primary Metrics Row ────────────────────────────────────── */}
+      <div
+        className="grid grid-cols-2 sm:grid-cols-4 divide-x"
+        style={{
+          borderBottom: "1px solid var(--border)",
+          borderLeft: "0px",
+          "--tw-divide-color": "var(--border)",
+        } as React.CSSProperties}
+      >
+        {[
+          {
+            value: stats.totalSolved,
+            sub: `/ ${stats.totalQuestions}`,
+            label: "Problems Solved",
+            icon: CheckCircle2,
+            iconColor: "var(--success)",
+          },
+          {
+            value: stats.currentStreak,
+            sub: `days`,
+            label: "Current Streak",
+            icon: Flame,
+            iconColor: "var(--warning)",
+            note: `Best: ${stats.longestStreak}d`,
+          },
+          {
+            value: stats.xp,
+            sub: "XP",
+            label: "Total Experience",
+            icon: Zap,
+            iconColor: "var(--fg-muted)",
+            mono: true,
+          },
+          {
+            value: `${stats.acceptanceRate}%`,
+            sub: `${stats.acceptedSubmissions}/${stats.totalSubmissions}`,
+            label: "Acceptance Rate",
+            icon: Send,
+            iconColor: "var(--fg-muted)",
+          },
+        ].map(({ value, sub, label, icon: Icon, iconColor, note, mono }, i) => (
+          <div key={i} className="px-5 py-6 space-y-1" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="flex items-center justify-between">
+              <p className="section-label">{label}</p>
+              <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: iconColor }} />
+            </div>
+            <div className="flex items-baseline gap-1.5 pt-1">
+              <span
+                className={`text-[32px] font-bold leading-none tracking-tight ${mono ? "mono" : ""}`}
+                style={{ color: "var(--fg)" }}
+              >
+                {value}
+              </span>
+              <span className="mono text-[13px]" style={{ color: "var(--fg-dimmed)" }}>
+                {sub}
+              </span>
+            </div>
+            {note && (
+              <p className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>{note}</p>
+            )}
           </div>
-          <p className="text-xs text-[#8B93A7]">
-            Real-time telemetry tracking problem resolution, accuracy, and practice momentum.
-          </p>
+        ))}
+      </div>
+
+      {/* ── Difficulty Breakdown ───────────────────────────────────── */}
+      <div
+        className="py-6"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <p className="section-label mb-4">Difficulty Breakdown</p>
+        <div className="space-y-3">
+          {[
+            { label: "Easy", solved: stats.easySolved, total: stats.totalEasy, color: "var(--easy)" },
+            { label: "Medium", solved: stats.mediumSolved, total: stats.totalMedium, color: "var(--medium)" },
+            { label: "Hard", solved: stats.hardSolved, total: stats.totalHard, color: "var(--hard)" },
+          ].map(({ label, solved, total, color }) => (
+            <div key={label} className="grid grid-cols-12 items-center gap-3">
+              <span
+                className="col-span-2 text-[11px] font-semibold uppercase tracking-wide"
+                style={{ color }}
+              >
+                {label}
+              </span>
+              <div className="col-span-7">
+                <ProgressBar value={solved} max={total} color={color} />
+              </div>
+              <span className="col-span-3 mono text-[11px] text-right" style={{ color: "var(--fg-muted)" }}>
+                {solved} / {total}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Primary Metrics 4-Card Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Problems Solved</span>
-            <CheckCircle2 className="h-4 w-4 text-[#39FF14]" />
-          </div>
-          <p className="text-2xl font-bold text-[#F5F7FA] font-mono">
-            {stats.totalSolved}{" "}
-            <span className="text-xs font-normal text-[#5E667B]">/ {stats.totalQuestions}</span>
-          </p>
-          <div className="mt-2 text-[11px] text-[#8B93A7] space-x-2">
-            <span className="text-[#39FF14]">{stats.easySolved} Easy</span>
-            <span className="text-[#F59E0B]">{stats.mediumSolved} Med</span>
-            <span className="text-[#FF4D6D]">{stats.hardSolved} Hard</span>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Practice Streak</span>
-            <Flame className="h-4 w-4 text-[#F59E0B]" />
-          </div>
-          <p className="text-2xl font-bold text-[#F59E0B] font-mono">{stats.currentStreak} Days</p>
-          <p className="text-[11px] text-[#5E667B] mt-1">Longest record: {stats.longestStreak} days</p>
-        </div>
-
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Total Experience</span>
-            <Zap className="h-4 w-4 text-[#00F0FF]" />
-          </div>
-          <p className="text-2xl font-bold text-[#00F0FF] font-mono">{stats.xp} XP</p>
-          <p className="text-[11px] text-[#5E667B] mt-1">First-solve verified rewards</p>
-        </div>
-
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Acceptance Rate</span>
-            <Send className="h-4 w-4 text-[#39FF14]" />
-          </div>
-          <p className="text-2xl font-bold text-[#F5F7FA] font-mono">{stats.acceptanceRate}%</p>
-          <p className="text-[11px] text-[#5E667B] mt-1">
-            {stats.acceptedSubmissions} / {stats.totalSubmissions} submissions
-          </p>
-        </div>
-      </div>
-
-      {/* GitHub-style 12-Month Activity Heatmap */}
-      <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-[#00F0FF]" />
-            <h3 className="text-sm font-bold text-[#F5F7FA]">Solve Activity (Past 12 Months)</h3>
-          </div>
-          <span className="text-xs font-mono text-[#8B93A7]">
-            {Object.values(stats.heatmap).reduce((a, b) => a + b, 0)} total solves
+      {/* ── Activity Heatmap ───────────────────────────────────────── */}
+      <div
+        className="py-6"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <p className="section-label">Solve Activity — Past 12 Months</p>
+          <span className="mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            {totalHeatmapSolves} total solves
           </span>
         </div>
 
-        <div className="overflow-x-auto pb-2">
-          <div className="grid grid-rows-7 grid-flow-col gap-1 w-max">
+        <div className="overflow-x-auto">
+          <div
+            className="grid grid-rows-7 grid-flow-col gap-[3px] w-max"
+            style={{ gridTemplateRows: "repeat(7, 1fr)" }}
+          >
             {days.map((d) => {
               const count = d.count;
-              const bgClass =
+              const bg =
                 count === 0
-                  ? "bg-[#181B24]"
+                  ? "var(--bg-elevated)"
                   : count === 1
-                  ? "bg-[#00F0FF]/30"
+                  ? "color-mix(in srgb, var(--success) 25%, transparent)"
                   : count <= 3
-                  ? "bg-[#00F0FF]/60"
-                  : "bg-[#00F0FF]";
+                  ? "color-mix(in srgb, var(--success) 55%, transparent)"
+                  : "var(--success)";
 
               return (
                 <div
                   key={d.dateStr}
-                  title={`${d.dateStr}: ${count} solves`}
-                  className={`h-3 w-3 rounded-xs ${bgClass} transition hover:ring-1 hover:ring-[#F5F7FA]`}
+                  title={`${d.dateStr}: ${count} solve${count !== 1 ? "s" : ""}`}
+                  style={{
+                    width: "11px",
+                    height: "11px",
+                    borderRadius: "2px",
+                    backgroundColor: bg,
+                  }}
                 />
               );
             })}
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 text-[10px] text-[#8B93A7]">
+        <div className="flex items-center gap-1.5 mt-3 text-[10px]" style={{ color: "var(--fg-dimmed)" }}>
           <span>Less</span>
-          <div className="h-2.5 w-2.5 rounded-xs bg-[#181B24]" />
-          <div className="h-2.5 w-2.5 rounded-xs bg-[#00F0FF]/30" />
-          <div className="h-2.5 w-2.5 rounded-xs bg-[#00F0FF]/60" />
-          <div className="h-2.5 w-2.5 rounded-xs bg-[#00F0FF]" />
+          {["var(--bg-elevated)", "color-mix(in srgb, var(--success) 25%, transparent)", "color-mix(in srgb, var(--success) 55%, transparent)", "var(--success)"].map((bg, i) => (
+            <span
+              key={i}
+              style={{ width: "10px", height: "10px", borderRadius: "2px", backgroundColor: bg, display: "inline-block" }}
+            />
+          ))}
           <span>More</span>
         </div>
       </div>
 
-      {/* Curriculum Phase Breakdown */}
-      <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-[#39FF14]" />
-          <h3 className="text-sm font-bold text-[#F5F7FA]">Curriculum Phase Progress</h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stats.phaseBreakdown.map((p) => (
-            <div key={p.phaseId} className="rounded-lg border border-[#252936] bg-[#090A0F] p-3.5 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-[#F5F7FA]">
-                  Phase {p.phaseId}: {p.title}
-                </span>
-                <span className="font-mono text-[#8B93A7]">
-                  {p.solved} / {p.total} ({p.percentage}%)
-                </span>
+      {/* ── Phase Progress ─────────────────────────────────────────── */}
+      <div
+        className="py-6"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <p className="section-label mb-4">Phase Progress</p>
+        <div className="space-y-0" style={{ border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}>
+          {stats.phaseBreakdown.map((p, i) => (
+            <div
+              key={p.phaseId}
+              className="grid grid-cols-12 items-center gap-3 px-4 py-3"
+              style={{ borderBottom: i < stats.phaseBreakdown.length - 1 ? "1px solid var(--border)" : "none" }}
+            >
+              <span className="col-span-1 mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+                P{p.phaseId}
+              </span>
+              <span className="col-span-3 text-[12px] font-medium truncate" style={{ color: "var(--fg)" }}>
+                {p.title}
+              </span>
+              <div className="col-span-5">
+                <ProgressBar value={p.solved} max={p.total} color="var(--accent)" />
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-[#181B24]">
-                <div
-                  className="h-full bg-[#00F0FF] transition-all duration-500"
-                  style={{ width: `${p.percentage}%` }}
-                />
-              </div>
+              <span className="col-span-3 mono text-[11px] text-right" style={{ color: "var(--fg-muted)" }}>
+                {p.solved} / {p.total}
+              </span>
             </div>
           ))}
         </div>
       </div>
+
+      {/* ── Recent Submissions ─────────────────────────────────────── */}
+      {stats.recentSubmissions && stats.recentSubmissions.length > 0 && (
+        <div className="py-6">
+          <p className="section-label mb-4">Recent Submissions</p>
+          <div style={{ border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}>
+            {/* Table header */}
+            <div
+              className="hidden sm:grid grid-cols-12 px-4 py-2.5"
+              style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-subtle)" }}
+            >
+              {["Date", "Problem", "Language", "Status", "XP"].map((col, i) => (
+                <div
+                  key={i}
+                  className={`section-label ${
+                    i === 0 ? "col-span-2" :
+                    i === 1 ? "col-span-4" :
+                    i === 2 ? "col-span-2" :
+                    i === 3 ? "col-span-2" :
+                    "col-span-2 text-right"
+                  }`}
+                >
+                  {col}
+                </div>
+              ))}
+            </div>
+            {stats.recentSubmissions.map((sub, i) => {
+              const date = new Date(sub.createdAt);
+              const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              const isAccepted = sub.status === "Accepted";
+              return (
+                <div
+                  key={i}
+                  className="grid grid-cols-12 items-center px-4 py-3 text-[12px]"
+                  style={{ borderBottom: i < stats.recentSubmissions.length - 1 ? "1px solid var(--border)" : "none" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <span className="col-span-3 sm:col-span-2 mono" style={{ color: "var(--fg-dimmed)" }}>
+                    {dateStr}
+                  </span>
+                  <span className="col-span-5 sm:col-span-4 font-medium truncate" style={{ color: "var(--fg)" }}>
+                    {sub.problemTitle}
+                  </span>
+                  <span className="hidden sm:block col-span-2 mono" style={{ color: "var(--fg-muted)" }}>
+                    {sub.language}
+                  </span>
+                  <span
+                    className="col-span-2 text-[11px] font-semibold uppercase tracking-wide"
+                    style={{ color: isAccepted ? "var(--success)" : "var(--danger)" }}
+                  >
+                    {isAccepted ? "OK" : "WA"}
+                  </span>
+                  <span className="col-span-2 text-right mono" style={{ color: "var(--fg-muted)" }}>
+                    {sub.awardedXp > 0 ? `+${sub.awardedXp}` : "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

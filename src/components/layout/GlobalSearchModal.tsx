@@ -30,12 +30,20 @@ export function GlobalSearchModal({ onClose }: { onClose: () => void }) {
     inputRef.current?.focus();
   }, []);
 
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults({ problems: [], users: [] });
       return;
     }
-
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
@@ -54,42 +62,76 @@ export function GlobalSearchModal({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(timer);
   }, [query]);
 
+  const hasResults =
+    results.problems.length > 0 || results.users.length > 0;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-20 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-xl border border-[#252936] bg-[#11131A] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Search Input */}
-        <div className="flex items-center gap-3 border-b border-[#252936] px-4 py-3">
-          <Search className="h-4 w-4 text-[#8B93A7]" />
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[15vh]"
+      style={{ backgroundColor: "rgba(0,0,0,0.65)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-lg overflow-hidden"
+        style={{
+          border: "1px solid var(--border-strong)",
+          borderRadius: "4px",
+          backgroundColor: "var(--bg-surface)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+        }}
+      >
+        {/* Input row */}
+        <div
+          className="flex items-center gap-3 px-4 py-3"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          <Search className="h-4 w-4 shrink-0" style={{ color: "var(--fg-dimmed)" }} />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search problems, topics, or developers..."
-            className="w-full bg-transparent text-sm text-[#F5F7FA] placeholder-[#5E667B] focus:outline-none"
+            className="w-full bg-transparent text-[13px] focus:outline-none"
+            style={{ color: "var(--fg)" }}
           />
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-[#00F0FF]" />}
-          <button
-            onClick={onClose}
-            aria-label="Close search"
-            className="rounded p-1 text-[#8B93A7] hover:bg-[#181B24] hover:text-[#F5F7FA]"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {loading ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
+          ) : (
+            <button
+              onClick={onClose}
+              aria-label="Close search"
+              className="flex h-6 w-6 items-center justify-center transition-colors"
+              style={{ color: "var(--fg-dimmed)", borderRadius: "2px" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-dimmed)")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
-        {/* Results Container */}
-        <div className="max-h-96 overflow-y-auto p-2">
-          {query.trim().length >= 2 && results.problems.length === 0 && results.users.length === 0 && !loading && (
-            <div className="py-8 text-center text-xs text-[#8B93A7]">
-              No problems or developers found matching &quot;{query}&quot;.
+        {/* Results */}
+        <div className="max-h-[60vh] overflow-y-auto">
+          {query.trim().length >= 2 && !hasResults && !loading && (
+            <div className="py-10 text-center text-[12px]" style={{ color: "var(--fg-muted)" }}>
+              No results for &ldquo;{query}&rdquo;
             </div>
           )}
 
-          {/* Problems Section */}
+          {query.trim().length < 2 && (
+            <div className="py-8 text-center text-[12px]" style={{ color: "var(--fg-dimmed)" }}>
+              Type at least 2 characters to search
+            </div>
+          )}
+
+          {/* Problems */}
           {results.problems.length > 0 && (
-            <div className="mb-3">
-              <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#5E667B]">
+            <div>
+              <div
+                className="section-label px-4 py-2"
+                style={{ borderBottom: "1px solid var(--border)" }}
+              >
                 Problems
               </div>
               {results.problems.map((p) => (
@@ -97,21 +139,34 @@ export function GlobalSearchModal({ onClose }: { onClose: () => void }) {
                   key={p.problemId}
                   href={`/problems/${p.problemId}`}
                   onClick={onClose}
-                  className="flex items-center justify-between rounded-lg px-3 py-2 text-xs hover:bg-[#181B24] transition group"
+                  className="flex items-center justify-between px-4 py-2.5 text-[12px] transition-colors"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Code2 className="h-3.5 w-3.5 text-[#00F0FF]" />
-                    <span className="font-mono text-[#8B93A7] group-hover:text-[#F5F7FA]">{p.problemId}</span>
-                    <span className="font-medium text-[#F5F7FA]">{p.title}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Code2 className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--fg-dimmed)" }} />
+                    <span className="mono shrink-0" style={{ color: "var(--fg-dimmed)" }}>
+                      {p.problemId}
+                    </span>
+                    <span className="font-medium truncate" style={{ color: "var(--fg)" }}>
+                      {p.title}
+                    </span>
                   </div>
                   <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                      p.difficulty === "Easy"
-                        ? "text-[#39FF14] bg-[#39FF14]/10"
-                        : p.difficulty === "Medium"
-                        ? "text-[#F59E0B] bg-[#F59E0B]/10"
-                        : "text-[#FF4D6D] bg-[#FF4D6D]/10"
-                    }`}
+                    className="shrink-0 ml-3"
+                    style={{
+                      color:
+                        p.difficulty === "Easy"
+                          ? "var(--easy)"
+                          : p.difficulty === "Medium"
+                          ? "var(--medium)"
+                          : "var(--hard)",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
                   >
                     {p.difficulty}
                   </span>
@@ -120,10 +175,13 @@ export function GlobalSearchModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Users Section */}
+          {/* Users */}
           {results.users.length > 0 && (
             <div>
-              <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#5E667B]">
+              <div
+                className="section-label px-4 py-2"
+                style={{ borderBottom: "1px solid var(--border)" }}
+              >
                 Developers
               </div>
               {results.users.map((u) => (
@@ -131,14 +189,23 @@ export function GlobalSearchModal({ onClose }: { onClose: () => void }) {
                   key={u.username}
                   href={`/profile/${u.username}`}
                   onClick={onClose}
-                  className="flex items-center justify-between rounded-lg px-3 py-2 text-xs hover:bg-[#181B24] transition"
+                  className="flex items-center justify-between px-4 py-2.5 text-[12px] transition-colors"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <UserIcon className="h-3.5 w-3.5 text-[#8B93A7]" />
-                    <span className="font-medium text-[#F5F7FA]">{u.displayName}</span>
-                    <span className="font-mono text-[#5E667B]">@{u.username}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <UserIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--fg-dimmed)" }} />
+                    <span className="font-medium truncate" style={{ color: "var(--fg)" }}>
+                      {u.displayName}
+                    </span>
+                    <span className="mono shrink-0" style={{ color: "var(--fg-dimmed)" }}>
+                      @{u.username}
+                    </span>
                   </div>
-                  <span className="font-mono text-[11px] text-[#00F0FF]">{u.xp} XP</span>
+                  <span className="mono shrink-0 text-[11px]" style={{ color: "var(--fg-muted)" }}>
+                    {u.xp} XP
+                  </span>
                 </Link>
               ))}
             </div>

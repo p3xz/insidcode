@@ -44,11 +44,11 @@ export const CURRICULUM_PHASES = [
 ] as const;
 
 export const SUPPORTED_LANGUAGES = [
-  { id: "python", name: "Python 3", pistonLanguage: "python", version: "3.10.0", monacoId: "python" },
-  { id: "javascript", name: "JavaScript", pistonLanguage: "javascript", version: "18.15.0", monacoId: "javascript" },
-  { id: "c", name: "C", pistonLanguage: "c", version: "10.2.0", monacoId: "c" },
-  { id: "cpp", name: "C++", pistonLanguage: "cpp", version: "10.2.0", monacoId: "cpp" },
-  { id: "java", name: "Java", pistonLanguage: "java", version: "15.0.2", monacoId: "java" },
+  { id: "python", name: "Python 3", compilerId: "python-3.14", monacoId: "python" },
+  { id: "javascript", name: "JavaScript", compilerId: "typescript-deno", monacoId: "javascript" },
+  { id: "c", name: "C", compilerId: "gcc-15", monacoId: "c" },
+  { id: "cpp", name: "C++", compilerId: "g++-15", monacoId: "cpp" },
+  { id: "java", name: "Java", compilerId: "openjdk-25", monacoId: "java" },
 ] as const;
 
 export type SupportedLanguageId = (typeof SUPPORTED_LANGUAGES)[number]["id"];

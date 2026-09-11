@@ -156,3 +156,38 @@ export interface ISystemConfig {
     updatedAt: Date;
   };
 }
+
+export type ExecutionStatus =
+  | "queued"
+  | "running"
+  | "success"
+  | "error"
+  | "timeout"
+  | "failed"
+  | "cancelled";
+
+export interface IExecution {
+  _id: string;
+  executionId: string;
+  userId: string;
+  queueId?: number | string;
+  compiler: string;
+  language: string;
+  code: string;
+  input?: string;
+  status: ExecutionStatus;
+  stdout?: string;
+  stderr?: string;
+  output?: string;
+  exitCode?: number | null;
+  signal?: string | null;
+  time?: string | null;
+  memory?: string | null;
+  compilationError?: string;
+  runtimeError?: string;
+  isTimeout?: boolean;
+  systemError?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+

@@ -56,16 +56,32 @@ export function NotificationDropdown({
   };
 
   return (
-    <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-[#252936] bg-[#11131A] shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-      <div className="flex items-center justify-between border-b border-[#252936] px-4 py-3">
+    <div
+      className="absolute right-0 mt-2 w-80 sm:w-96 z-50 overflow-hidden"
+      style={{
+        border: "1px solid var(--border-strong)",
+        borderRadius: "4px",
+        backgroundColor: "var(--bg-surface)",
+        boxShadow: "0 16px 40px rgba(0,0,0,0.3)",
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-[#00F0FF]" />
-          <span className="text-xs font-semibold text-[#F5F7FA]">Notifications</span>
+          <Bell className="h-4 w-4" style={{ color: "var(--fg-muted)" }} />
+          <span className="text-xs font-semibold" style={{ color: "var(--fg)" }}>
+            Notifications
+          </span>
         </div>
         {notifications.some((n) => !n.read) && (
           <button
             onClick={handleMarkAllRead}
-            className="flex items-center gap-1 text-[11px] text-[#8B93A7] hover:text-[#00F0FF] transition"
+            className="flex items-center gap-1 text-[11px] transition-colors"
+            style={{ color: "var(--fg-muted)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
           >
             <Check className="h-3 w-3" />
             Mark all read
@@ -73,31 +89,39 @@ export function NotificationDropdown({
         )}
       </div>
 
-      <div className="max-h-80 overflow-y-auto divide-y divide-[#181B24]">
+      <div className="max-h-80 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-[#00F0FF]" />
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="py-8 text-center text-xs text-[#8B93A7]">No notifications yet.</div>
+          <div className="py-8 text-center text-xs" style={{ color: "var(--fg-muted)" }}>
+            No notifications yet.
+          </div>
         ) : (
-          notifications.map((n) => (
+          notifications.map((n, i) => (
             <div
               key={n.id}
-              className={`p-3.5 transition ${n.read ? "bg-transparent opacity-75" : "bg-[#181B24]/40"}`}
+              className="p-3.5 transition-colors"
+              style={{
+                borderBottom: i < notifications.length - 1 ? "1px solid var(--border)" : "none",
+                backgroundColor: n.read ? "transparent" : "var(--bg-subtle)",
+                opacity: n.read ? 0.75 : 1,
+              }}
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-semibold text-[#F5F7FA]">{n.title}</p>
-                <span className="text-[10px] text-[#5E667B] shrink-0 font-mono">
+                <p className="text-xs font-semibold" style={{ color: "var(--fg)" }}>{n.title}</p>
+                <span className="text-[10px] shrink-0 mono" style={{ color: "var(--fg-dimmed)" }}>
                   {new Date(n.createdAt).toLocaleDateString()}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-[#8B93A7]">{n.message}</p>
+              <p className="mt-1 text-xs" style={{ color: "var(--fg-muted)" }}>{n.message}</p>
               {n.link && (
                 <Link
                   href={n.link}
                   onClick={onClose}
-                  className="mt-2 inline-block text-[11px] font-medium text-[#00F0FF] hover:underline"
+                  className="mt-2 inline-block text-[11px] font-medium hover:underline"
+                  style={{ color: "var(--accent)" }}
                 >
                   View Details &rarr;
                 </Link>

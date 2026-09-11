@@ -88,6 +88,9 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
   };
 
   const handleRunCode = async () => {
+    // Prevent duplicate requests while execution is in-flight
+    if (isRunning || isSubmitting) return;
+
     if (!session?.user) {
       alert("Please sign in to run code.");
       return;
@@ -111,20 +114,83 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
       const data = await res.json();
       if (!res.ok) {
-        setExecResult({ systemError: data.error || "Failed to execute code" });
-      } else {
+        if (res.status === 429) {
+          setExecResult({
+            systemError: data.error || "Rate limit exceeded. Maximum 10 runs per 10 minutes (50/hr). Please wait.",
+          });
+        } else {
+          setExecResult({ systemError: data.error || "Failed to execute code" });
+        }
+        return;
+      }
+
+      const executionId = data.executionId;
+      if (!executionId) {
+        // Direct execution result fallback if API returned sync result directly
+        if (data.status) {
+          setExecResult({
+            stdout: data.stdout,
+            stderr: data.stderr,
+            output: data.output,
+            errorDetails: data.compilationError || data.runtimeError || data.systemError,
+            status: data.compilationError
+              ? "Compilation Error"
+              : data.runtimeError
+              ? "Runtime Error"
+              : data.isTimeout || data.status === "timeout"
+              ? "Time Limit Exceeded"
+              : "Accepted",
+          });
+          return;
+        }
+        setExecResult({ systemError: "Failed to queue execution. Missing execution ID." });
+        return;
+      }
+
+      // Poll status endpoint until execution reaches a terminal state
+      const terminalStates = ["success", "error", "timeout", "failed", "cancelled"];
+      let completed = false;
+      const startTime = Date.now();
+      const MAX_POLL_TIME = 45000; // 45s safety limit
+
+      while (!completed && Date.now() - startTime < MAX_POLL_TIME) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+
+        const statusRes = await fetch(`/api/execute/status?id=${encodeURIComponent(executionId)}`);
+        if (!statusRes.ok) {
+          const errData = await statusRes.json().catch(() => ({}));
+          setExecResult({
+            systemError: errData.error || "Failed to retrieve execution status.",
+          });
+          completed = true;
+          break;
+        }
+
+        const statusData = await statusRes.json();
+        if (terminalStates.includes(statusData.status)) {
+          completed = true;
+          setExecResult({
+            stdout: statusData.stdout,
+            stderr: statusData.stderr,
+            output: statusData.output,
+            errorDetails: statusData.compilationError || statusData.runtimeError || statusData.systemError,
+            status: statusData.compilationError
+              ? "Compilation Error"
+              : statusData.runtimeError
+              ? "Runtime Error"
+              : statusData.isTimeout || statusData.status === "timeout"
+              ? "Time Limit Exceeded"
+              : statusData.status === "failed" || statusData.status === "cancelled"
+              ? "System Error"
+              : "Accepted",
+          });
+          break;
+        }
+      }
+
+      if (!completed) {
         setExecResult({
-          stdout: data.stdout,
-          stderr: data.stderr,
-          output: data.output,
-          errorDetails: data.compilationError || data.runtimeError,
-          status: data.compilationError
-            ? "Compilation Error"
-            : data.runtimeError
-            ? "Runtime Error"
-            : data.isTimeout
-            ? "Time Limit Exceeded"
-            : "Accepted",
+          systemError: "Execution timed out waiting for results. Please try again.",
         });
       }
     } catch {

@@ -1,105 +1,222 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Code, Database, Server, Cpu, Shield, Sparkles } from "lucide-react";
+import { ArrowLeft, Server, Code, Database, Shield, Sparkles, Feather, ArrowUpRight } from "lucide-react";
+import { CreatorSocialCard } from "@/components/ui/CreatorSocialCard";
+
+const TECH_STACK = [
+  {
+    name: "Next.js",
+    role: "App Router, SSR, Server Components & Edge API routes",
+    license: "MIT License",
+    url: "https://nextjs.org",
+    icon: Server,
+  },
+  {
+    name: "Monaco Editor",
+    role: "Browser-based code editor powering the practice workspace",
+    license: "MIT License",
+    url: "https://microsoft.github.io/monaco-editor",
+    icon: Code,
+  },
+  {
+    name: "MongoDB & Mongoose",
+    role: "Database storage for curriculum challenges, users, and telemetry",
+    license: "SSPL / Apache 2.0",
+    url: "https://mongoosejs.com",
+    icon: Database,
+  },
+  {
+    name: "Auth.js",
+    role: "Passwordless authentication via GitHub and Google OAuth",
+    license: "ISC License",
+    url: "https://authjs.dev",
+    icon: Shield,
+  },
+  {
+    name: "Tailwind CSS",
+    role: "Utility-first design token system and fluid typography",
+    license: "MIT License",
+    url: "https://tailwindcss.com",
+    icon: Sparkles,
+  },
+  {
+    name: "Lucide",
+    role: "Minimal vector iconography and system indicators",
+    license: "ISC License",
+    url: "https://lucide.dev",
+    icon: Feather,
+  },
+];
 
 export default function CreditsPage() {
-  const techStack = [
-    {
-      name: "Next.js",
-      role: "Full-stack React framework powering App Router, SSR, and API endpoints.",
-      license: "MIT License",
-      url: "https://nextjs.org",
-      icon: Server,
-    },
-    {
-      name: "Monaco Editor",
-      role: "Browser-based code editor engine powering the interactive coding workspace.",
-      license: "MIT License",
-      url: "https://microsoft.github.io/monaco-editor",
-      icon: Code,
-    },
-    {
-      name: "MongoDB & Mongoose",
-      role: "Document database storage for users, questions, test suites, and streaks.",
-      license: "SSPL / Apache 2.0",
-      url: "https://mongoosejs.com",
-      icon: Database,
-    },
-    {
-      name: "Auth.js / NextAuth",
-      role: "Secure passwordless authentication with Google and GitHub OAuth providers.",
-      license: "ISC License",
-      url: "https://authjs.dev",
-      icon: Shield,
-    },
-    {
-      name: "Piston API",
-      role: "High-performance isolated code execution engine for C, C++, Java, Python, and JavaScript.",
-      license: "MIT License",
-      url: "https://github.com/engineer-man/piston",
-      icon: Cpu,
-    },
-    {
-      name: "Tailwind CSS & Lucide",
-      role: "Utility-first design styling and clean geometric vector iconography.",
-      license: "MIT License",
-      url: "https://tailwindcss.com",
-      icon: Sparkles,
-    },
-  ];
-
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 space-y-8">
+    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 space-y-12" style={{ color: "var(--fg)" }}>
+      {/* Top back navigation */}
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8B93A7] hover:text-[#00F0FF] transition"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors"
+        style={{ color: "var(--fg-muted)" }}
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to Home
       </Link>
 
-      <div className="border-b border-[#252936] pb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-[#F5F7FA]">Credits & Open Source Acknowledgements</h1>
-        <p className="text-xs text-[#8B93A7] mt-1">
-          insidcode is built on robust open-source technologies and developer tooling.
-        </p>
-      </div>
+      {/* ── Primary Section: Creator Attribution ───────────────────── */}
+      <section className="space-y-8">
+        <div className="space-y-2">
+          <p className="section-label">Credits & Authorship</p>
+          <h1
+            className="font-bold tracking-tight leading-none"
+            style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
+          >
+            INSIDCODE
+          </h1>
+          <p className="text-[13px]" style={{ color: "var(--fg-muted)" }}>
+            Created and developed by
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {techStack.map((tech) => {
-          const Icon = tech.icon;
-          return (
-            <div
-              key={tech.name}
-              className="rounded-xl border border-[#252936] bg-[#11131A] p-5 space-y-2 hover:border-[#363C4E] transition"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-[#00F0FF]" />
-                  <h3 className="text-sm font-bold text-[#F5F7FA]">{tech.name}</h3>
-                </div>
-                <span className="font-mono text-[10px] text-[#5E667B]">{tech.license}</span>
-              </div>
-              <p className="text-xs text-[#8B93A7] leading-relaxed">{tech.role}</p>
+        {/* Creator Identity Hero */}
+        <div
+          className="p-6 sm:p-8 space-y-4"
+          style={{
+            border: "1.5px solid var(--border-strong)",
+            borderRadius: "4px",
+            backgroundColor: "var(--bg-surface)",
+          }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+            <div>
+              <span className="section-label block mb-1">Lead Architect & Developer</span>
+              <h2 className="text-[26px] font-bold tracking-tight" style={{ color: "var(--fg)" }}>
+                NAMISH YADAV
+              </h2>
+              <p className="mono text-[13px] mt-0.5" style={{ color: "var(--accent)" }}>
+                @p3xz
+              </p>
+            </div>
+            <p className="text-[12px] max-w-xs leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+              Designed, built, and maintained as a focused logic-building platform
+              to master programming foundations before DSA.
+            </p>
+          </div>
+
+          {/* Quick links list */}
+          <div
+            className="pt-4 flex flex-wrap items-center gap-4 text-[12px] font-medium"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
+            {[
+              { label: "Portfolio →", href: "https://namishhh.vercel.app/" },
+              { label: "LinkedIn →", href: "https://www.linkedin.com/in/namish-yadav-639769408/" },
+              { label: "GitHub →", href: "https://github.com/p3xz" },
+              { label: "Instagram →", href: "https://instagram.com/nam7sh" },
+            ].map((link) => (
               <a
-                href={tech.url}
+                key={link.label}
+                href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block text-[11px] font-mono text-[#00F0FF] hover:underline pt-1"
+                className="transition-colors hover:underline"
+                style={{ color: "var(--fg)" }}
               >
-                {tech.url} &rarr;
+                {link.label}
               </a>
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        </div>
 
-      <div className="rounded-xl border border-[#252936] bg-[#11131A] p-6 space-y-2">
-        <h3 className="text-sm font-bold text-[#F5F7FA]">Curriculum & Author</h3>
-        <p className="text-xs text-[#8B93A7] leading-relaxed">
-          The &quot;Master Your Logic Building (Before Starting DSA)&quot; curriculum is organized into six progressive phases to build problem-solving intuition. Platform created for private developer growth.
+        {/* Interactive Creator Social Card */}
+        <div className="pt-2">
+          <CreatorSocialCard />
+        </div>
+      </section>
+
+      {/* ── Secondary Section: Technology Attribution ──────────────── */}
+      <section className="pt-8" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="mb-6 space-y-1">
+          <p className="section-label">Underlying Infrastructure</p>
+          <h2 className="text-[18px] font-bold tracking-tight" style={{ color: "var(--fg)" }}>
+            Built with
+          </h2>
+          <p className="text-[12px]" style={{ color: "var(--fg-muted)" }}>
+            InsidCode stands on the shoulders of robust, open-source developer tooling.
+          </p>
+        </div>
+
+        {/* Structured table rows (no giant cards) */}
+        <div
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: "3px",
+            overflow: "hidden",
+          }}
+        >
+          {TECH_STACK.map((tech, i) => {
+            const Icon = tech.icon;
+            return (
+              <div
+                key={tech.name}
+                className="grid grid-cols-12 items-center px-4 py-3.5 transition-colors group"
+                style={{
+                  borderBottom: i < TECH_STACK.length - 1 ? "1px solid var(--border)" : "none",
+                  backgroundColor: "var(--bg)",
+                }}
+              >
+                {/* Tech name + icon */}
+                <div className="col-span-12 sm:col-span-4 flex items-center gap-2.5 mb-1 sm:mb-0">
+                  <Icon className="h-4 w-4 shrink-0" style={{ color: "var(--fg-dimmed)" }} />
+                  <span className="text-[13px] font-semibold" style={{ color: "var(--fg)" }}>
+                    {tech.name}
+                  </span>
+                  <span className="mono text-[10px] sm:hidden" style={{ color: "var(--fg-dimmed)" }}>
+                    · {tech.license}
+                  </span>
+                </div>
+
+                {/* Role */}
+                <div className="col-span-12 sm:col-span-5 text-[12px]" style={{ color: "var(--fg-muted)" }}>
+                  {tech.role}
+                </div>
+
+                {/* License & External link */}
+                <div className="col-span-12 sm:col-span-3 flex items-center justify-between sm:justify-end gap-3 mt-1 sm:mt-0">
+                  <span className="mono text-[10px] hidden sm:inline" style={{ color: "var(--fg-dimmed)" }}>
+                    {tech.license}
+                  </span>
+                  <a
+                    href={tech.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 text-[11px] font-medium transition-colors hover:underline"
+                    style={{ color: "var(--fg-muted)" }}
+                  >
+                    <span>docs</span>
+                    <ArrowUpRight className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Curriculum & Mission Note ──────────────────────────────── */}
+      <section
+        className="p-5"
+        style={{
+          border: "1px solid var(--border)",
+          borderRadius: "3px",
+          backgroundColor: "var(--bg-subtle)",
+        }}
+      >
+        <p className="section-label mb-1">Curriculum Architecture</p>
+        <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+          The &quot;Master Your Logic Building (Before Starting DSA)&quot; curriculum comprises
+          330+ structured problems arranged into six sequential phases.
+          Created and maintained for disciplined, self-directed developer intuition.
         </p>
-      </div>
+      </section>
     </div>
   );
 }

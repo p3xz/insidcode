@@ -25,19 +25,26 @@ export function Logo({ className = "", size = "md", showText = true }: LogoProps
         xmlns="http://www.w3.org/2000/svg"
         className="shrink-0"
       >
-        {/* Background rounded frame */}
-        <rect width="32" height="32" rx="7" fill="#11131A" stroke="#252936" strokeWidth="1.5" />
+        {/* Background rounded frame using semantic tokens */}
+        <rect
+          width="32"
+          height="32"
+          rx="7"
+          fill="var(--bg-elevated)"
+          stroke="var(--border-strong)"
+          strokeWidth="1.5"
+        />
         {/* Outer Code Brackets */}
         <path
           d="M10 11L5 16L10 21"
-          stroke="#00F0FF"
+          stroke="var(--accent)"
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
           d="M22 11L27 16L22 21"
-          stroke="#00F0FF"
+          stroke="var(--accent)"
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -45,14 +52,14 @@ export function Logo({ className = "", size = "md", showText = true }: LogoProps
         {/* Inner Core Accent */}
         <path
           d="M18 10L14 22"
-          stroke="#39FF14"
+          stroke="var(--success)"
           strokeWidth="2"
           strokeLinecap="round"
         />
       </svg>
       {showText && (
-        <span className={`${textClass} font-semibold tracking-tight text-[#F5F7FA]`}>
-          insid<span className="text-[#00F0FF]">code</span>
+        <span className={`${textClass} font-semibold tracking-tight`} style={{ color: "var(--fg)" }}>
+          insid<span style={{ color: "var(--brand-code)" }}>code</span>
         </span>
       )}
     </div>
@@ -69,24 +76,31 @@ export function LogoIcon({ size = 28, className = "" }: { size?: number; classNa
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <rect width="32" height="32" rx="7" fill="#11131A" stroke="#252936" strokeWidth="1.5" />
+      <rect
+        width="32"
+        height="32"
+        rx="7"
+        fill="var(--bg-elevated)"
+        stroke="var(--border-strong)"
+        strokeWidth="1.5"
+      />
       <path
         d="M10 11L5 16L10 21"
-        stroke="#00F0FF"
+        stroke="var(--accent)"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M22 11L27 16L22 21"
-        stroke="#00F0FF"
+        stroke="var(--accent)"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M18 10L14 22"
-        stroke="#39FF14"
+        stroke="var(--success)"
         strokeWidth="2"
         strokeLinecap="round"
       />
