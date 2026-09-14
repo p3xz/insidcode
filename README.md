@@ -26,7 +26,7 @@ insidcode is built for developers who want a serious, distraction-free environme
 3. Monaco Code Editor & Execution Engine
    - Monaco Editor with dark developer theme tokens.
    - Supported languages: Python 3, JavaScript (Node.js), C, C++, and Java.
-   - Real-time compilation and execution via Piston API with strict 10s timeouts, 100 KB code limit, and 32 KB stdin limit.
+   - Real-time compilation and execution via ONLINECOMPILER API with strict 10s timeouts, 100 KB code limit, and 32 KB stdin limit.
    - Language starter templates with unsaved modification alerts.
 
 4. Server-Evaluated Hidden Tests & XP System
@@ -55,7 +55,7 @@ insidcode is built for developers who want a serious, distraction-free environme
 - Backend: Next.js API Route Handlers, Zod Validation, Sliding-Window Rate Limiting
 - Database: MongoDB Atlas, Mongoose ODM with cached serverless connections
 - Authentication: NextAuth (Auth.js) with Google and GitHub OAuth
-- Execution Engine: Piston API (isolated sandbox)
+- Execution Engine: ONLINECOMPILER API (isolated sandbox)
 - Deployment Target: Vercel
 
 ## Getting Started
@@ -78,7 +78,7 @@ Fill in the environment variables:
 - `AUTH_SECRET`: Random 32-character secret string.
 - `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`: From Google Cloud Console.
 - `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`: From GitHub Developer Settings.
-- `PISTON_URL`: `https://emkc.org/api/v2/piston` or your self-hosted instance.
+- `ONLINECOMPILER_URL`: `https://emkc.org/api/v2/ONLINECOMPILER` or your self-hosted instance.
 
 ### 3. Install Dependencies
 
