@@ -13,8 +13,17 @@ import {
   Check,
   X,
   AtSign,
+  Award,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+
+interface TitleOption {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  unlocked: boolean;
+}
 
 interface UserSettingsState {
   username: string;
@@ -42,6 +51,13 @@ export default function SettingsPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
+  // Titles state
+  const [titles, setTitles] = useState<TitleOption[]>([]);
+  const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
+  const [titleLoading, setTitleLoading] = useState(false);
+  const [titleSuccess, setTitleSuccess] = useState("");
+  const [titleError, setTitleError] = useState("");
+
   // Username edit state
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [editUsernameInput, setEditUsernameInput] = useState("");
@@ -58,11 +74,21 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("/api/user/settings");
-        if (res.ok) {
-          const data = await res.json();
+        const [settingsRes, titlesRes] = await Promise.all([
+          fetch("/api/user/settings"),
+          fetch("/api/user/titles"),
+        ]);
+
+        if (settingsRes.ok) {
+          const data = await settingsRes.json();
           setSettings(data.user);
           setEditUsernameInput(data.user.username);
+        }
+
+        if (titlesRes.ok) {
+          const titlesData = await titlesRes.json();
+          setTitles(titlesData.titles || []);
+          setSelectedTitle(titlesData.selectedTitle || null);
         }
       } catch {
         // silent
@@ -72,6 +98,34 @@ export default function SettingsPage() {
     };
     fetchSettings();
   }, []);
+
+  const handleSelectTitle = async (newTitle: string | null) => {
+    setTitleLoading(true);
+    setTitleError("");
+    setTitleSuccess("");
+
+    try {
+      const res = await fetch("/api/user/titles", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setTitleError(data.error || "Failed to update title.");
+      } else {
+        setSelectedTitle(data.selectedTitle || null);
+        setTitleSuccess(data.message || "Title updated successfully.");
+        setTimeout(() => setTitleSuccess(""), 4000);
+      }
+    } catch {
+      setTitleError("Network error while updating title.");
+    } finally {
+      setTitleLoading(false);
+    }
+  };
 
   const validateUsernameInput = (value: string): string | null => {
     const trimmed = value.trim();
@@ -378,7 +432,7 @@ export default function SettingsPage() {
                 </p>
               ) : (
                 <p className="text-[11px] text-[var(--fg-muted)]">
-                  3–20 characters. Only letters, numbers, and underscores allowed.
+                  3 to 20 characters. Only letters, numbers, and underscores allowed.
                 </p>
               )}
             </div>
@@ -395,6 +449,69 @@ export default function SettingsPage() {
             maxLength={40}
             className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-2 text-xs text-[var(--fg)] focus:border-[#00F0FF] focus:outline-none"
           />
+        </div>
+
+        {/* Developer Title Selection */}
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)] p-4 space-y-3 pt-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <Award className="h-3.5 w-3.5 text-[var(--accent)]" />
+                <label className="text-xs font-semibold text-[var(--fg)]">Developer Title</label>
+              </div>
+              <p className="text-[11px] text-[var(--fg-muted)]">
+                Server-verified title displayed on your public profile and leaderboard entries.
+              </p>
+            </div>
+            {selectedTitle && (
+              <span
+                className="mono text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider"
+                style={{
+                  backgroundColor: "var(--bg-elevated)",
+                  color: "var(--fg)",
+                  border: "1px solid var(--border-strong)",
+                  borderRadius: "2px",
+                }}
+              >
+                {selectedTitle}
+              </span>
+            )}
+          </div>
+
+          {titleSuccess && (
+            <div className="flex items-center gap-1.5 text-xs text-[#39FF14]">
+              <Check className="h-3.5 w-3.5" />
+              <span>{titleSuccess}</span>
+            </div>
+          )}
+
+          {titleError && (
+            <div className="flex items-center gap-1.5 text-xs text-[#FF4D6D]">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>{titleError}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+            <select
+              value={selectedTitle || ""}
+              onChange={(e) => handleSelectTitle(e.target.value || null)}
+              disabled={titleLoading}
+              className="flex-1 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-2 text-xs text-[var(--fg)] focus:border-[#00F0FF] focus:outline-none disabled:opacity-50"
+            >
+              <option value="">None (No Title)</option>
+              {titles.map((t) => (
+                <option
+                  key={t.id}
+                  value={t.title}
+                  disabled={!t.unlocked}
+                >
+                  {t.title} {t.unlocked ? "✓" : `(Locked: ${t.description})`}
+                </option>
+              ))}
+            </select>
+            {titleLoading && <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)] self-center" />}
+          </div>
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { Footer } from "@/components/layout/Footer";
 import { SessionProvider } from "@/components/layout/SessionProvider";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { OnboardingGuard } from "@/components/layout/OnboardingGuard";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,9 +21,39 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Insidcode",
+  metadataBase: new URL("https://insidcode.vercel.app"),
+  title: {
+    default: "InsidCode | Master Programming Logic Before DSA",
+    template: "%s | InsidCode",
+  },
   description:
-    "Master your programming logic before DSA with 330+ structured challenges and isolated code execution.",
+    "Master foundational programming logic, recursion, arrays, and algorithms with 330+ structured challenges and isolated code execution before diving into DSA.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "InsidCode | Master Programming Logic Before DSA",
+    description:
+      "Master foundational programming logic, recursion, arrays, and algorithms with 330+ structured challenges and isolated code execution before diving into DSA.",
+    url: "https://insidcode.vercel.app",
+    siteName: "InsidCode",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "InsidCode | Master Programming Logic Before DSA",
+    description:
+      "Master foundational programming logic, recursion, arrays, and algorithms with 330+ structured challenges and isolated code execution before diving into DSA.",
+    creator: "@p3xz",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "google-site-verification-placeholder",
+  },
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -38,7 +69,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* No-flash theme script — runs before React hydration */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('insidcode-theme')||'system';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',r);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
@@ -51,17 +81,19 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <SessionProvider>
-            <div
-              className="flex min-h-screen flex-col"
-              style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}
-            >
-              <Navbar />
-              <main className="flex-1 w-full" style={{ backgroundColor: "var(--bg)" }}>
-                {children}
-              </main>
-              <Footer />
-              <BottomNav />
-            </div>
+            <OnboardingGuard>
+              <div
+                className="flex min-h-screen flex-col"
+                style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}
+              >
+                <Navbar />
+                <main className="flex-1 w-full" style={{ backgroundColor: "var(--bg)" }}>
+                  {children}
+                </main>
+                <Footer />
+                <BottomNav />
+              </div>
+            </OnboardingGuard>
           </SessionProvider>
         </ThemeProvider>
       </body>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Play,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { CURRICULUM_PHASES } from "@/lib/constants";
@@ -36,6 +38,7 @@ interface PhaseStat {
 }
 
 export default function ProblemsDirectoryPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [problems, setProblems] = useState<ProblemRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -289,10 +292,12 @@ export default function ProblemsDirectoryPage() {
             <table className="w-full text-left text-[12px]">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-subtle)" }}>
-                  {["", "ID", "Title", "Phase", "Difficulty", "XP"].map((col, i) => (
+                  {["", "ID", "Title", "Phase", "Difficulty", "XP", "Actions"].map((col, i) => (
                     <th
                       key={i}
-                      className={`px-4 py-3 section-label ${i === 5 ? "text-right" : i === 0 ? "w-10 text-center" : ""}`}
+                      className={`px-4 py-3 section-label ${
+                        i === 6 ? "text-right w-24" : i === 5 ? "text-right" : i === 0 ? "w-10 text-center" : ""
+                      }`}
                     >
                       {col}
                     </th>
@@ -303,6 +308,17 @@ export default function ProblemsDirectoryPage() {
                 {problems.map((prob, i) => (
                   <tr
                     key={prob.problemId}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open problem ${prob.problemId}: ${prob.title}`}
+                    onClick={() => router.push(`/problems/${prob.problemId}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/problems/${prob.problemId}`);
+                      }
+                    }}
+                    className="cursor-pointer focus:outline-none focus:bg-[var(--bg-subtle)]"
                     style={{ borderBottom: i < problems.length - 1 ? "1px solid var(--border)" : "none" }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
@@ -325,15 +341,12 @@ export default function ProblemsDirectoryPage() {
 
                     {/* Title */}
                     <td className="px-4 py-3 font-medium">
-                      <Link
-                        href={`/problems/${prob.problemId}`}
-                        className="transition-colors"
+                      <span
+                        className="transition-colors group-hover:text-[var(--accent)]"
                         style={{ color: "var(--fg)" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg)")}
                       >
                         {prob.title}
-                      </Link>
+                      </span>
                     </td>
 
                     {/* Phase */}
@@ -359,6 +372,36 @@ export default function ProblemsDirectoryPage() {
                     {/* XP */}
                     <td className="px-4 py-3 text-right mono" style={{ color: "var(--fg-muted)" }}>
                       +{prob.xp}
+                    </td>
+
+                    {/* Action button: RUN */}
+                    <td className="px-4 py-3 text-right">
+                      <div
+                        className="flex items-center justify-end"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Link
+                          href={`/problems/${prob.problemId}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold mono transition-colors"
+                          style={{
+                            border: "1px solid var(--border-strong)",
+                            borderRadius: "3px",
+                            color: "var(--fg)",
+                            backgroundColor: "var(--bg-elevated)",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = "var(--accent)";
+                            e.currentTarget.style.color = "var(--accent)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = "var(--border-strong)";
+                            e.currentTarget.style.color = "var(--fg)";
+                          }}
+                        >
+                          <Play className="h-2.5 w-2.5 fill-current" />
+                          <span>RUN</span>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

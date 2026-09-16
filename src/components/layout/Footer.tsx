@@ -13,6 +13,7 @@ const platformLinks = [
 ];
 
 const aboutLinks = [
+  { href: "/feedback", label: "Feedback" },
   { href: "/credits", label: "Credits" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
@@ -51,7 +52,7 @@ export function Footer() {
             </Link>
             <p className="text-[12px] leading-relaxed max-w-xs" style={{ color: "var(--fg-muted)" }}>
               A focused programming platform for mastering algorithmic logic,
-              recursion, arrays, and problem solving — before DSA.
+              recursion, arrays, and problem solving before DSA.
             </p>
           </div>
 

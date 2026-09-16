@@ -9,7 +9,7 @@ insidcode is built for developers who want a serious, distraction-free environme
 ## Key Features
 
 1. Password-Free OAuth Authentication
-   - Seamless sign in via Google and GitHub OAuth.
+   - Sign in via Google and GitHub OAuth.
    - Automatic unique username generation with case-insensitive validation and reserved username protection.
    - Zero password storage or email registration workflows.
 

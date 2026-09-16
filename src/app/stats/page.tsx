@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Flame, Zap, Send, Loader2, CheckCircle2 } from "lucide-react";
+import { Flame, Zap, Send, Loader2, CheckCircle2, Code2, Swords, Trophy } from "lucide-react";
 
 interface UserStatsData {
   totalSolved: number;
@@ -18,6 +18,17 @@ interface UserStatsData {
   totalSubmissions: number;
   acceptedSubmissions: number;
   acceptanceRate: number;
+  duelsPlayed?: number;
+  duelsWon?: number;
+  duelsLost?: number;
+  duelWinRate?: number;
+  languagePoints?: {
+    python?: number;
+    javascript?: number;
+    c?: number;
+    cpp?: number;
+    java?: number;
+  };
   phaseBreakdown: Array<{
     phaseId: number;
     title: string;
@@ -109,7 +120,7 @@ export default function UserStatsPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-0">
 
-      {/* ── Page Header ────────────────────────────────────────────── */}
+      {/* -- Page Header ---------------------------------------------- */}
       <div
         className="pb-6"
         style={{ borderBottom: "1px solid var(--border)" }}
@@ -119,11 +130,11 @@ export default function UserStatsPage() {
           Performance Statistics
         </h1>
         <p className="mt-1 text-[12px]" style={{ color: "var(--fg-muted)" }}>
-          Real-time telemetry tracking problem resolution, accuracy, and practice momentum.
+          Real-time telemetry tracking problem resolution, duel combat, and practice momentum.
         </p>
       </div>
 
-      {/* ── Primary Metrics Row ────────────────────────────────────── */}
+      {/* -- Primary Metrics Row -------------------------------------- */}
       <div
         className="grid grid-cols-2 sm:grid-cols-4 divide-x"
         style={{
@@ -187,7 +198,75 @@ export default function UserStatsPage() {
         ))}
       </div>
 
-      {/* ── Difficulty Breakdown ───────────────────────────────────── */}
+      {/* -- Duel Statistics Row -------------------------------------- */}
+      <div
+        className="py-6"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Swords className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <p className="section-label">1v1 Duel Telemetry</p>
+          </div>
+          <span className="mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            Best of 3 matches
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            {
+              label: "Duels Won",
+              value: stats.duelsWon || 0,
+              sub: "Victories",
+              color: "var(--accent)",
+              icon: Trophy,
+            },
+            {
+              label: "Win Rate",
+              value: `${stats.duelWinRate || 0}%`,
+              sub: `${stats.duelsWon || 0}W / ${stats.duelsLost || 0}L`,
+              color: (stats.duelWinRate || 0) >= 50 ? "var(--success)" : "var(--fg)",
+            },
+            {
+              label: "Duels Played",
+              value: stats.duelsPlayed || 0,
+              sub: "Matches",
+              color: "var(--fg)",
+            },
+            {
+              label: "Duel Status",
+              value: (stats.duelsPlayed || 0) >= 3 ? "Ranked" : "Unranked",
+              sub: (stats.duelsPlayed || 0) >= 3 ? "Eligible on Leaderboard" : `${3 - (stats.duelsPlayed || 0)} more to rank`,
+              color: (stats.duelsPlayed || 0) >= 3 ? "var(--success)" : "var(--fg-dimmed)",
+              textValue: true,
+            },
+          ].map(({ label, value, sub, color, textValue }) => (
+            <div
+              key={label}
+              className="p-4"
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: "3px",
+                backgroundColor: "var(--bg)",
+              }}
+            >
+              <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>{label}</p>
+              <div className="flex items-baseline gap-1 mt-1">
+                <span
+                  className={`text-[24px] font-bold ${textValue ? "text-[18px]" : "mono"}`}
+                  style={{ color }}
+                >
+                  {value}
+                </span>
+              </div>
+              <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>{sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* -- Difficulty Breakdown ------------------------------------- */}
       <div
         className="py-6"
         style={{ borderBottom: "1px solid var(--border)" }}
@@ -217,13 +296,13 @@ export default function UserStatsPage() {
         </div>
       </div>
 
-      {/* ── Activity Heatmap ───────────────────────────────────────── */}
+      {/* -- Activity Heatmap ----------------------------------------- */}
       <div
         className="py-6"
         style={{ borderBottom: "1px solid var(--border)" }}
       >
         <div className="flex items-center justify-between mb-4">
-          <p className="section-label">Solve Activity — Past 12 Months</p>
+          <p className="section-label">Solve Activity (Past 12 Months)</p>
           <span className="mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
             {totalHeatmapSolves} total solves
           </span>
@@ -273,7 +352,52 @@ export default function UserStatsPage() {
         </div>
       </div>
 
-      {/* ── Phase Progress ─────────────────────────────────────────── */}
+      {/* -- Language Points ------------------------------------------ */}
+      <div
+        className="py-6"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Code2 className="h-4 w-4" style={{ color: "var(--fg-muted)" }} />
+            <p className="section-label">Language Points</p>
+          </div>
+          <span className="mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            +10 pts / solved problem
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {[
+            { key: "python", label: "Python" },
+            { key: "javascript", label: "JavaScript" },
+            { key: "c", label: "C" },
+            { key: "cpp", label: "C++" },
+            { key: "java", label: "Java" },
+          ].map(({ key, label }) => {
+            const pts = stats.languagePoints?.[key as keyof typeof stats.languagePoints] || 0;
+            return (
+              <div
+                key={key}
+                className="p-3.5"
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  backgroundColor: "var(--bg)",
+                }}
+              >
+                <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>{label}</p>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-[18px] font-bold mono" style={{ color: "var(--fg)" }}>{pts}</span>
+                  <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>pts</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* -- Phase Progress ------------------------------------------- */}
       <div
         className="py-6"
         style={{ borderBottom: "1px solid var(--border)" }}
@@ -303,7 +427,7 @@ export default function UserStatsPage() {
         </div>
       </div>
 
-      {/* ── Recent Submissions ─────────────────────────────────────── */}
+      {/* -- Recent Submissions --------------------------------------- */}
       {stats.recentSubmissions && stats.recentSubmissions.length > 0 && (
         <div className="py-6">
           <p className="section-label mb-4">Recent Submissions</p>
@@ -356,7 +480,7 @@ export default function UserStatsPage() {
                     {isAccepted ? "OK" : "WA"}
                   </span>
                   <span className="col-span-2 text-right mono" style={{ color: "var(--fg-muted)" }}>
-                    {sub.awardedXp > 0 ? `+${sub.awardedXp}` : "—"}
+                    {sub.awardedXp > 0 ? `+${sub.awardedXp}` : "-"}
                   </span>
                 </div>
               );

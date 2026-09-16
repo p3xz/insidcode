@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { requireAdminUser } from "@/lib/auth";
+import { requireAdminMutationUser } from "@/lib/security";
 import { Question } from "@/models/Question";
 import { AdminAction } from "@/models/AdminAction";
 import { LIMITS } from "@/lib/constants";
@@ -107,7 +108,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const adminCheck = await requireAdminUser();
+    const adminCheck = await requireAdminMutationUser(req, "PROBLEM_CREATE");
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }

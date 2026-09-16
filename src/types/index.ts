@@ -59,9 +59,108 @@ export interface IUser {
     reducedMotion?: boolean;
     soundEnabled?: boolean;
   };
+  languagePoints?: {
+    python?: number;
+    javascript?: number;
+    c?: number;
+    cpp?: number;
+    java?: number;
+  };
+  selectedTitle?: string;
+  duelsPlayed?: number;
+  duelsWon?: number;
+  duelsLost?: number;
+  onboardingCompleted: boolean;
+  privacyPolicyAccepted: boolean;
+  termsAccepted: boolean;
+  privacyPolicyVersion?: string;
+  termsVersion?: string;
+  acceptedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   save: () => Promise<this>;
+}
+
+export interface ITitleDefinition {
+  id: string;
+  title: string;
+  description: string;
+  category: "solves" | "streak" | "language" | "difficulty" | "duel";
+}
+
+export interface ILanguageSolve {
+  _id: string;
+  userId: string;
+  problemId: string;
+  language: string;
+  points: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type DuelStatus =
+  | "WAITING"
+  | "COUNTDOWN"
+  | "ACTIVE"
+  | "FINISHED"
+  | "CANCELLED"
+  | "EXPIRED";
+
+export type DuelPlayerStatus = "CODING" | "SUBMITTED" | "SOLVED";
+
+export interface IDuelPlayer {
+  userId: string;
+  username: string;
+  displayName: string;
+  image?: string;
+  status: DuelPlayerStatus;
+  submittedAt?: Date;
+  testsPassed?: number;
+  totalTests?: number;
+  runtime?: number;
+}
+
+export interface IDuelRound {
+  roundNumber: number; // 1, 2, 3
+  problemId: string;
+  problemTitle: string;
+  difficulty: DifficultyLevel;
+  startedAt?: Date;
+  endsAt?: Date;
+  winner?: string | null; // userId or null for draw/timeout
+  finishedAt?: Date;
+  player1Status: DuelPlayerStatus;
+  player2Status: DuelPlayerStatus;
+  player1SubmittedAt?: Date;
+  player2SubmittedAt?: Date;
+  player1TestsPassed?: number;
+  player2TestsPassed?: number;
+  player1TotalTests?: number;
+  player2TotalTests?: number;
+  player1Runtime?: number;
+  player2Runtime?: number;
+}
+
+export interface IDuelRoom {
+  _id: string;
+  roomCode: string;
+  difficulty: DifficultyLevel;
+  rounds: number; // 3
+  currentRound: number; // 1, 2, 3
+  roundsData: IDuelRound[];
+  player1: IDuelPlayer;
+  player2?: IDuelPlayer;
+  player1Score: number;
+  player2Score: number;
+  status: DuelStatus;
+  countdownEndsAt?: Date;
+  winner?: string | null; // final overall winner userId or null/DRAW
+  finishedAt?: Date;
+  finalizedAt?: Date; // crash-safe idempotency marker for statistics
+  cancelReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt: Date;
 }
 
 export interface IQuestion {
@@ -98,6 +197,7 @@ export interface ISubmission {
   testsPassed: number;
   totalTests: number;
   awardedXp: number;
+  awardedLanguagePoints?: number;
   createdAt: Date;
 }
 
@@ -164,7 +264,8 @@ export type ExecutionStatus =
   | "error"
   | "timeout"
   | "failed"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export interface IExecution {
   _id: string;
@@ -187,7 +288,9 @@ export interface IExecution {
   runtimeError?: string;
   isTimeout?: boolean;
   systemError?: string;
+  claimedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
+
 

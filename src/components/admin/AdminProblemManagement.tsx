@@ -32,7 +32,6 @@ export function AdminProblemManagement() {
   const [phaseFilter, setPhaseFilter] = useState<string>("");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("");
 
-  // Editor Modal state
   const [isEditing, setIsEditing] = useState(false);
   const [editingProblem, setEditingProblem] = useState<Partial<IQuestion> | null>(null);
   const [isNewProblem, setIsNewProblem] = useState(false);
@@ -146,7 +145,6 @@ export function AdminProblemManagement() {
       const url = isNewProblem ? "/api/admin/problems" : `/api/admin/problems/${editingProblem.problemId}`;
       const method = isNewProblem ? "POST" : "PUT";
 
-      // Ensure slug exists
       const cleanSlug = editingProblem.slug || slugifyTitle(editingProblem.title);
 
       const payload = {

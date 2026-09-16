@@ -38,6 +38,7 @@ const NotificationSchema = new Schema<INotification>(
 );
 
 NotificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
+NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 24 * 60 * 60 }); // 60-day TTL for transient in-app notifications
 
 export const Notification: Model<INotification> =
   mongoose.models.Notification ||

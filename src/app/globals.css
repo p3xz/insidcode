@@ -122,7 +122,7 @@
   }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
-  /* Primary — neo-brutalist filled */
+  /* Primary: filled */
   .btn-primary {
     background-color: var(--accent);
     color: var(--accent-fg);
@@ -138,7 +138,7 @@
     box-shadow: none;
   }
 
-  /* Secondary — neo-brutalist outlined */
+  /* Secondary: outlined */
   .btn-secondary {
     background-color: transparent;
     color: var(--fg);
@@ -155,7 +155,7 @@
     box-shadow: none;
   }
 
-  /* Ghost — no border */
+  /* Ghost: no border */
   .btn-ghost {
     background-color: transparent;
     color: var(--fg-muted);

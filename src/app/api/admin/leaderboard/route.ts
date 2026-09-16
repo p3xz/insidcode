@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { requireAdminUser } from "@/lib/auth";
+import { requireAdminMutationUser } from "@/lib/security";
 import { SystemConfig } from "@/models/SystemConfig";
 import { AdminAction } from "@/models/AdminAction";
 
 export async function POST(req: NextRequest) {
   try {
-    const adminCheck = await requireAdminUser();
+    const adminCheck = await requireAdminMutationUser(req, "LEADERBOARD_FREEZE_TOGGLE");
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }

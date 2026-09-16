@@ -61,7 +61,7 @@ export const CURRICULUM_ARRAYS: QuestionSeedItem[] = [
     { input: "4\n5 10 15 20\n0", expectedOutput: "5 10 15 20" }
   ]),
 
-  createSeedQuestion(91, "Input an element x — check if it exists in the array.", 4, "Easy", "Given N followed by N integers on line 2, and target X on line 3, check if X exists in the array. Print 'Yes' or 'No'.", "5\n1 2 3 4 5\n3", "Yes", [
+  createSeedQuestion(91, "Input an element x and check if it exists in the array.", 4, "Easy", "Given N followed by N integers on line 2, and target X on line 3, check if X exists in the array. Print 'Yes' or 'No'.", "5\n1 2 3 4 5\n3", "Yes", [
     { input: "5\n1 2 3 4 5\n3", expectedOutput: "Yes" },
     { input: "4\n10 20 30 40\n25", expectedOutput: "No" },
     { input: "1\n7\n7", expectedOutput: "Yes" }
@@ -174,13 +174,13 @@ export const CURRICULUM_ARRAYS: QuestionSeedItem[] = [
     { input: "1\n42", expectedOutput: "42" }
   ]),
 
-  createSeedQuestion(111, "Compare two arrays — check if they are equal (same elements & order).", 4, "Medium", "Given two arrays (N followed by N elements, then M followed by M elements), check if they are identical in size, elements, and order. Print 'Yes' or 'No'.", "3\n1 2 3\n3\n1 2 3", "Yes", [
+  createSeedQuestion(111, "Compare two arrays and check if they are equal (same elements & order).", 4, "Medium", "Given two arrays (N followed by N elements, then M followed by M elements), check if they are identical in size, elements, and order. Print 'Yes' or 'No'.", "3\n1 2 3\n3\n1 2 3", "Yes", [
     { input: "3\n1 2 3\n3\n1 2 3", expectedOutput: "Yes" },
     { input: "3\n1 2 3\n3\n1 3 2", expectedOutput: "No" },
     { input: "2\n1 2\n3\n1 2 3", expectedOutput: "No" }
   ]),
 
-  createSeedQuestion(112, "Compare two arrays — check if they contain the same elements (ignore order).", 4, "Hard", "Given two arrays, check if they contain the exact same set of elements with identical frequencies, ignoring order. Print 'Yes' or 'No'.", "3\n1 2 3\n3\n3 1 2", "Yes", [
+  createSeedQuestion(112, "Compare two arrays and check if they contain the same elements (ignore order).", 4, "Hard", "Given two arrays, check if they contain the exact same set of elements with identical frequencies, ignoring order. Print 'Yes' or 'No'.", "3\n1 2 3\n3\n3 1 2", "Yes", [
     { input: "3\n1 2 3\n3\n3 1 2", expectedOutput: "Yes" },
     { input: "3\n1 2 3\n3\n1 2 4", expectedOutput: "No" },
     { input: "2\n1 2\n2\n2 1", expectedOutput: "Yes" }

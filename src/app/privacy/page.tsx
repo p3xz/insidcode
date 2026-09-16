@@ -1,6 +1,22 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Shield, Lock, Eye, Scale, Database, UserCheck, AlertTriangle, Mail } from "lucide-react";
+import type { Metadata } from "next";
+import { ArrowLeft, Shield, Lock, Eye, Scale, Database, UserCheck, AlertTriangle, Mail, ShieldAlert } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "Review how InsidCode handles developer telemetry, sandboxed code execution privacy, and data protection.",
+  alternates: {
+    canonical: "/privacy",
+  },
+  openGraph: {
+    title: "Privacy Policy | InsidCode",
+    description:
+      "Review how InsidCode handles developer telemetry, sandboxed code execution privacy, and data protection.",
+    url: "https://insidcode.vercel.app/privacy",
+  },
+};
 
 export default function PrivacyPage() {
   return (
@@ -58,16 +74,13 @@ export default function PrivacyPage() {
               <strong style={{ color: "var(--fg)" }}>Authentication & Social Profile Data:</strong> We operate a password-free platform. When you sign in via Google OAuth or GitHub OAuth, we receive your verified <strong>email address</strong>, <strong>display name</strong>, public <strong>profile image (avatar)</strong>, and provider-specific account identifier.
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>User-Provided Account Details:</strong> You may customize your platform username, biography, college branch (e.g., CSE, IT, ECE), and academic semester.
+              <strong style={{ color: "var(--fg)" }}>User-Provided Account Details:</strong> You may customize your platform username, display name, biography, college branch, and selected titles.
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>Code Submissions & Practice Metrics:</strong> We store source code submissions, selected programming languages (Python, JavaScript, C, C++, Java), execution runtimes, problem completion status, practice streaks, and earned Experience Points (XP).
+              <strong style={{ color: "var(--fg)" }}>Code Submissions & Practice Metrics:</strong> We store source code submissions, selected programming languages (Python, JavaScript, C, C++, Java), execution runtimes, problem completion status, practice streaks, 1v1 Duel outcomes, and earned Experience Points (XP).
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>Device & Log Information:</strong> System IP addresses, browser headers, and request timestamps are processed solely for sliding-window rate limiting, DDoS mitigation, and server security.
-            </li>
-            <li>
-              <strong style={{ color: "var(--fg)" }}>Payment & Transaction Data:</strong> If you purchase insidcode Pro or premium features, our third-party payment gateways (e.g., Razorpay / Stripe) securely handle payment processing. <strong>insidcode never sees, processes, or stores your credit/debit card numbers or UPI PINs.</strong>
+              <strong style={{ color: "var(--fg)" }}>Security & Audit Metadata:</strong> Safe request metadata including system IP addresses, user agent headers, and request timestamps are processed solely for security audits, automated abuse prevention, sliding-window rate limiting, DDoS mitigation, and server integrity.
             </li>
           </ul>
           <p className="text-[11px] pt-2" style={{ borderTop: "1px solid var(--border)", color: "var(--fg-dimmed)" }}>
@@ -90,7 +103,7 @@ export default function PrivacyPage() {
           </div>
           <p>We process your data strictly under valid legal bases:</p>
           <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
-            <li>To provision your user account and verify code solutions against server-side hidden test suites.</li>
+            <li>To provision your user account and verify code solutions against server-side test suites.</li>
             <li>To compute fair ranking metrics, calculate daily practice streaks, and reward XP achievements.</li>
             <li>To enforce community safety, detect automated malicious scripts, and prevent unauthorized scraping.</li>
             <li>To communicate critical account alerts, system updates, and security announcements.</li>
@@ -100,7 +113,33 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        {/* 3. Code Execution Privacy */}
+        {/* 3. Security, Audit Logging & Fraud Prevention */}
+        <section
+          className="space-y-3 p-5"
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: "4px",
+            backgroundColor: "var(--bg-surface)",
+          }}
+        >
+          <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
+            <ShieldAlert className="h-4 w-4" style={{ color: "var(--danger)" }} />
+            <h2>3. Security, Audit Logging & Fraud Prevention</h2>
+          </div>
+          <p>
+            To protect users, maintain fair competition, and safeguard infrastructure, insidcode actively monitors for unauthorized access, privilege escalation, automated scraping, and malicious code execution:
+          </p>
+          <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
+            <li>
+              <strong>Security Event Logging:</strong> When an account attempts unauthorized access to privileged administrative endpoints or manipulates server resources, the incident (including timestamp, endpoint, HTTP method, and account ID) is recorded in an immutable security audit ledger.
+            </li>
+            <li>
+              <strong>Suspension Data Retention:</strong> Information regarding policy violations, account suspensions, and administrative actions may be retained as necessary for security enforcement, moderation, dispute handling, and legal compliance.
+            </li>
+          </ul>
+        </section>
+
+        {/* 4. Code Execution Privacy */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -111,7 +150,7 @@ export default function PrivacyPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <Lock className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>3. Code Execution & Sandboxing Privacy</h2>
+            <h2>4. Code Execution & Sandboxing Privacy</h2>
           </div>
           <p>
             When you run or submit code, your instructions are dispatched to an isolated execution sandbox. The execution environment enforces strict security boundaries:
@@ -124,7 +163,7 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        {/* 4. Third-Party Services */}
+        {/* 5. Third-Party Services */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -135,7 +174,7 @@ export default function PrivacyPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <Scale className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>4. Third-Party Service Providers</h2>
+            <h2>5. Third-Party Service Providers</h2>
           </div>
           <p>We partner with reputable infrastructure providers:</p>
           <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
@@ -145,7 +184,7 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        {/* 5. GDPR Rights */}
+        {/* 6. GDPR Rights */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -156,18 +195,18 @@ export default function PrivacyPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <UserCheck className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>5. General Data Protection Regulation (GDPR) — European Users</h2>
+            <h2>6. General Data Protection Regulation (GDPR)</h2>
           </div>
           <p>If you reside in the European Economic Area (EEA), you possess enforceable data rights:</p>
           <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
             <li><strong>Right of Access:</strong> Request a complete copy of your stored personal data.</li>
             <li><strong>Right to Rectification:</strong> Update inaccurate account details directly via Account Settings.</li>
-            <li><strong>Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> Request permanent account deletion.</li>
-            <li><strong>Right to Data Portability:</strong> Export your submission history and practice statistics in JSON format.</li>
+            <li><strong>Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> Request permanent account deletion via Account Settings.</li>
+            <li><strong>Right to Data Portability:</strong> Export your submission history and practice statistics.</li>
           </ul>
         </section>
 
-        {/* 6. CCPA */}
+        {/* 7. CCPA */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -178,7 +217,7 @@ export default function PrivacyPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <Scale className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>6. California Consumer Privacy Act (CCPA)</h2>
+            <h2>7. California Consumer Privacy Act (CCPA)</h2>
           </div>
           <p>For California residents:</p>
           <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
@@ -188,7 +227,7 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        {/* 7. Children's Privacy */}
+        {/* 8. Children's Privacy */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -199,14 +238,14 @@ export default function PrivacyPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <AlertTriangle className="h-4 w-4" style={{ color: "var(--warning)" }} />
-            <h2>7. Children&apos;s Privacy (COPPA)</h2>
+            <h2>8. Children&apos;s Privacy (COPPA)</h2>
           </div>
           <p>
             insidcode is strictly directed to university students, working professionals, and individuals aged <strong>13 and older</strong>. We do not knowingly solicit or collect personal information from children under 13. If you believe a child under 13 has created an account, please contact us immediately.
           </p>
         </section>
 
-        {/* 8. Contact */}
+        {/* 9. Contact */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -217,10 +256,10 @@ export default function PrivacyPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <Mail className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>8. Contact & Privacy Inquiries</h2>
+            <h2>9. Contact & Privacy Inquiries</h2>
           </div>
           <p>
-            If you have questions, feedback, or legal inquiries regarding this Privacy Policy, you can reach out to us:
+            If you have questions, feedback, or legal inquiries regarding this Privacy Policy, reach out to us:
           </p>
           <p>
             <strong style={{ color: "var(--fg)" }}>Email:</strong>{" "}

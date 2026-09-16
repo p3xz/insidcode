@@ -11,10 +11,12 @@ declare module "next-auth" {
     user: {
       id: string;
       username: string;
+      displayName: string;
       role: "user" | "admin";
       xp: number;
       currentStreak: number;
       isBanned: boolean;
+      onboardingCompleted: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -92,6 +94,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               reducedMotion: false,
               soundEnabled: false,
             },
+            onboardingCompleted: false,
+            privacyPolicyAccepted: false,
+            termsAccepted: false,
           });
           console.log(`[Auth] Created new user: ${dbUser.username} (Role: ${dbUser.role})`);
         } else {
@@ -143,20 +148,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (dbUser) {
             token.userId = dbUser._id.toString();
             token.username = dbUser.username;
+            token.displayName = dbUser.displayName;
             token.role = dbUser.role;
             token.xp = dbUser.xp;
             token.currentStreak = dbUser.currentStreak;
             token.isBanned = dbUser.isBanned;
+            token.onboardingCompleted = Boolean(
+              dbUser.onboardingCompleted &&
+              dbUser.privacyPolicyAccepted &&
+              dbUser.termsAccepted
+            );
           }
         } catch (error) {
           console.error("[Auth] JWT database sync error:", error);
         }
       }
 
-      // Handle session update triggers (e.g. when username is changed)
+      // Handle session update triggers (e.g. when username is changed or onboarding completed)
       if (trigger === "update") {
         if (session?.username && typeof session.username === "string") {
           token.username = session.username;
+        }
+        if (session?.onboardingCompleted !== undefined) {
+          token.onboardingCompleted = Boolean(session.onboardingCompleted);
         }
 
         if (token.userId) {
@@ -165,14 +179,47 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             const dbUser = await User.findById(token.userId);
             if (dbUser) {
               token.username = dbUser.username;
+              token.displayName = dbUser.displayName;
               token.role = dbUser.role;
               token.xp = dbUser.xp;
               token.currentStreak = dbUser.currentStreak;
               token.isBanned = dbUser.isBanned;
+              token.onboardingCompleted = Boolean(
+                dbUser.onboardingCompleted &&
+                dbUser.privacyPolicyAccepted &&
+                dbUser.termsAccepted
+              );
             }
           } catch (error) {
             console.error("[Auth] JWT session refresh error:", error);
           }
+        }
+        return token;
+      }
+
+      // Authoritative synchronization on session retrieval: ensure token reflects latest DB user state
+      if (token.userId) {
+        try {
+          await connectToDatabase();
+          const dbUser = await User.findById(token.userId)
+            .select("username displayName role xp currentStreak isBanned onboardingCompleted privacyPolicyAccepted termsAccepted")
+            .lean();
+
+          if (dbUser) {
+            token.username = dbUser.username;
+            token.displayName = dbUser.displayName;
+            token.role = dbUser.role;
+            token.xp = dbUser.xp;
+            token.currentStreak = dbUser.currentStreak;
+            token.isBanned = dbUser.isBanned;
+            token.onboardingCompleted = Boolean(
+              dbUser.onboardingCompleted &&
+              dbUser.privacyPolicyAccepted &&
+              dbUser.termsAccepted
+            );
+          }
+        } catch (error) {
+          console.error("[Auth] JWT auto-sync error:", error);
         }
       }
 
@@ -182,10 +229,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token && session.user) {
         session.user.id = (token.userId as string) || "";
         session.user.username = (token.username as string) || "";
+        session.user.displayName = (token.displayName as string) || (token.username as string) || "";
         session.user.role = (token.role as "user" | "admin") || "user";
         session.user.xp = (token.xp as number) || 0;
         session.user.currentStreak = (token.currentStreak as number) || 0;
         session.user.isBanned = (token.isBanned as boolean) || false;
+        session.user.onboardingCompleted = (token.onboardingCompleted as boolean) || false;
       }
       return session;
     },
@@ -196,7 +245,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-export async function getAuthenticatedUser(): Promise<{
+export async function getAuthenticatedUser(options?: {
+  allowIncompleteOnboarding?: boolean;
+}): Promise<{
   user: IUser | null;
   error?: string;
   status: number;
@@ -232,6 +283,20 @@ export async function getAuthenticatedUser(): Promise<{
       }
     }
 
+    const hasCompletedOnboarding = Boolean(
+      dbUser.onboardingCompleted &&
+      dbUser.privacyPolicyAccepted &&
+      dbUser.termsAccepted
+    );
+
+    if (!options?.allowIncompleteOnboarding && !hasCompletedOnboarding) {
+      return {
+        user: null,
+        error: "Onboarding and consent required before proceeding.",
+        status: 403,
+      };
+    }
+
     return { user: dbUser, status: 200 };
   } catch (error) {
     console.error("[Auth] Verification error:", error);
@@ -241,17 +306,18 @@ export async function getAuthenticatedUser(): Promise<{
 
 export async function requireAdminUser(): Promise<{
   admin: IUser | null;
+  user?: IUser | null;
   error?: string;
   status: number;
 }> {
   const authResult = await getAuthenticatedUser();
   if (!authResult.user) {
-    return { admin: null, error: authResult.error, status: authResult.status };
+    return { admin: null, user: null, error: authResult.error, status: authResult.status };
   }
 
   if (authResult.user.role !== "admin") {
-    return { admin: null, error: "Forbidden. Admin access required.", status: 403 };
+    return { admin: null, user: authResult.user, error: "Forbidden. Admin access required.", status: 403 };
   }
 
-  return { admin: authResult.user, status: 200 };
+  return { admin: authResult.user, user: authResult.user, status: 200 };
 }

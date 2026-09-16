@@ -1,7 +1,23 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowLeft, Server, Code, Database, Shield, Sparkles, Feather, ArrowUpRight } from "lucide-react";
 import { CreatorSocialCard } from "@/components/ui/CreatorSocialCard";
+
+export const metadata: Metadata = {
+  title: "Credits & Tech Stack",
+  description:
+    "Open-source technologies, runtime dependencies, and creators behind the InsidCode algorithmic practice platform.",
+  alternates: {
+    canonical: "/credits",
+  },
+  openGraph: {
+    title: "Credits & Tech Stack | InsidCode",
+    description:
+      "Open-source technologies, runtime dependencies, and creators behind the InsidCode algorithmic practice platform.",
+    url: "https://insidcode.vercel.app/credits",
+  },
+};
 
 const TECH_STACK = [
   {

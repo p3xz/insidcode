@@ -46,6 +46,7 @@ const ExecutionSchema = new Schema<IExecution>(
         "timeout",
         "failed",
         "cancelled",
+        "expired",
       ],
       default: "queued",
       index: true,
@@ -91,6 +92,9 @@ const ExecutionSchema = new Schema<IExecution>(
     systemError: {
       type: String,
     },
+    claimedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -100,7 +104,9 @@ const ExecutionSchema = new Schema<IExecution>(
 // TTL index to automatically expire execution logs after 24 hours
 ExecutionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
 ExecutionSchema.index({ userId: 1, createdAt: -1 });
+ExecutionSchema.index({ status: 1, createdAt: 1 });
 
 export const Execution: Model<IExecution> =
   mongoose.models.Execution ||
   mongoose.model<IExecution>("Execution", ExecutionSchema);
+

@@ -30,7 +30,6 @@ export function ThemeToggle() {
         outline: "none",
       }}
     >
-      {/* Stars — visible in dark mode */}
       <span
         aria-hidden
         style={{
@@ -45,7 +44,6 @@ export function ThemeToggle() {
         <span style={{ position: "absolute", top: "6px",  left: "18px", width: "2px", height: "2px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.55)" }} />
       </span>
 
-      {/* Cloud — visible in light mode */}
       <span
         aria-hidden
         style={{

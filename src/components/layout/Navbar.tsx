@@ -29,7 +29,6 @@ export function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const avatarRef = useRef<HTMLDivElement>(null);
 
-  // Ctrl + K global search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -41,7 +40,6 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Unread notification count
   useEffect(() => {
     if (!session?.user) return;
     const fetchNotifCount = async () => {
@@ -58,7 +56,6 @@ export function Navbar() {
     fetchNotifCount();
   }, [session?.user]);
 
-  // Click outside avatar menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -76,6 +73,7 @@ export function Navbar() {
     { href: "/problems", label: "Problems" },
     { href: "/leaderboard", label: "Leaderboard" },
     { href: "/stats", label: "Stats" },
+    { href: "/duel", label: "Duel" },
   ];
 
   return (
@@ -269,7 +267,7 @@ export function Navbar() {
                         style={{ borderBottom: "1px solid var(--border)" }}
                       >
                         <p className="text-[12px] font-semibold truncate" style={{ color: "var(--fg)" }}>
-                          {session.user.name || session.user.username}
+                          {session.user.displayName || session.user.username}
                         </p>
                         <p className="mono text-[11px] truncate" style={{ color: "var(--fg-dimmed)" }}>
                           @{session.user.username}

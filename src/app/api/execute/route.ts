@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import { getAuthenticatedUser } from "@/lib/auth";
 import {
   checkExecutionRateLimit,
@@ -7,9 +6,7 @@ import {
   releaseExecutionLock,
 } from "@/lib/rateLimit";
 import { CodeExecutionSchema } from "@/lib/validations";
-import { executeCodeOnlineCompilerAsync } from "@/lib/onlinecompiler";
-import { Execution } from "@/models/Execution";
-import { connectToDatabase } from "@/lib/mongodb";
+import { createQueuedExecution, tryClaimAndExecute, cleanupStaleExecutions } from "@/lib/executionQueue";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +33,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // In-flight lock to prevent duplicate concurrent execution requests
+    // In-flight lock to prevent duplicate concurrent execution requests from same user
     const lockAcquired = acquireExecutionLock(userId);
     if (!lockAcquired) {
       return NextResponse.json(
@@ -56,46 +53,39 @@ export async function POST(req: NextRequest) {
 
       const { language, code, customInput } = parseResult.data;
 
-      // Ensure MongoDB is connected
-      await connectToDatabase();
+      // Clean up any stale executions in background
+      cleanupStaleExecutions().catch(() => {});
 
-      const executionId = `exec_${Date.now()}_${crypto.randomBytes(6).toString("hex")}`;
-
-      // Dispatch async execution to OnlineCompiler
-      const dispatchResult = await executeCodeOnlineCompilerAsync(
-        language,
-        code,
-        customInput || "",
-        { executionId, userId }
-      );
-
-      if (dispatchResult.status === "failed") {
-        return NextResponse.json(
-          { error: dispatchResult.systemError || "Failed to dispatch code to execution service." },
-          { status: 500 }
-        );
-      }
-
-      // Store execution record
-      await Execution.create({
-        executionId,
+      // Create durable queued execution record
+      const queuedJob = await createQueuedExecution({
         userId,
-        queueId: dispatchResult.queueId,
-        compiler: dispatchResult.compilerId || language,
         language,
         code,
         input: customInput || "",
-        status: "queued",
       });
+
+      // Attempt to immediately claim and start execution if concurrency slot is open
+      const claimed = await tryClaimAndExecute(queuedJob.executionId);
 
       return NextResponse.json(
         {
-          executionId,
-          queueId: dispatchResult.queueId,
-          status: "queued",
+          executionId: queuedJob.executionId,
+          status: claimed ? "running" : "queued",
+          queuePosition: claimed ? 1 : queuedJob.queuePosition,
         },
         { status: 202 }
       );
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && (err as { type?: string }).type === "QUEUE_FULL") {
+        return NextResponse.json(
+          {
+            error: "QUEUE_FULL",
+            message: "Execution queue is at maximum capacity. Please wait a moment.",
+          },
+          { status: 429 }
+        );
+      }
+      throw err;
     } finally {
       releaseExecutionLock(userId);
     }
@@ -107,3 +97,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

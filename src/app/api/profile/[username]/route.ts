@@ -25,7 +25,7 @@ export async function GET(
       usernameNormalized: username.toLowerCase(),
       isBanned: false,
     })
-      .select("username displayName image xp currentStreak longestStreak solvedProblems totalSubmissions acceptedSubmissions createdAt role")
+      .select("username displayName image xp currentStreak longestStreak solvedProblems totalSubmissions acceptedSubmissions createdAt role languagePoints selectedTitle duelsPlayed duelsWon duelsLost")
       .lean();
 
     if (!targetUser) {
@@ -91,6 +91,10 @@ export async function GET(
       .lean();
 
     const isOwnProfile = currentUserId ? targetUser._id.toString() === currentUserId : false;
+    const duelsPlayed = targetUser.duelsPlayed || 0;
+    const duelsWon = targetUser.duelsWon || 0;
+    const duelsLost = targetUser.duelsLost || 0;
+    const duelWinRate = duelsPlayed > 0 ? Math.round((duelsWon / duelsPlayed) * 100) : 0;
 
     return NextResponse.json({
       profile: {
@@ -98,6 +102,7 @@ export async function GET(
         username: targetUser.username,
         displayName: targetUser.displayName,
         image: targetUser.image,
+        selectedTitle: targetUser.selectedTitle || null,
         xp: targetUser.xp,
         currentStreak: targetUser.currentStreak,
         longestStreak: targetUser.longestStreak,
@@ -111,6 +116,17 @@ export async function GET(
         recentSolves,
         memberSince: targetUser.createdAt,
         role: targetUser.role,
+        languagePoints: targetUser.languagePoints || {
+          python: 0,
+          javascript: 0,
+          c: 0,
+          cpp: 0,
+          java: 0,
+        },
+        duelsPlayed,
+        duelsWon,
+        duelsLost,
+        duelWinRate,
         isOwnProfile,
       },
     });

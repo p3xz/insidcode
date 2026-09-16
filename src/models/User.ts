@@ -107,6 +107,57 @@ const UserSchema = new Schema<IUser>(
       reducedMotion: { type: Boolean, default: false },
       soundEnabled: { type: Boolean, default: false },
     },
+    languagePoints: {
+      python: { type: Number, default: 0, min: 0 },
+      javascript: { type: Number, default: 0, min: 0 },
+      c: { type: Number, default: 0, min: 0 },
+      cpp: { type: Number, default: 0, min: 0 },
+      java: { type: Number, default: 0, min: 0 },
+    },
+    selectedTitle: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    duelsPlayed: {
+      type: Number,
+      default: 0,
+      min: 0,
+      index: true,
+    },
+    duelsWon: {
+      type: Number,
+      default: 0,
+      min: 0,
+      index: true,
+    },
+    duelsLost: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    privacyPolicyAccepted: {
+      type: Boolean,
+      default: false,
+    },
+    termsAccepted: {
+      type: Boolean,
+      default: false,
+    },
+    privacyPolicyVersion: {
+      type: String,
+    },
+    termsVersion: {
+      type: String,
+    },
+    acceptedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -115,5 +166,7 @@ const UserSchema = new Schema<IUser>(
 
 UserSchema.index({ provider: 1, providerAccountId: 1 }, { unique: true });
 UserSchema.index({ xp: -1, solvedProblems: -1 });
+UserSchema.index({ duelsWon: -1, duelsPlayed: -1 });
 
 export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+

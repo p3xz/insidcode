@@ -1,6 +1,22 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, Scale, Code2, Terminal, Bot, ZapOff, Mail } from "lucide-react";
+import type { Metadata } from "next";
+import { ArrowLeft, ShieldCheck, Code2, Terminal, Bot, ZapOff, Mail, ShieldAlert } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Academic & User Integrity",
+  description:
+    "Community integrity guidelines, fair coding standards, and anti-abuse policies for InsidCode.",
+  alternates: {
+    canonical: "/integrity",
+  },
+  openGraph: {
+    title: "Academic & User Integrity | InsidCode",
+    description:
+      "Community integrity guidelines, fair coding standards, and anti-abuse policies for InsidCode.",
+    url: "https://insidcode.vercel.app/integrity",
+  },
+};
 
 export default function IntegrityPage() {
   return (
@@ -86,12 +102,12 @@ export default function IntegrityPage() {
               <strong style={{ color: "var(--fg)" }}>Sandbox Container Integrity:</strong> You must not attempt to escape isolated runner sandboxes, exploit Linux kernel privileges, scan internal private networks, or manipulate system processes.
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>No Malicious Payloads:</strong> Submitting malicious payloads, recursive process spawners (fork bombs), ransomware scripts, or network socket scanners will lead to immediate, permanent account termination and IP blacklisting.
+              <strong style={{ color: "var(--fg)" }}>No Malicious Payloads:</strong> Submitting malicious payloads, recursive process spawners (fork bombs), ransomware scripts, or network socket scanners will lead to immediate account suspension and IP blacklisting.
             </li>
           </ul>
         </section>
 
-        {/* 3. Leaderboard Fairness */}
+        {/* 3. Fair Play & No Administrative Tampering */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -101,16 +117,16 @@ export default function IntegrityPage() {
           }}
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
-            <Scale className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>3. Leaderboard & Streak Fairness</h2>
+            <ShieldAlert className="h-4 w-4" style={{ color: "var(--danger)" }} />
+            <h2>3. Fair Play, No Privilege Escalation & Responsible Disclosure</h2>
           </div>
-          <p>Global leaderboards exist to celebrate consistency and genuine growth:</p>
+          <p>Global leaderboards and duels exist to celebrate consistency and genuine growth:</p>
           <ul className="list-disc pl-5 space-y-2" style={{ color: "var(--fg-muted)" }}>
             <li>
-              <strong style={{ color: "var(--fg)" }}>Authentic Progress:</strong> Artificial manipulation of daily heatmaps, account-sharing to maintain streaks, or exploiting bugs to gain unearned XP ruins the experience for the community.
+              <strong style={{ color: "var(--fg)" }}>Zero Tampering:</strong> Attempting unauthorized administrative access, privilege escalation, modifying leaderboard parameters, or forging Duel wins is strictly forbidden and results in immediate automated account suspension.
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>Responsible Disclosure:</strong> If you discover a security vulnerability or a bug in our test case evaluator, report it responsibly to our administration team (<a href="mailto:contactphoenixfy@gmail.com" className="hover:underline" style={{ color: "var(--accent)" }}>contactphoenixfy@gmail.com</a>) rather than exploiting it.
+              <strong style={{ color: "var(--fg)" }}>Responsible Security Disclosure:</strong> If you discover a security vulnerability, authorization loophole, or test case evaluator bug, please report it responsibly via our <Link href="/feedback" className="underline" style={{ color: "var(--accent)" }}>Feedback Portal</Link> or email (<a href="mailto:contactphoenixfy@gmail.com" className="hover:underline" style={{ color: "var(--accent)" }}>contactphoenixfy@gmail.com</a>) rather than exploiting it.
             </li>
           </ul>
         </section>

@@ -133,7 +133,7 @@ export const CURRICULUM_PLACEMENT: QuestionSeedItem[] = [
     { input: "axc\nahbgdc", expectedOutput: "No" }
   ]),
 
-  createSeedQuestion(307, "Validate an IPv4 address format (four integers separated by dots, each 0–255 with no leading zeros).", 6, "Medium", "Validate IPv4 address format strictly (4 octets 0-255 with no leading zeros). Print 'Valid' or 'Invalid'.", "172.16.254.1", "Valid", [
+  createSeedQuestion(307, "Validate an IPv4 address format (four integers separated by dots, each 0-255 with no leading zeros).", 6, "Medium", "Validate IPv4 address format strictly (4 octets 0-255 with no leading zeros). Print 'Valid' or 'Invalid'.", "172.16.254.1", "Valid", [
     { input: "172.16.254.1", expectedOutput: "Valid" },
     { input: "172.16.254.01", expectedOutput: "Invalid" }
   ]),

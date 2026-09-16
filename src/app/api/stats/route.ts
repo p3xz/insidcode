@@ -86,6 +86,11 @@ export async function GET() {
       .select("problemId problemTitle language status runtime awardedXp createdAt")
       .lean();
 
+    const duelsPlayed = user.duelsPlayed || 0;
+    const duelsWon = user.duelsWon || 0;
+    const duelsLost = user.duelsLost || 0;
+    const duelWinRate = duelsPlayed > 0 ? Math.round((duelsWon / duelsPlayed) * 100) : 0;
+
     return NextResponse.json({
       stats: {
         totalSolved: solvedIds.length,
@@ -105,6 +110,17 @@ export async function GET() {
         phaseBreakdown,
         heatmap: heatmapMap,
         recentSubmissions,
+        languagePoints: user.languagePoints || {
+          python: 0,
+          javascript: 0,
+          c: 0,
+          cpp: 0,
+          java: 0,
+        },
+        duelsPlayed,
+        duelsWon,
+        duelsLost,
+        duelWinRate,
       },
     });
   } catch (error) {

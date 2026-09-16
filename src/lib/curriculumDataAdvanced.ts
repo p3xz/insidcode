@@ -1,19 +1,19 @@
 import { QuestionSeedItem, createSeedQuestion } from "./curriculumData";
 
 export const CURRICULUM_ADVANCED: QuestionSeedItem[] = [
-  createSeedQuestion(221, "Print all numbers whose sum of digits is even (1–100).", 6, "Medium", "Print all numbers between 1 and 100 inclusive whose sum of digits is an even number, separated by space.", "", "2 4 6 8 11 13 15 17 19 20 22 24 26 28 31 33 35 37 39 40 42 44 46 48 51 53 55 57 59 60 62 64 66 68 71 73 75 77 79 80 82 84 86 88 91 93 95 97 99", [
+  createSeedQuestion(221, "Print all numbers whose sum of digits is even (1 to 100).", 6, "Medium", "Print all numbers between 1 and 100 inclusive whose sum of digits is an even number, separated by space.", "", "2 4 6 8 11 13 15 17 19 20 22 24 26 28 31 33 35 37 39 40 42 44 46 48 51 53 55 57 59 60 62 64 66 68 71 73 75 77 79 80 82 84 86 88 91 93 95 97 99", [
     { input: "", expectedOutput: "2 4 6 8 11 13 15 17 19 20 22 24 26 28 31 33 35 37 39 40 42 44 46 48 51 53 55 57 59 60 62 64 66 68 71 73 75 77 79 80 82 84 86 88 91 93 95 97 99" }
   ]),
 
-  createSeedQuestion(222, "Count how many numbers between 1–500 are divisible by 7 but not by 5.", 6, "Easy", "Count how many numbers between 1 and 500 are divisible by 7 but not by 5.", "", "57", [
+  createSeedQuestion(222, "Count how many numbers between 1-500 are divisible by 7 but not by 5.", 6, "Easy", "Count how many numbers between 1 and 500 are divisible by 7 but not by 5.", "", "57", [
     { input: "", expectedOutput: "57" }
   ]),
 
-  createSeedQuestion(223, "Print all numbers that are palindromes between 1–500.", 6, "Medium", "Print all numbers between 1 and 100 that are palindromes, separated by space.", "", "1 2 3 4 5 6 7 8 9 11 22 33 44 55 66 77 88 99", [
+  createSeedQuestion(223, "Print all numbers that are palindromes between 1-500.", 6, "Medium", "Print all numbers between 1 and 100 that are palindromes, separated by space.", "", "1 2 3 4 5 6 7 8 9 11 22 33 44 55 66 77 88 99", [
     { input: "", expectedOutput: "1 2 3 4 5 6 7 8 9 11 22 33 44 55 66 77 88 99" }
   ]),
 
-  createSeedQuestion(224, "Print numbers between 1–100 whose digits add up to a multiple of 3.", 6, "Medium", "Print all numbers between 1 and 50 whose digits add up to a multiple of 3, separated by space.", "", "3 6 9 12 15 18 21 24 27 30 33 36 39 42 45 48", [
+  createSeedQuestion(224, "Print numbers between 1-100 whose digits add up to a multiple of 3.", 6, "Medium", "Print all numbers between 1 and 50 whose digits add up to a multiple of 3, separated by space.", "", "3 6 9 12 15 18 21 24 27 30 33 36 39 42 45 48", [
     { input: "", expectedOutput: "3 6 9 12 15 18 21 24 27 30 33 36 39 42 45 48" }
   ]),
 
@@ -22,7 +22,7 @@ export const CURRICULUM_ADVANCED: QuestionSeedItem[] = [
     { input: "777", expectedOutput: "Smallest: 7, Largest: 7" }
   ]),
 
-  createSeedQuestion(226, "Print all numbers from 1–n whose binary representation has an even number of 1s.", 6, "Hard", "Given N, print all numbers from 1 to N whose binary representation has an even number of set bits (1s), separated by space.", "10", "3 5 6 9 10", [
+  createSeedQuestion(226, "Print all numbers from 1 to n whose binary representation has an even number of 1s.", 6, "Hard", "Given N, print all numbers from 1 to N whose binary representation has an even number of set bits (1s), separated by space.", "10", "3 5 6 9 10", [
     { input: "10", expectedOutput: "3 5 6 9 10" },
     { input: "5", expectedOutput: "3 5" }
   ]),

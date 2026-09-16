@@ -52,6 +52,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (body.notificationId) {
+      if (typeof body.notificationId !== "string" || !/^[0-9a-fA-F]{24}$/.test(body.notificationId)) {
+        return NextResponse.json({ error: "Invalid notification ID format." }, { status: 400 });
+      }
+
       await Notification.updateOne(
         { _id: body.notificationId, userId },
         { $set: { read: true } }

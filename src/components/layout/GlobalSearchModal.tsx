@@ -30,7 +30,6 @@ export function GlobalSearchModal({ onClose }: { onClose: () => void }) {
     inputRef.current?.focus();
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();

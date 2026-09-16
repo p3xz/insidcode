@@ -4,11 +4,13 @@ import { Question } from "@/models/Question";
 import { User } from "@/models/User";
 import { LIMITS } from "@/lib/constants";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || "search_ip";
-    const rateLimit = checkRateLimit(`search_${ip}`, { limit: 40, windowMs: 60000 });
+    const session = await auth();
+    const identifier = session?.user?.id || req.headers.get("x-forwarded-for") || "search_ip";
+    const rateLimit = checkRateLimit(`search_${identifier}`, { limit: 40, windowMs: 60000 });
     if (!rateLimit.success) {
       return NextResponse.json({ error: "Rate limit exceeded." }, { status: 429 });
     }

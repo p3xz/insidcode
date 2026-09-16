@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { requireAdminUser } from "@/lib/auth";
+import { requireAdminMutationUser } from "@/lib/security";
 import { Question } from "@/models/Question";
 import { AdminAction } from "@/models/AdminAction";
 
@@ -37,7 +38,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const adminCheck = await requireAdminUser();
+    const adminCheck = await requireAdminMutationUser(req, "PROBLEM_EDIT");
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
@@ -113,7 +114,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const adminCheck = await requireAdminUser();
+    const adminCheck = await requireAdminMutationUser(req, "PROBLEM_DELETE");
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }

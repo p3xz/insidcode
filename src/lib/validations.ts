@@ -18,6 +18,14 @@ export const DisplayNameSchema = z
   .min(1, "Display name is required")
   .max(LIMITS.DISPLAY_NAME_MAX, `Display name cannot exceed ${LIMITS.DISPLAY_NAME_MAX} characters`);
 
+export const OnboardingSchema = z.object({
+  username: UsernameSchema,
+  displayName: DisplayNameSchema.optional(),
+  consent: z.literal(true, {
+    errorMap: () => ({ message: "You must agree to the Privacy Policy and Terms of Use to continue." }),
+  }),
+});
+
 export const BioSchema = z
   .string()
   .max(LIMITS.BIO_MAX, `Bio cannot exceed ${LIMITS.BIO_MAX} characters`)

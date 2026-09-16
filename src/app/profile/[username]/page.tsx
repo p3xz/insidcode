@@ -7,6 +7,8 @@ import {
   Layers,
   Loader2,
   Edit3,
+  Code2,
+  Swords,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -15,6 +17,7 @@ interface ProfileData {
   username: string;
   displayName: string;
   image?: string;
+  selectedTitle?: string | null;
   xp: number;
   currentStreak: number;
   longestStreak: number;
@@ -23,6 +26,17 @@ interface ProfileData {
   mediumSolved: number;
   hardSolved: number;
   totalQuestions: number;
+  duelsPlayed?: number;
+  duelsWon?: number;
+  duelsLost?: number;
+  duelWinRate?: number;
+  languagePoints?: {
+    python?: number;
+    javascript?: number;
+    c?: number;
+    cpp?: number;
+    java?: number;
+  };
   phaseBreakdown: Array<{
     phaseId: number;
     title: string;
@@ -142,7 +156,24 @@ export default function UserProfilePage() {
                   </span>
                 )}
               </div>
-              <p className="mono text-[12px]" style={{ color: "var(--fg-dimmed)" }}>@{profile.username}</p>
+
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="mono text-[12px]" style={{ color: "var(--fg-dimmed)" }}>@{profile.username}</p>
+                {profile.selectedTitle && (
+                  <span
+                    className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                    style={{
+                      backgroundColor: "var(--bg-elevated)",
+                      color: "var(--fg)",
+                      border: "1px solid var(--border-strong)",
+                      borderRadius: "2px",
+                    }}
+                  >
+                    {profile.selectedTitle}
+                  </span>
+                )}
+              </div>
+
               <p className="text-[11px] mt-1" style={{ color: "var(--fg-muted)" }}>
                 Member since {new Date(profile.memberSince).toLocaleDateString()}
               </p>
@@ -155,7 +186,7 @@ export default function UserProfilePage() {
               className="btn btn-secondary self-start sm:self-auto text-[12px]"
             >
               <Edit3 className="h-3.5 w-3.5" />
-              Edit Profile
+              Edit Profile & Titles
             </Link>
           )}
         </div>
@@ -193,6 +224,93 @@ export default function UserProfilePage() {
               {profile.longestStreak}{" "}
               <span className="text-[12px] font-normal" style={{ color: "var(--fg-dimmed)" }}>Days</span>
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* -- Duel Arena Record ----------------------------------------- */}
+      <div
+        className="pb-8"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Swords className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <h3 className="text-[13px] font-bold" style={{ color: "var(--fg)" }}>1v1 Duel Record</h3>
+          </div>
+          <span className="mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            Best of 3 matches
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duels Won</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[20px] font-bold mono" style={{ color: "var(--accent)" }}>
+                {profile.duelsWon || 0}
+              </span>
+              <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>victories</span>
+            </div>
+          </div>
+
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Win Rate</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[20px] font-bold mono" style={{ color: (profile.duelWinRate || 0) >= 50 ? "var(--success)" : "var(--fg)" }}>
+                {profile.duelWinRate || 0}%
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duels Played</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[20px] font-bold mono" style={{ color: "var(--fg)" }}>
+                {profile.duelsPlayed || 0}
+              </span>
+              <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>matches</span>
+            </div>
+          </div>
+
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Arena Status</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span
+                className="text-[13px] font-bold"
+                style={{ color: (profile.duelsPlayed || 0) >= 3 ? "var(--success)" : "var(--fg-dimmed)" }}
+              >
+                {(profile.duelsPlayed || 0) >= 3 ? "Ranked Duelist" : "Unranked (needs 3)"}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -253,6 +371,51 @@ export default function UserProfilePage() {
             />
           ))}
           <span>More</span>
+        </div>
+      </div>
+
+      {/* Language Points */}
+      <div
+        className="pb-8"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Code2 className="h-4 w-4" style={{ color: "var(--fg-muted)" }} />
+            <h3 className="text-[13px] font-bold" style={{ color: "var(--fg)" }}>Language Points</h3>
+          </div>
+          <span className="mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            +10 pts / solved problem
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {[
+            { key: "python", label: "Python" },
+            { key: "javascript", label: "JavaScript" },
+            { key: "c", label: "C" },
+            { key: "cpp", label: "C++" },
+            { key: "java", label: "Java" },
+          ].map(({ key, label }) => {
+            const pts = profile.languagePoints?.[key as keyof typeof profile.languagePoints] || 0;
+            return (
+              <div
+                key={key}
+                className="p-3.5"
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  backgroundColor: "var(--bg)",
+                }}
+              >
+                <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>{label}</p>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-[18px] font-bold mono" style={{ color: "var(--fg)" }}>{pts}</span>
+                  <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>pts</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

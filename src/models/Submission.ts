@@ -64,6 +64,10 @@ const SubmissionSchema = new Schema<ISubmission>(
       type: Number,
       default: 0,
     },
+    awardedLanguagePoints: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

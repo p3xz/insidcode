@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
+import { useTheme } from "@/components/layout/ThemeProvider";
 
 interface CodeEditorProps {
   language: string;
@@ -20,11 +21,20 @@ export function CodeEditor({
   minimap = false,
 }: CodeEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
+  const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    if (!monacoRef.current) return;
+    monacoRef.current.editor.setTheme(
+      resolvedTheme === "light" ? "insidcode-light" : "insidcode-dark"
+    );
+  }, [resolvedTheme]);
 
   const handleEditorDidMount: OnMount = (editorInstance, monaco) => {
     editorRef.current = editorInstance;
+    monacoRef.current = monaco;
 
-    // Define custom insidcode dark theme
     monaco.editor.defineTheme("insidcode-dark", {
       base: "vs-dark",
       inherit: true,
@@ -47,7 +57,33 @@ export function CodeEditor({
       },
     });
 
-    monaco.editor.setTheme("insidcode-dark");
+    monaco.editor.defineTheme("insidcode-light", {
+      base: "vs",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "6B7280", fontStyle: "italic" },
+        { token: "keyword", foreground: "0070F3", fontStyle: "bold" },
+        { token: "string", foreground: "16A34A" },
+        { token: "number", foreground: "D97706" },
+        { token: "identifier", foreground: "111827" },
+      ],
+      colors: {
+        "editor.background": "#F9FAFB",
+        "editor.foreground": "#111827",
+        "editor.lineHighlightBackground": "#F3F4F6",
+        "editorLineNumber.foreground": "#9CA3AF",
+        "editorLineNumber.activeForeground": "#0070F3",
+        "editorCursor.foreground": "#0070F3",
+        "editor.selectionBackground": "#DBEAFE",
+        "editor.inactiveSelectionBackground": "#EFF6FF",
+        "editorIndentGuide.background": "#E5E7EB",
+        "editorIndentGuide.activeBackground": "#D1D5DB",
+      },
+    });
+
+    monaco.editor.setTheme(
+      resolvedTheme === "light" ? "insidcode-light" : "insidcode-dark"
+    );
   };
 
   const getMonacoLang = (lang: string) => {
@@ -67,15 +103,16 @@ export function CodeEditor({
     }
   };
 
+  const bgColor = resolvedTheme === "light" ? "#F9FAFB" : "#090A0F";
+
   return (
-    <div className="h-full w-full overflow-hidden bg-[#090A0F]">
+    <div className="h-full w-full overflow-hidden" style={{ backgroundColor: bgColor }}>
       <Editor
         height="100%"
         language={getMonacoLang(language)}
         value={code}
         onChange={(val) => onChange(val || "")}
         onMount={handleEditorDidMount}
-        theme="vs-dark"
         options={{
           fontSize,
           minimap: { enabled: minimap },

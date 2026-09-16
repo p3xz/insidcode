@@ -30,14 +30,13 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [execResult, setExecResult] = useState<ExecutionResultData | null>(null);
   const [isSolved, setIsSolved] = useState(initialSolved);
 
-  // Unsaved code prompt modal
   const [pendingLanguage, setPendingLanguage] = useState<SupportedLanguageId | null>(null);
   const [showLanguageWarning, setShowLanguageWarning] = useState(false);
 
-  // Load starter template or cached code
   useEffect(() => {
     const savedCodeKey = `code_${problem.problemId}_${selectedLanguage}`;
     const saved = localStorage.getItem(savedCodeKey);
@@ -147,8 +146,12 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
         return;
       }
 
+      if (data.status === "queued") {
+        setQueuePosition(data.queuePosition || 1);
+      }
+
       // Poll status endpoint until execution reaches a terminal state
-      const terminalStates = ["success", "error", "timeout", "failed", "cancelled"];
+      const terminalStates = ["success", "error", "timeout", "failed", "cancelled", "expired"];
       let completed = false;
       const startTime = Date.now();
       const MAX_POLL_TIME = 45000; // 45s safety limit
@@ -167,8 +170,16 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
         }
 
         const statusData = await statusRes.json();
+
+        if (statusData.status === "queued") {
+          setQueuePosition(statusData.queuePosition || 1);
+        } else if (statusData.status === "running") {
+          setQueuePosition(null);
+        }
+
         if (terminalStates.includes(statusData.status)) {
           completed = true;
+          setQueuePosition(null);
           setExecResult({
             stdout: statusData.stdout,
             stderr: statusData.stderr,
@@ -180,7 +191,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
               ? "Runtime Error"
               : statusData.isTimeout || statusData.status === "timeout"
               ? "Time Limit Exceeded"
-              : statusData.status === "failed" || statusData.status === "cancelled"
+              : statusData.status === "failed" || statusData.status === "cancelled" || statusData.status === "expired"
               ? "System Error"
               : "Accepted",
           });
@@ -199,6 +210,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
       });
     } finally {
       setIsRunning(false);
+      setQueuePosition(null);
     }
   };
 
@@ -383,19 +395,6 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
             </div>
           )}
 
-          {/* Constraints */}
-          {problem.constraints && problem.constraints.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F5F7FA] mb-2">
-                Constraints
-              </h3>
-              <ul className="list-disc pl-4 space-y-1 text-xs text-[#8B93A7] font-mono">
-                {problem.constraints.map((c, idx) => (
-                  <li key={idx}>{c}</li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
 
         {/* Right Pane: Code Editor & Output Console (col-span-7) */}
@@ -440,7 +439,13 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
                 className="flex items-center gap-1.5 rounded-md border border-[#252936] bg-[#181B24] px-3 py-1 text-xs font-semibold text-[#F5F7FA] hover:bg-[#252936] disabled:opacity-50 transition"
               >
                 <Play className="h-3.5 w-3.5 text-[#00F0FF]" />
-                <span>{isRunning ? "Running..." : "Run"}</span>
+                <span>
+                  {isRunning
+                    ? queuePosition
+                      ? `Queued (#${queuePosition})`
+                      : "Running..."
+                    : "Run"}
+                </span>
               </button>
 
               <button
@@ -477,6 +482,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
               result={execResult}
               isRunning={isRunning}
               isSubmitting={isSubmitting}
+              queuePosition={queuePosition}
               customInput={customInput}
               onCustomInputChange={setCustomInput}
             />

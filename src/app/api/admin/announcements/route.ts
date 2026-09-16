@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { requireAdminUser } from "@/lib/auth";
+import { requireAdminMutationUser } from "@/lib/security";
 import { SystemConfig } from "@/models/SystemConfig";
 import { Notification } from "@/models/Notification";
 import { User } from "@/models/User";
@@ -9,7 +9,7 @@ import { AdminAnnouncementSchema } from "@/lib/validations";
 
 export async function POST(req: NextRequest) {
   try {
-    const adminCheck = await requireAdminUser();
+    const adminCheck = await requireAdminMutationUser(req, "ANNOUNCEMENT_POST");
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
