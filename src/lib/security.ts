@@ -62,14 +62,17 @@ export async function recordSecurityViolation(params: SecurityViolationParams): 
 
     // Record immutable audit event
     await AdminAction.create({
-      adminId: userId,
-      adminUsername: username || "unknown",
+      adminId: "system",
+      adminUsername: "System",
       action: "UNAUTHORIZED_ADMIN_ACTION",
       targetUserId: userId,
+      previousValue: "isBanned: false",
       newValue: JSON.stringify({
+        username: username || "unknown",
         path: pathname,
         method,
         action,
+        isBanned: true,
       }),
       reason,
       metadata: safeMetadata,

@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { ShieldAlert, Mail, LogOut, FileText, Scale } from "lucide-react";
+import { ShieldAlert, Mail, LogOut, FileText, Scale, Loader2, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { ISuspensionDetails } from "@/types";
 
 export default function SuspendedPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [details, setDetails] = useState<ISuspensionDetails | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // If user is authenticated and not banned, redirect to problems
   useEffect(() => {
@@ -17,10 +20,39 @@ export default function SuspendedPage() {
     }
   }, [session, status, router]);
 
+  // Fetch verified suspension event details from the server
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchSuspensionDetails() {
+      if (status !== "authenticated") {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch("/api/user/suspension-details");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.details) {
+            setDetails(data.details);
+          }
+        }
+      } catch {
+        // Safe fallback
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchSuspensionDetails();
+    return () => {
+      isMounted = false;
+    };
+  }, [status]);
+
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12 sm:px-6">
+    <div className="flex min-h-[85vh] items-center justify-center px-4 py-12 sm:px-6">
       <div
-        className="w-full max-w-lg p-6 sm:p-8 space-y-6 text-center"
+        className="w-full max-w-2xl p-6 sm:p-8 space-y-6 text-center"
         style={{
           border: "1px solid var(--border)",
           backgroundColor: "var(--bg-subtle)",
@@ -49,31 +81,178 @@ export default function SuspendedPage() {
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: "var(--fg)" }}>
             You have been banned from InsidCode.
           </h1>
-          <p className="text-[13px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+          <p className="text-[13px] leading-relaxed max-w-lg mx-auto" style={{ color: "var(--fg-muted)" }}>
             Your access to InsidCode has been restricted due to unwanted or unauthorized activity.
           </p>
-          <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-dimmed)" }}>
+          <p className="text-[12px] leading-relaxed max-w-lg mx-auto" style={{ color: "var(--fg-dimmed)" }}>
             All protected platform operations, code executions, problem submissions, and competitive Duels are disabled for this account in accordance with platform security and integrity policies.
           </p>
         </div>
 
-        {/* User Identity Box */}
-        {session?.user && (
+        {/* Loading State for Details */}
+        {loading && (
           <div
-            className="p-3.5 text-left text-xs space-y-1.5"
+            className="p-8 flex items-center justify-center gap-2 text-xs"
+            style={{
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg)",
+              borderRadius: "4px",
+              color: "var(--fg-muted)",
+            }}
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading suspension event details...</span>
+          </div>
+        )}
+
+        {/* SUSPENSION DETAILS SECTION */}
+        {!loading && (
+          <div
+            className="text-left text-xs space-y-4 p-5"
             style={{
               border: "1px solid var(--border)",
               backgroundColor: "var(--bg)",
               borderRadius: "4px",
             }}
           >
-            <p className="section-label">Account Identifier</p>
-            <p className="mono font-semibold text-[13px]" style={{ color: "var(--fg)" }}>
-              @{session.user.username || "authenticated user"}
-            </p>
-            <p className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
-              Status: <span style={{ color: "var(--danger)" }}>Restricted / Suspended</span>
-            </p>
+            <div className="flex items-center justify-between pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+              <div className="flex items-center gap-2">
+                <span className="mono text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/30">
+                  Suspension Details
+                </span>
+              </div>
+              <span className="mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+                ID: {details?.relatedEvents?.[0] || "SEC-RECORD"}
+              </span>
+            </div>
+
+            {/* Grid of Key Metadata */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 pt-1">
+              <div>
+                <p className="section-label mb-0.5">User</p>
+                <p className="mono font-semibold text-[13px]" style={{ color: "var(--fg)" }}>
+                  {details?.user || (session?.user ? `@${session.user.username}` : "Restricted User")}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-0.5">Action</p>
+                <p className="mono font-bold text-[12px] tracking-wide" style={{ color: "var(--danger)" }}>
+                  {details?.action || "SUSPENDED"}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-0.5">Source</p>
+                <p className="text-[12px] font-medium" style={{ color: "var(--fg)" }}>
+                  {details?.source || "Automated"}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-0.5">Admin</p>
+                <p className="mono text-[12px] font-medium" style={{ color: "var(--fg)" }}>
+                  {details?.admin || "System"}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-0.5">Detected</p>
+                <p className="mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
+                  {details?.formattedDate || "Recorded"}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-0.5">Appeal</p>
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  {details?.appealStatus === "PENDING" && (
+                    <span className="mono text-[11px] px-2 py-0.5 rounded font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Pending review
+                    </span>
+                  )}
+                  {details?.appealStatus === "APPROVED" && (
+                    <span className="mono text-[11px] px-2 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Approved
+                    </span>
+                  )}
+                  {details?.appealStatus === "REJECTED" && (
+                    <span className="mono text-[11px] px-2 py-0.5 rounded font-medium bg-red-500/10 text-red-400 border border-red-500/30 inline-flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      Rejected
+                    </span>
+                  )}
+                  {(!details || details.appealStatus === "NONE") && (
+                    <span className="mono text-[11px] px-2 py-0.5 rounded font-medium bg-zinc-500/10 text-zinc-400 border border-zinc-500/30">
+                      Not submitted
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="section-label mb-0.5">Previous State</p>
+                <p className="mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
+                  {details?.previousAccountState || "ACTIVE"}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-0.5">Current State</p>
+                <p className="mono text-[12px] font-semibold" style={{ color: "var(--danger)" }}>
+                  {details?.newAccountState || "SUSPENDED"}
+                </p>
+              </div>
+            </div>
+
+            {/* Detailed Rows */}
+            <div className="space-y-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+              <div>
+                <p className="section-label mb-1">Reason</p>
+                <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg)" }}>
+                  {details?.reason || "Unauthorized access attempts"}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-1">Trigger</p>
+                <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+                  {details?.trigger || "Multiple unauthorized access attempts detected."}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-1">Evidence</p>
+                <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-dimmed)" }}>
+                  {details?.evidence || "Available to the InsidCode administrative team."}
+                </p>
+              </div>
+
+              <div>
+                <p className="section-label mb-1.5">Related Events</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {details?.relatedEvents && details.relatedEvents.length > 0 ? (
+                    details.relatedEvents.map((ev, idx) => (
+                      <span
+                        key={idx}
+                        className="mono text-[11px] px-2 py-0.5 rounded"
+                        style={{
+                          backgroundColor: "var(--bg-subtle)",
+                          border: "1px solid var(--border)",
+                          color: "var(--fg-muted)",
+                        }}
+                      >
+                        {ev}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="mono text-[11px] text-zinc-500">None</span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -84,7 +263,13 @@ export default function SuspendedPage() {
             className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5"
           >
             <Mail className="h-3.5 w-3.5" />
-            <span>Appeal Suspension</span>
+            <span>
+              {details?.appealStatus === "PENDING"
+                ? "View Appeal Status"
+                : details?.appealStatus === "REJECTED"
+                ? "View Appeal Decision"
+                : "Appeal Suspension"}
+            </span>
           </Link>
 
           <button
@@ -125,4 +310,3 @@ export default function SuspendedPage() {
     </div>
   );
 }
-

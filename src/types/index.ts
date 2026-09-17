@@ -292,5 +292,19 @@ export interface IExecution {
   createdAt: Date;
   updatedAt: Date;
 }
-
-
+export interface ISuspensionDetails {
+  user: string;
+  action: string;
+  source: string;
+  reason: string;
+  detectedAt: string;
+  formattedDate: string;
+  previousAccountState: string;
+  newAccountState: string;
+  trigger: string;
+  evidence: string;
+  relatedEvents: string[];
+  admin: string;
+  appeal: string;
+  appealStatus: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+}
