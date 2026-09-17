@@ -74,6 +74,78 @@ function truncateOutput(str: string): string {
   return Buffer.from(str, "utf8").subarray(0, MAX_OUTPUT_BYTES).toString("utf8") + "\n... [Output truncated]";
 }
 
+export function classifyExecutionError(
+  errorText: string
+): { compilationError?: string; runtimeError?: string } {
+  if (!errorText || errorText.trim() === "") {
+    return { runtimeError: "Runtime execution terminated with non-zero exit code." };
+  }
+
+  const errLower = errorText.toLowerCase();
+
+  // 1. Explicit Runtime Errors (Prioritized over generic compiler tokens)
+  const isExplicitRuntimeError =
+    errLower.includes("exception in thread") ||
+    errLower.includes("java.lang.") ||
+    errLower.includes("traceback (most recent call last)") ||
+    errLower.includes("segmentation fault") ||
+    errLower.includes("floating point exception") ||
+    errLower.includes("aborted (core dumped)") ||
+    errLower.includes("sigsegv") ||
+    errLower.includes("sigfpe") ||
+    errLower.includes("sigabrt") ||
+    errLower.includes("terminate called") ||
+    errLower.includes("zerodivisionerror") ||
+    errLower.includes("indexerror") ||
+    errLower.includes("keyerror") ||
+    errLower.includes("valueerror") ||
+    errLower.includes("nullpointerexception") ||
+    errLower.includes("arithmeticexception") ||
+    errLower.includes("arrayindexoutofboundsexception") ||
+    errLower.includes("stringindexoutofboundsexception") ||
+    errLower.includes("uncaught exception") ||
+    errLower.includes("uncaught referenceerror") ||
+    errLower.includes("uncaught typeerror") ||
+    errLower.includes("uncaught rangeerror");
+
+  if (isExplicitRuntimeError) {
+    return { runtimeError: errorText };
+  }
+
+  // 2. Explicit Compilation Errors
+  const isExplicitCompilationError =
+    errLower.includes("syntaxerror") ||
+    errLower.includes("indentationerror") ||
+    errLower.includes("taberror") ||
+    errLower.includes("parse error") ||
+    errLower.includes("cannot find symbol") ||
+    errLower.includes("undefined reference") ||
+    errLower.includes("ld returned") ||
+    errLower.includes("class, interface, enum, or record expected") ||
+    errLower.includes("reached end of file while parsing") ||
+    errLower.includes("illegal start of expression") ||
+    errLower.includes("not a statement") ||
+    errLower.includes("unclosed string literal") ||
+    errLower.includes("expected ';'") ||
+    errLower.includes("expected ')'") ||
+    errLower.includes("expected '}'") ||
+    errLower.includes("compilation error") ||
+    errLower.includes("compilation failed") ||
+    errLower.includes("fatal error:") ||
+    (errLower.includes("error:") && !errLower.includes("runtime error"));
+
+  if (isExplicitCompilationError) {
+    return { compilationError: errorText };
+  }
+
+  // 3. Compiler source line diagnostic pattern check (e.g. "Solution.java:5:" or "main.cpp:4:1:")
+  if (/\b\w+\.(?:java|cpp|c|cc|cxx):\d+/i.test(errorText)) {
+    return { compilationError: errorText };
+  }
+
+  return { runtimeError: errorText };
+}
+
 /**
  * Dispatches asynchronous code execution to OnlineCompiler.
  * Uses POST /api/run-code/ endpoint.
@@ -345,19 +417,9 @@ export async function executeCodeOnlineCompilerSync(
     let runtimeError: string | undefined = undefined;
 
     if (!isSuccess && !isTimeout) {
-      const errLower = error.toLowerCase();
-      if (
-        errLower.includes("syntaxerror") ||
-        errLower.includes("error: ") ||
-        errLower.includes("compilation error") ||
-        compilerId.includes("gcc") ||
-        compilerId.includes("g++") ||
-        compilerId.includes("openjdk")
-      ) {
-        compilationError = error || "Compilation failed";
-      } else {
-        runtimeError = error || "Runtime error";
-      }
+      const classified = classifyExecutionError(error || "Execution error");
+      compilationError = classified.compilationError;
+      runtimeError = classified.runtimeError;
     }
 
     return {

@@ -33,7 +33,7 @@ export default function AdminUsersPage() {
   const [xpReason, setXpReason] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -50,11 +50,11 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, filter]);
 
   useEffect(() => {
     fetchUsers();
-  }, [search, filter]);
+  }, [fetchUsers]);
 
   const handleToggleBan = async (user: AdminUserItem) => {
     const isBanning = !user.isBanned;

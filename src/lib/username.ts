@@ -1,6 +1,7 @@
 import { LIMITS, RESERVED_USERNAMES } from "./constants";
 import { User } from "@/models/User";
 import { connectToDatabase } from "./mongodb";
+import { validateUsernameModeration, UsernameValidationResult } from "./moderation/usernameModeration";
 
 export function isReservedUsername(username: string): boolean {
   const normalized = username.toLowerCase().trim();
@@ -10,6 +11,10 @@ export function isReservedUsername(username: string): boolean {
 export function isValidUsernameFormat(username: string): boolean {
   const regex = /^[A-Za-z0-9_]{3,20}$/;
   return regex.test(username);
+}
+
+export function validateUsername(username: string): UsernameValidationResult {
+  return validateUsernameModeration(username);
 }
 
 export function sanitizeOAuthNameToUsername(rawName: string): string {
@@ -26,7 +31,7 @@ export function sanitizeOAuthNameToUsername(rawName: string): string {
     sanitized = sanitized.substring(0, LIMITS.USERNAME_MAX);
   }
 
-  if (!isValidUsernameFormat(sanitized)) {
+  if (!isValidUsernameFormat(sanitized) || !validateUsernameModeration(sanitized).allowed) {
     sanitized = `user_${Date.now().toString().slice(-6)}`;
   }
 
@@ -38,25 +43,25 @@ export async function generateUniqueUsername(preferredName: string): Promise<str
 
   let baseUsername = sanitizeOAuthNameToUsername(preferredName);
 
-  // If reserved, prefix with user_
-  if (isReservedUsername(baseUsername)) {
-    baseUsername = `user_${baseUsername}`.substring(0, LIMITS.USERNAME_MAX);
+  // If reserved or prohibited, replace with safe random base
+  if (!validateUsernameModeration(baseUsername).allowed) {
+    baseUsername = `coder_${Math.floor(1000 + Math.random() * 9000)}`;
   }
 
   // Check if base is available
   const existing = await User.findOne({ usernameNormalized: baseUsername.toLowerCase() });
-  if (!existing && !isReservedUsername(baseUsername)) {
+  if (!existing && validateUsernameModeration(baseUsername).allowed) {
     return baseUsername;
   }
 
-  // Try appending numbers within 15 char limit
+  // Try appending numbers within length limit
   for (let attempt = 1; attempt <= 9999; attempt++) {
     const suffix = attempt.toString();
     const maxBaseLen = LIMITS.USERNAME_MAX - suffix.length;
     const truncatedBase = baseUsername.substring(0, maxBaseLen);
     const candidate = `${truncatedBase}${suffix}`;
 
-    if (!isReservedUsername(candidate) && isValidUsernameFormat(candidate)) {
+    if (validateUsernameModeration(candidate).allowed) {
       const collision = await User.findOne({ usernameNormalized: candidate.toLowerCase() });
       if (!collision) {
         return candidate;

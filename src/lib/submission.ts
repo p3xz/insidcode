@@ -87,9 +87,10 @@ export async function evaluateAndRecordSubmission(
     }
 
     // Output comparison with whitespace and newline normalization
-    const normalize = (str: string) =>
-      str
+    const normalize = (str: unknown) =>
+      String(str ?? "")
         .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
         .trim()
         .split("\n")
         .map((line) => line.trimEnd())
@@ -124,7 +125,7 @@ export async function evaluateAndRecordSubmission(
           ? {
               input: testCase.input,
               expectedOutput: testCase.expectedOutput,
-              actualOutput: execResult.stdout ? execResult.stdout.trim() : "(empty output)",
+              actualOutput: (execResult.stdout ? execResult.stdout.trim() : "(empty output)").slice(0, 1000),
             }
           : {}),
         remainingFailedCount: remainingFailed,

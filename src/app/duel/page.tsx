@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Swords, ArrowRight, Loader2, Zap, Shield, Flame } from "lucide-react";
+import { Swords, ArrowRight, Loader2, Zap, Shield, Flame, Eye } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function DuelHubPage() {
@@ -285,20 +285,36 @@ export default function DuelHubPage() {
                 </p>
               )}
 
-              <button
-                type="submit"
-                disabled={isJoining || !roomCode.trim()}
-                className="w-full btn btn-secondary flex items-center justify-center gap-2 text-[12px] py-2.5 disabled:opacity-50"
-              >
-                {isJoining ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <span>Enter Duel Room</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </>
-                )}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="submit"
+                  disabled={isJoining || !roomCode.trim()}
+                  className="flex-1 btn btn-secondary flex items-center justify-center gap-2 text-[12px] py-2.5 disabled:opacity-50"
+                >
+                  {isJoining ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Enter Duel Room</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!roomCode.trim()}
+                  onClick={() => {
+                    const clean = roomCode.trim().toUpperCase();
+                    if (clean) router.push(`/duel/${clean}/spectate`);
+                  }}
+                  className="px-3 py-2.5 rounded bg-[#181B24] border border-[#252936] text-[12px] font-mono text-[#00F0FF] hover:bg-[#00F0FF]/10 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  title="Watch match live as spectator"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  <span>Spectate Live</span>
+                </button>
+              </div>
             </form>
           </div>
 

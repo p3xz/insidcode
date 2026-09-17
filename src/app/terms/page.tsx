@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, FileText, AlertTriangle, ShieldCheck, Scale, Lock, Ban, Mail } from "lucide-react";
+import { ArrowLeft, FileText, AlertTriangle, ShieldCheck, Scale, Lock, Ban, Mail, UserCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Terms of Use",
@@ -98,7 +98,37 @@ export default function TermsPage() {
           </ul>
         </section>
 
-        {/* 3. Intellectual Property */}
+        {/* 3. Username Policy & Identity Integrity */}
+        <section
+          className="space-y-3 p-5"
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: "4px",
+            backgroundColor: "var(--bg-surface)",
+          }}
+        >
+          <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
+            <UserCheck className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <h2>3. Username Policy & Content Moderation</h2>
+          </div>
+          <p>
+            Usernames represent your identity across public leaderboards, profiles, and 1v1 Duels. When choosing or updating your username, you agree not to select or use any identifier that contains, promotes, or impersonates:
+          </p>
+          <ul className="list-disc pl-5 space-y-1.5" style={{ color: "var(--fg-muted)" }}>
+            <li>Hateful, discriminatory, racist, or derogatory language and slurs.</li>
+            <li>Targeted harassment, bullying, or defamation of any person or community.</li>
+            <li>Direct threats of violence, self-harm, or illegal acts.</li>
+            <li>Sexually explicit, vulgar, obscene, or pornographic terms.</li>
+            <li>Impersonation of InsidCode administrators, staff, moderators, or official bots (e.g. <code>admin</code>, <code>system</code>, <code>root</code>, <code>insidcode</code>).</li>
+            <li>Deceptive, misleading, or fraudulent official-looking titles.</li>
+            <li>Content designed to intimidate, harass, or evade prior administrative sanctions.</li>
+          </ul>
+          <p className="pt-2 text-[11px] leading-relaxed" style={{ color: "var(--fg-dimmed)" }}>
+            <strong>Moderation Authority & Enforcement:</strong> InsidCode reserves the right to reject a requested username, mandate a username change, temporarily restrict account capabilities, or suspend an account depending on the circumstances, context, and severity of violations. Automated screening algorithms utilize multi-lingual heuristic lists (including the open-source LDNOOBW project); however, third-party word lists do not constitute the exhaustive definition of prohibited content. The InsidCode Terms of Use and platform moderation policies remain the final authoritative standard.
+          </p>
+        </section>
+
+        {/* 4. Intellectual Property */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -109,14 +139,14 @@ export default function TermsPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <Scale className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>3. Intellectual Property & User Code Rights</h2>
+            <h2>4. Intellectual Property & User Code Rights</h2>
           </div>
           <p>
             You retain 100% intellectual ownership of any original source code you write and submit on the Platform. Unless otherwise stated, insidcode and/or its licensors own the intellectual property rights for all educational material, question prompts, test cases, and editorial content published on insidcode.
           </p>
         </section>
 
-        {/* 4. Account Suspension and Termination */}
+        {/* 5. Account Suspension and Termination */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -127,25 +157,25 @@ export default function TermsPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <Ban className="h-4 w-4" style={{ color: "var(--danger)" }} />
-            <h2>4. Account Suspension, Revocation & Termination</h2>
+            <h2>5. Account Suspension, Revocation & Termination</h2>
           </div>
           <p>
             We reserve the right to suspend, restrict, or terminate account access for violations of these Terms:
           </p>
           <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
             <li>
-              <strong>Automatic Suspension:</strong> Confirmed unauthorized attempts to perform administrative mutations, tamper with platform settings, or exploit security vulnerabilities will result in immediate automated suspension.
+              <strong>Automatic Suspension:</strong> Confirmed unauthorized attempts to perform administrative mutations, repeated malicious attempts to bypass naming filters, tamper with platform settings, or exploit security vulnerabilities will result in immediate automated suspension.
             </li>
             <li>
               <strong>Progress Revocation:</strong> Illegitimately gained XP, fake streak days, manipulated language points, and invalid leaderboard rankings will be removed.
             </li>
             <li>
-              <strong>Appeals:</strong> Suspended users may submit an inquiry or appeal via the official Feedback and support channel.
+              <strong>Appeals:</strong> Suspended users may submit an inquiry or appeal via the official Feedback and appeal review channel.
             </li>
           </ul>
         </section>
 
-        {/* 5. Disclaimer & Limitation of Liability */}
+        {/* 6. Disclaimer & Limitation of Liability */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -156,14 +186,14 @@ export default function TermsPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <AlertTriangle className="h-4 w-4" style={{ color: "var(--warning)" }} />
-            <h2>5. Disclaimer & Limitation of Liability</h2>
+            <h2>6. Disclaimer & Limitation of Liability</h2>
           </div>
           <p>
             The Platform is provided on an <strong>&quot;AS IS&quot;</strong> and <strong>&quot;AS AVAILABLE&quot;</strong> basis without warranties of any kind. As long as the website and the services on the website are provided free of charge, we will not be liable for any loss or damage of any nature.
           </p>
         </section>
 
-        {/* 6. Contact */}
+        {/* 7. Contact */}
         <section
           className="space-y-3 p-5"
           style={{
@@ -174,7 +204,7 @@ export default function TermsPage() {
         >
           <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
             <Mail className="h-4 w-4" style={{ color: "var(--accent)" }} />
-            <h2>6. Contact Us</h2>
+            <h2>7. Contact Us</h2>
           </div>
           <p>
             If you have questions regarding these Terms and Conditions, please contact us:

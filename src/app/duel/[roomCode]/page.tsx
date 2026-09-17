@@ -18,6 +18,7 @@ import {
   Terminal,
   AlertTriangle,
   Trophy,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -323,17 +324,31 @@ export default function DuelArenaPage() {
   }
 
   if (error || !room) {
+    const isNonParticipant = error?.toLowerCase().includes("not a participant");
     return (
-      <div className="flex h-[calc(100vh-3.5rem)] flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-[18px] font-bold mb-2" style={{ color: "var(--fg)" }}>
+      <div className="flex h-[calc(100vh-3.5rem)] flex-col items-center justify-center p-6 text-center space-y-4">
+        <h2 className="text-[18px] font-bold" style={{ color: "var(--fg)" }}>
           {error || "Duel Room Not Found"}
         </h2>
-        <p className="text-[12px] mb-6" style={{ color: "var(--fg-muted)" }}>
-          The requested Duel room code does not exist or has expired.
+        <p className="text-[12px] max-w-sm" style={{ color: "var(--fg-muted)" }}>
+          {isNonParticipant
+            ? "You are not registered as a player in this Duel, but you can watch the match live in Spectator Mode."
+            : "The requested Duel room code does not exist or has expired."}
         </p>
-        <Link href="/duel" className="btn btn-primary text-[12px]">
-          Back to Duel Hub
-        </Link>
+        <div className="flex items-center gap-3 pt-2">
+          {isNonParticipant && roomCode && (
+            <Link
+              href={`/duel/${encodeURIComponent(roomCode)}/spectate`}
+              className="btn btn-primary text-[12px] flex items-center gap-1.5"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              <span>Watch as Spectator</span>
+            </Link>
+          )}
+          <Link href="/duel" className="btn btn-secondary text-[12px]">
+            Back to Duel Hub
+          </Link>
+        </div>
       </div>
     );
   }
@@ -389,28 +404,40 @@ export default function DuelArenaPage() {
             <p className="text-[32px] font-bold mono tracking-widest" style={{ color: "var(--accent)" }}>
               {room.roomCode}
             </p>
-            <button
-              onClick={handleCopyRoomCode}
-              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold mono transition-colors"
-              style={{
-                border: "1px solid var(--border-strong)",
-                borderRadius: "3px",
-                backgroundColor: "var(--bg)",
-                color: copiedCode ? "var(--success)" : "var(--fg)",
-              }}
-            >
-              {copiedCode ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-[var(--success)]" />
-                  <span>COPIED CODE</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>COPY ROOM CODE</span>
-                </>
-              )}
-            </button>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <button
+                onClick={handleCopyRoomCode}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold mono transition-colors"
+                style={{
+                  border: "1px solid var(--border-strong)",
+                  borderRadius: "3px",
+                  backgroundColor: "var(--bg)",
+                  color: copiedCode ? "var(--success)" : "var(--fg)",
+                }}
+              >
+                {copiedCode ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-[var(--success)]" />
+                    <span>COPIED CODE</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>COPY ROOM CODE</span>
+                  </>
+                )}
+              </button>
+
+              <Link
+                href={`/duel/${encodeURIComponent(room.roomCode)}/spectate`}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold mono text-[#00F0FF] bg-[#181B24] border border-[#252936] hover:bg-[#00F0FF]/10 rounded transition"
+                title="Open live spectator link"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                <span>SPECTATOR LINK</span>
+              </Link>
+            </div>
           </div>
 
           <div className="flex items-center justify-center gap-2 text-[12px] mb-8" style={{ color: "var(--fg-muted)" }}>

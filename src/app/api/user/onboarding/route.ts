@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { validateUsername } from "@/lib/username";
+import { recordAbuseAttemptAndCheckEscalation } from "@/lib/moderation/usernameModeration";
 import { OnboardingSchema } from "@/lib/validations";
-import { isReservedUsername } from "@/lib/username";
 import { LEGAL_VERSIONS } from "@/lib/constants";
 import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
@@ -61,18 +62,32 @@ export async function POST(req: NextRequest) {
     const { username: rawUsername, displayName: rawDisplayName } = parseResult.data;
     const newUsername = rawUsername.trim();
 
-    // Validate format
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(newUsername)) {
-      return NextResponse.json(
-        { error: "Username must be 3-20 characters and contain only letters, numbers, and underscores." },
-        { status: 400 }
-      );
-    }
+    // Authoritative server-side username moderation check
+    const moderation = validateUsername(newUsername);
+    if (!moderation.allowed) {
+      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || undefined;
+      const escalation = await recordAbuseAttemptAndCheckEscalation({
+        userId: user._id.toString(),
+        username: newUsername,
+        ip: clientIp,
+      });
 
-    // Check reserved usernames
-    if (isReservedUsername(newUsername)) {
+      if (escalation.escalated) {
+        return NextResponse.json(
+          {
+            error: "Username not allowed",
+            message: "This username violates the InsidCode Terms of Use or Username Policy. Your account has been suspended due to repeated policy violations.",
+            suspended: true,
+          },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json(
-        { error: "This username is reserved and cannot be used." },
+        {
+          error: "Username not allowed",
+          message: "This username violates the InsidCode Terms of Use or Username Policy. Please choose another username.",
+        },
         { status: 400 }
       );
     }

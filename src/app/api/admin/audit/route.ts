@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
         previousValue: l.previousValue,
         newValue: l.newValue,
         reason: l.reason,
+        metadata: l.metadata,
         createdAt: l.createdAt,
       })),
       pagination: {

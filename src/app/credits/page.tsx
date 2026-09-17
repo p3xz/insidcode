@@ -62,6 +62,13 @@ const TECH_STACK = [
     url: "https://lucide.dev",
     icon: Feather,
   },
+  {
+    name: "LDNOOBW Word Dataset",
+    role: "Multilingual abusive content screening and username moderation dataset",
+    license: "CC BY 4.0",
+    url: "https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words",
+    icon: Shield,
+  },
 ];
 
 export default function CreditsPage() {

@@ -38,7 +38,7 @@ export function AdminProblemManagement() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const fetchProblems = async () => {
+  const fetchProblems = React.useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -57,11 +57,11 @@ export function AdminProblemManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, phaseFilter, difficultyFilter]);
 
   useEffect(() => {
     fetchProblems();
-  }, [search, phaseFilter, difficultyFilter]);
+  }, [fetchProblems]);
 
   const handleOpenCreate = () => {
     const nextNum = (problems.length + 1).toString().padStart(3, "0");
