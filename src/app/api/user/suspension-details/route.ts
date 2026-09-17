@@ -79,6 +79,12 @@ export async function GET() {
         appealLabel = "Pending review";
       } else if (appealStatus === "APPROVED") {
         appealLabel = "Approved";
+        if (user.isBanned) {
+          await User.findByIdAndUpdate(user._id, {
+            isBanned: false,
+            requiresRestorationConsent: true,
+          });
+        }
       } else if (appealStatus === "REJECTED") {
         appealLabel = "Rejected";
       }
@@ -155,7 +161,9 @@ export async function GET() {
 
     const previousAccountState = "ACTIVE";
     const newAccountState =
-      appealStatus === "APPROVED" && !user.isBanned ? "RESTORED" : "SUSPENDED";
+      appealStatus === "APPROVED"
+        ? (user.requiresRestorationConsent ? "RESTORATION_REQUIRED" : "RESTORED")
+        : (user.isBanned ? "SUSPENDED" : "ACTIVE");
 
     const responseData: ISuspensionDetails = {
       user: `@${user.username}`,

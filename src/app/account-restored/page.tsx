@@ -36,11 +36,6 @@ export default function AccountRestoredPage() {
 
       if (status !== "authenticated") return;
 
-      if (session?.user?.isBanned) {
-        router.replace("/suspended");
-        return;
-      }
-
       try {
         const res = await fetch("/api/user/restore-details");
         if (res.ok) {

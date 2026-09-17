@@ -13,12 +13,25 @@ export default function SuspendedPage() {
   const [details, setDetails] = useState<ISuspensionDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // If user is authenticated and not banned, redirect to problems
+  // If user is authenticated and not banned, redirect appropriately
   useEffect(() => {
-    if (status === "authenticated" && session?.user && !session.user.isBanned) {
-      router.replace("/problems");
+    if (status === "authenticated" && session?.user) {
+      if (!session.user.isBanned) {
+        if (session.user.requiresRestorationConsent) {
+          router.replace("/account-restored");
+        } else {
+          router.replace("/problems");
+        }
+      }
     }
   }, [session, status, router]);
+
+  // When details arrive, if appeal is approved, redirect to /account-restored
+  useEffect(() => {
+    if (details?.appealStatus === "APPROVED" || details?.newAccountState === "RESTORED" || details?.newAccountState === "RESTORATION_REQUIRED") {
+      router.replace("/account-restored");
+    }
+  }, [details, router]);
 
   // Fetch verified suspension event details from the server
   useEffect(() => {
@@ -258,19 +271,29 @@ export default function SuspendedPage() {
 
         {/* Action Buttons */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href="/feedback/appeal"
-            className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5"
-          >
-            <Mail className="h-3.5 w-3.5" />
-            <span>
-              {details?.appealStatus === "PENDING"
-                ? "View Appeal Status"
-                : details?.appealStatus === "REJECTED"
-                ? "View Appeal Decision"
-                : "Appeal Suspension"}
-            </span>
-          </Link>
+          {details?.appealStatus === "APPROVED" ? (
+            <Link
+              href="/account-restored"
+              className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span>Continue to Account Restoration</span>
+            </Link>
+          ) : (
+            <Link
+              href="/feedback/appeal"
+              className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              <span>
+                {details?.appealStatus === "PENDING"
+                  ? "View Appeal Status"
+                  : details?.appealStatus === "REJECTED"
+                  ? "View Appeal Decision"
+                  : "Appeal Suspension"}
+              </span>
+            </Link>
+          )}
 
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

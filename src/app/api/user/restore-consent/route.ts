@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
+import { Appeal } from "@/models/Appeal";
 import { AdminAction } from "@/models/AdminAction";
 import { LEGAL_VERSIONS } from "@/lib/constants";
 import { z } from "zod";
@@ -14,14 +15,29 @@ const RestoreConsentSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const authResult = await getAuthenticatedUser({ allowIncompleteOnboarding: true });
-    if (!authResult.user) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
     }
 
-    const authUser = authResult.user;
+    await connectToDatabase();
+    const user = await User.findById(session.user.id);
+    if (!user) {
+      return NextResponse.json({ error: "User record not found." }, { status: 404 });
+    }
 
-    if (authUser.isBanned) {
+    const latestAppeal = await Appeal.findOne({ userId: user._id.toString() })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const isRestorationEligible = Boolean(
+      (latestAppeal && latestAppeal.status === "APPROVED") ||
+      user.restoredAt ||
+      user.requiresRestorationConsent ||
+      !user.isBanned
+    );
+
+    if (!isRestorationEligible && user.isBanned) {
       return NextResponse.json(
         { error: "Account is suspended. Cannot accept terms.", isBanned: true },
         { status: 403 }
@@ -33,12 +49,6 @@ export async function POST(req: NextRequest) {
     if (!parseResult.success) {
       const errorMsg = parseResult.error.errors[0]?.message || "Valid legal consent required.";
       return NextResponse.json({ error: errorMsg }, { status: 400 });
-    }
-
-    await connectToDatabase();
-    const user = await User.findById(authUser._id);
-    if (!user) {
-      return NextResponse.json({ error: "User record not found." }, { status: 404 });
     }
 
     const now = new Date();

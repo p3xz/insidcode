@@ -1,29 +1,43 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
+import { User } from "@/models/User";
 import { Appeal } from "@/models/Appeal";
 import { formatIST } from "@/lib/dateUtils";
 
 export async function GET() {
   try {
-    const authResult = await getAuthenticatedUser({ allowIncompleteOnboarding: true });
-    if (!authResult.user) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
     }
 
-    const user = authResult.user;
+    await connectToDatabase();
+    const user = await User.findById(session.user.id);
+    if (!user) {
+      return NextResponse.json({ error: "User record not found." }, { status: 404 });
+    }
 
-    if (user.isBanned) {
+    const latestAppeal = await Appeal.findOne({ userId: user._id.toString() })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // If appeal is approved, ensure user is marked as unbanned and requiring consent
+    if (latestAppeal && latestAppeal.status === "APPROVED" && user.isBanned) {
+      user.isBanned = false;
+      user.requiresRestorationConsent = true;
+      if (!user.restoredAt) {
+        user.restoredAt = latestAppeal.reviewedAt ? new Date(latestAppeal.reviewedAt) : new Date();
+      }
+      await user.save();
+    }
+
+    if (user.isBanned && (!latestAppeal || latestAppeal.status !== "APPROVED")) {
       return NextResponse.json(
         { error: "Account is currently suspended.", isBanned: true },
         { status: 403 }
       );
     }
-
-    await connectToDatabase();
-    const latestAppeal = await Appeal.findOne({ userId: user._id.toString() })
-      .sort({ createdAt: -1 })
-      .lean();
 
     const isRestored = Boolean(
       (latestAppeal && latestAppeal.status === "APPROVED") ||
