@@ -45,29 +45,51 @@ export async function GET() {
     }
 
     if (!dbUser.isBanned) {
+      const latestApprovedAppeal = await Appeal.findOne({ userId: dbUser._id, status: "APPROVED" })
+        .sort({ createdAt: -1 })
+        .lean();
+
       return NextResponse.json({
         isBanned: false,
-        hasAppeal: false,
-        appeal: null,
+        username: dbUser.username,
+        email: dbUser.email || "No email on record",
+        hasAppeal: Boolean(latestApprovedAppeal),
+        appeal: latestApprovedAppeal
+          ? {
+              id: latestApprovedAppeal._id.toString(),
+              reason: latestApprovedAppeal.reason,
+              statement: latestApprovedAppeal.statement,
+              status: latestApprovedAppeal.status,
+              createdAt: latestApprovedAppeal.createdAt,
+              reviewedAt: latestApprovedAppeal.reviewedAt,
+              decision: latestApprovedAppeal.decision,
+            }
+          : null,
       });
     }
 
-    const latestAppeal = await Appeal.findOne({ userId: dbUser._id })
+    // For a currently banned user: check if there is an active PENDING or REJECTED appeal
+    const activeAppeal = await Appeal.findOne({
+      userId: dbUser._id,
+      status: { $in: ["PENDING", "REJECTED"] },
+    })
       .sort({ createdAt: -1 })
       .lean();
 
     return NextResponse.json({
       isBanned: true,
-      hasAppeal: Boolean(latestAppeal),
-      appeal: latestAppeal
+      username: dbUser.username,
+      email: dbUser.email || "No email on record",
+      hasAppeal: Boolean(activeAppeal),
+      appeal: activeAppeal
         ? {
-            id: latestAppeal._id.toString(),
-            reason: latestAppeal.reason,
-            statement: latestAppeal.statement,
-            status: latestAppeal.status,
-            createdAt: latestAppeal.createdAt,
-            reviewedAt: latestAppeal.reviewedAt,
-            decision: latestAppeal.decision,
+            id: activeAppeal._id.toString(),
+            reason: activeAppeal.reason,
+            statement: activeAppeal.statement,
+            status: activeAppeal.status,
+            createdAt: activeAppeal.createdAt,
+            reviewedAt: activeAppeal.reviewedAt,
+            decision: activeAppeal.decision,
           }
         : null,
     });

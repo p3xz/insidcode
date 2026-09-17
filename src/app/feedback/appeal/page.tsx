@@ -17,6 +17,8 @@ import {
   Mail,
   Clock,
   XCircle,
+  CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
 import { formatIST } from "@/lib/dateUtils";
 
@@ -46,38 +48,52 @@ export default function AppealPage() {
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [isUserBanned, setIsUserBanned] = useState(true);
+  const [accountUsername, setAccountUsername] = useState("");
+  const [accountEmail, setAccountEmail] = useState("");
   const [existingAppeal, setExistingAppeal] = useState<ExistingAppeal | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/login");
-      return;
-    }
-    if (status === "authenticated" && session?.user && !session.user.isBanned) {
-      router.replace("/problems");
-      return;
-    }
+    let isMounted = true;
 
-    if (status === "authenticated" && session?.user?.isBanned) {
-      const fetchStatus = async () => {
-        try {
-          const res = await fetch("/api/feedback/appeal");
-          if (res.ok) {
-            const data = await res.json();
+    async function loadAppealState() {
+      if (status === "unauthenticated") {
+        router.replace("/login");
+        return;
+      }
+
+      if (status !== "authenticated") return;
+
+      try {
+        const res = await fetch("/api/feedback/appeal");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setIsUserBanned(data.isBanned !== false);
+            setAccountUsername(data.username || session?.user?.username || "");
+            setAccountEmail(data.email || session?.user?.email || "No email on record");
+
             if (data.hasAppeal && data.appeal) {
               setExistingAppeal(data.appeal);
+            } else {
+              setExistingAppeal(null);
             }
           }
-        } catch {
-          // silent
-        } finally {
-          setPageLoading(false);
         }
-      };
-      fetchStatus();
+      } catch {
+        // silent fallback
+      } finally {
+        if (isMounted) setPageLoading(false);
+      }
     }
-  }, [session, status, router]);
+
+    loadAppealState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,17 +150,54 @@ export default function AppealPage() {
     }
   };
 
-  if (status === "loading" || pageLoading || (status === "authenticated" && !session?.user?.isBanned)) {
+  if (status === "loading" || pageLoading) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
+        <div className="flex items-center gap-2.5 text-xs text-[var(--fg-muted)]">
+          <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)]" />
+          <span>Verifying account appeal status...</span>
+        </div>
       </div>
     );
   }
 
+  // If user is authenticated but not banned
+  if (!isUserBanned) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center space-y-5">
+        <div className="flex justify-center">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-full"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--accent) 15%, transparent)",
+              color: "var(--accent)",
+            }}
+          >
+            <CheckCircle2 className="h-6 w-6" />
+          </div>
+        </div>
+        <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--fg)" }}>
+          Account in Good Standing
+        </h1>
+        <p className="text-[13px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+          Your account is currently active and is not subject to any suspensions or restrictions.
+        </p>
+        <div className="pt-2">
+          <Link href="/problems" className="btn btn-primary inline-flex items-center gap-2 text-xs px-5 py-2.5">
+            <span>Go to Problems</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const displayUsername = accountUsername || session?.user?.username || "authenticated user";
+  const displayEmail = accountEmail || session?.user?.email || "No email attached";
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 space-y-8">
-      {/* Page Header */}
+      {/* 1. PAGE HEADER */}
       <div className="pb-6" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2 mb-1.5">
           <span
@@ -211,7 +264,7 @@ export default function AppealPage() {
             }}
           >
             <div className="flex items-center justify-between mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
-              <span>Submitted: {formatIST(existingAppeal.createdAt)}</span>
+              <span>Submitted (IST): {formatIST(existingAppeal.createdAt)}</span>
               <span>1 Appeal / Suspension</span>
             </div>
             <p className="font-semibold" style={{ color: "var(--fg)" }}>
@@ -298,7 +351,7 @@ export default function AppealPage() {
           >
             <div className="flex items-center justify-between mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
               <span>
-                Decided: {formatIST(existingAppeal.reviewedAt)}
+                Decided (IST): {formatIST(existingAppeal.reviewedAt)}
               </span>
               <span style={{ color: "var(--danger)" }}>Final Decision</span>
             </div>
@@ -337,9 +390,58 @@ export default function AppealPage() {
         </div>
       )}
 
-      {/* STATE 3: NO APPEAL YET -> SUBMISSION FORM */}
-      {!existingAppeal && (
+      {/* STATE 3: APPROVED APPEAL */}
+      {existingAppeal && existingAppeal.status === "APPROVED" && (
+        <div
+          className="p-6 text-center space-y-5"
+          style={{
+            border: "1px solid color-mix(in srgb, var(--accent) 35%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--accent) 5%, transparent)",
+            borderRadius: "6px",
+          }}
+        >
+          <div className="flex justify-center">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-full"
+              style={{
+                backgroundColor: "color-mix(in srgb, var(--accent) 15%, transparent)",
+                color: "var(--accent)",
+              }}
+            >
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-center">
+              <span className="mono text-[10px] px-2.5 py-0.5 rounded font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                Appeal Approved
+              </span>
+            </div>
+            <h2 className="text-lg font-bold" style={{ color: "var(--fg)" }}>
+              Account access restored
+            </h2>
+            <p className="text-[13px] leading-relaxed max-w-md mx-auto" style={{ color: "var(--fg-muted)" }}>
+              Your suspension appeal was approved by the InsidCode administrative team.
+            </p>
+          </div>
+
+          <div className="pt-2 flex justify-center">
+            <Link
+              href="/account-restored"
+              className="btn btn-primary inline-flex items-center gap-2 text-xs px-6 py-2.5"
+            >
+              <span>Continue to Restoration Consent</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* STATE 4: NO ACTIVE PENDING/REJECTED APPEAL -> SUBMISSION FORM */}
+      {(!existingAppeal || (existingAppeal.status !== "PENDING" && existingAppeal.status !== "REJECTED" && existingAppeal.status !== "APPROVED")) && (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 2. APPEAL REVIEW POLICY */}
           <div
             className="p-4 text-[12px] leading-relaxed space-y-1.5"
             style={{
@@ -360,6 +462,7 @@ export default function AppealPage() {
             </p>
           </div>
 
+          {/* Error Notification */}
           {errorMessage && (
             <div
               className="flex items-center gap-3 p-4 text-[12px]"
@@ -375,6 +478,7 @@ export default function AppealPage() {
             </div>
           )}
 
+          {/* 3. AUTHENTICATED ACCOUNT RECORD */}
           <div
             className="p-4 space-y-3"
             style={{
@@ -405,7 +509,7 @@ export default function AppealPage() {
                   }}
                 >
                   <UserIcon className="h-3.5 w-3.5 text-[var(--fg-dimmed)]" />
-                  <span>@{session?.user?.username || "unknown"}</span>
+                  <span>@{displayUsername}</span>
                 </div>
               </div>
 
@@ -414,7 +518,7 @@ export default function AppealPage() {
                   Account Email
                 </label>
                 <div
-                  className="flex items-center gap-2 px-3 py-2 text-[12px] mono select-none cursor-not-allowed"
+                  className="flex items-center gap-2 px-3 py-2 text-[12px] mono select-none cursor-not-allowed truncate"
                   style={{
                     border: "1px solid var(--border)",
                     backgroundColor: "var(--bg)",
@@ -422,13 +526,14 @@ export default function AppealPage() {
                     borderRadius: "3px",
                   }}
                 >
-                  <Mail className="h-3.5 w-3.5 text-[var(--fg-dimmed)]" />
-                  <span>{session?.user?.email || "No email attached"}</span>
+                  <Mail className="h-3.5 w-3.5 text-[var(--fg-dimmed)] shrink-0" />
+                  <span className="truncate">{displayEmail}</span>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* 4. REASON FOR APPEAL */}
           <div>
             <label className="section-label block mb-2">Reason for Appeal</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -464,6 +569,7 @@ export default function AppealPage() {
             </div>
           </div>
 
+          {/* 5. APPEAL STATEMENT */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="section-label">Appeal Statement & Supporting Information</label>
@@ -488,6 +594,7 @@ export default function AppealPage() {
             />
           </div>
 
+          {/* 6. SUBMIT APPEAL ACTION */}
           <div
             className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4"
             style={{ borderTop: "1px solid var(--border)" }}
@@ -522,6 +629,7 @@ export default function AppealPage() {
         </form>
       )}
 
+      {/* Footer Links */}
       <div
         className="pt-6 flex items-center justify-center gap-4 text-[11px]"
         style={{
