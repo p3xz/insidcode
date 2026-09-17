@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, Ban, Zap, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Ban, Zap, Loader2, ShieldAlert } from "lucide-react";
 
 interface AdminUserItem {
   id: string;
@@ -117,13 +117,22 @@ export default function AdminUsersPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-6">
-      <Link
-        href="/admin"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8B93A7] hover:text-[#00F0FF] transition"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Back to Admin Console
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8B93A7] hover:text-[#00F0FF] transition"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Admin Console
+        </Link>
+        <Link
+          href="/admin/appeals"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#FF4D6D] transition"
+        >
+          <ShieldAlert className="h-3.5 w-3.5 text-[#FF4D6D]" />
+          Suspension Appeals
+        </Link>
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

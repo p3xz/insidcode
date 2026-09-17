@@ -150,6 +150,13 @@ export default function AdminDashboardPage() {
             Users & Moderation
           </Link>
           <Link
+            href="/admin/appeals"
+            className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#FF4D6D] transition"
+          >
+            <ShieldAlert className="h-3.5 w-3.5 text-[#FF4D6D]" />
+            Suspension Appeals
+          </Link>
+          <Link
             href="/admin/audit"
             className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#00F0FF] transition"
           >
