@@ -10,6 +10,8 @@ export function BottomNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
+  if (session?.user?.isBanned || pathname === "/suspended") return null;
+
   const isCodingPage =
     pathname.startsWith("/problems/") && pathname !== "/problems";
   if (isCodingPage) return null;

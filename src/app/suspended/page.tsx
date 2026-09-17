@@ -1,15 +1,24 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { ShieldAlert, Mail, LogOut, FileText, Scale } from "lucide-react";
 
 export default function SuspendedPage() {
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // If user is authenticated and not banned, redirect to problems
+  useEffect(() => {
+    if (status === "authenticated" && session?.user && !session.user.isBanned) {
+      router.replace("/problems");
+    }
+  }, [session, status, router]);
 
   return (
-    <div className="flex min-h-[75vh] items-center justify-center px-4 py-12 sm:px-6">
+    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12 sm:px-6">
       <div
         className="w-full max-w-lg p-6 sm:p-8 space-y-6 text-center"
         style={{
@@ -33,23 +42,25 @@ export default function SuspendedPage() {
         </div>
 
         {/* Title and Explanation */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="section-label" style={{ color: "var(--danger)" }}>
-            Security & Policy Notice
+            Security & Access Restriction
           </p>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: "var(--fg)" }}>
-            Account Suspended
+            You have been banned from InsidCode.
           </h1>
           <p className="text-[13px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
-            Access to your InsidCode account has been suspended due to an unauthorized action,
-            security violation, or policy breach.
+            Your access to InsidCode has been restricted due to unwanted or unauthorized activity.
+          </p>
+          <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-dimmed)" }}>
+            All protected platform operations, code executions, problem submissions, and competitive Duels are disabled for this account in accordance with platform security and integrity policies.
           </p>
         </div>
 
         {/* User Identity Box */}
         {session?.user && (
           <div
-            className="p-3.5 text-left text-xs space-y-1"
+            className="p-3.5 text-left text-xs space-y-1.5"
             style={{
               border: "1px solid var(--border)",
               backgroundColor: "var(--bg)",
@@ -57,11 +68,11 @@ export default function SuspendedPage() {
             }}
           >
             <p className="section-label">Account Identifier</p>
-            <p className="mono font-semibold" style={{ color: "var(--fg)" }}>
-              @{session.user.username || "user"}
+            <p className="mono font-semibold text-[13px]" style={{ color: "var(--fg)" }}>
+              @{session.user.username || "authenticated user"}
             </p>
             <p className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
-              Protected platform actions, coding submissions, and Duels are disabled.
+              Status: <span style={{ color: "var(--danger)" }}>Restricted / Suspended</span>
             </p>
           </div>
         )}
@@ -73,7 +84,7 @@ export default function SuspendedPage() {
             className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5"
           >
             <Mail className="h-3.5 w-3.5" />
-            <span>Contact Support / Appeal</span>
+            <span>Contact Administrator / Appeal</span>
           </Link>
 
           <button
@@ -114,3 +125,4 @@ export default function SuspendedPage() {
     </div>
   );
 }
+

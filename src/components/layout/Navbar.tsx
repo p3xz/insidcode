@@ -69,6 +69,51 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  if (session?.user?.isBanned || pathname === "/suspended") {
+    return (
+      <header
+        className="sticky top-0 z-40 w-full"
+        style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg)" }}
+      >
+        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
+              <Logo size="md" />
+            </Link>
+            <span
+              className="mono text-[11px] px-2 py-0.5 rounded font-medium"
+              style={{
+                backgroundColor: "color-mix(in srgb, var(--danger) 12%, transparent)",
+                color: "var(--danger)",
+                border: "1px solid color-mix(in srgb, var(--danger) 28%, transparent)",
+              }}
+            >
+              RESTRICTED
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {session?.user && (
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="btn btn-secondary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
+                style={{
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--bg-subtle)",
+                  color: "var(--fg)",
+                }}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   const navLinks = [
     { href: "/problems", label: "Problems" },
     { href: "/leaderboard", label: "Leaderboard" },
