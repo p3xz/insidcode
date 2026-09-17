@@ -8,11 +8,13 @@ import { ArrowUpRight } from "lucide-react";
 
 const platformLinks = [
   { href: "/problems", label: "Problems" },
+  { href: "/duel", label: "Duel Arena" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/stats", label: "Stats" },
 ];
 
 const aboutLinks = [
+  { href: "/changelog", label: "Patch Notes" },
   { href: "/feedback", label: "Feedback" },
   { href: "/credits", label: "Credits" },
   { href: "/privacy", label: "Privacy" },

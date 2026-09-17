@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 const BANNED_ALLOWED_ROUTES = [
   "/suspended",
   "/feedback",
+  "/changelog",
   "/terms",
   "/privacy",
   "/integrity",
@@ -16,6 +17,7 @@ const BANNED_ALLOWED_ROUTES = [
 const ONBOARDING_EXEMPT_ROUTES = [
   "/onboarding",
   "/login",
+  "/changelog",
   "/privacy",
   "/terms",
   "/credits",
