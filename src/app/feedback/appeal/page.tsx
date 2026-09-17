@@ -8,7 +8,6 @@ import {
   ShieldAlert,
   Send,
   Loader2,
-  CheckCircle2,
   AlertCircle,
   LogOut,
   Scale,
@@ -16,6 +15,8 @@ import {
   Lock,
   User as UserIcon,
   Mail,
+  Clock,
+  XCircle,
 } from "lucide-react";
 
 const APPEAL_REASONS = [
@@ -26,6 +27,16 @@ const APPEAL_REASONS = [
   "Other Reason",
 ];
 
+interface ExistingAppeal {
+  id: string;
+  reason: string;
+  statement: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  reviewedAt?: string;
+  decision?: string;
+}
+
 export default function AppealPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -33,11 +44,10 @@ export default function AppealPage() {
   const [appealReason, setAppealReason] = useState(APPEAL_REASONS[0]);
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [pageLoading, setPageLoading] = useState(true);
+  const [existingAppeal, setExistingAppeal] = useState<ExistingAppeal | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Route protection: Non-suspended users must NOT access the appeal flow
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/login");
@@ -45,15 +55,34 @@ export default function AppealPage() {
     }
     if (status === "authenticated" && session?.user && !session.user.isBanned) {
       router.replace("/problems");
+      return;
+    }
+
+    if (status === "authenticated" && session?.user?.isBanned) {
+      const fetchStatus = async () => {
+        try {
+          const res = await fetch("/api/feedback/appeal");
+          if (res.ok) {
+            const data = await res.json();
+            if (data.hasAppeal && data.appeal) {
+              setExistingAppeal(data.appeal);
+            }
+          }
+        } catch {
+          // silent
+        } finally {
+          setPageLoading(false);
+        }
+      };
+      fetchStatus();
     }
   }, [session, status, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitted || isSending) return;
+    if (existingAppeal || isSending) return;
 
     setErrorMessage("");
-    setSuccessMessage("");
 
     if (!additionalInfo.trim()) {
       setErrorMessage("Please provide details for your appeal statement.");
@@ -79,12 +108,21 @@ export default function AppealPage() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        setIsSubmitted(true);
-        setSuccessMessage(
-          data.message ||
-            "Your appeal has been received and will be reviewed by the InsidCode team."
-        );
+      if (res.status === 201 || res.status === 200) {
+        setExistingAppeal({
+          id: data.appealId || "new",
+          reason: appealReason,
+          statement: additionalInfo.trim(),
+          status: "PENDING",
+          createdAt: new Date().toISOString(),
+        });
+      } else if (res.status === 409) {
+        setErrorMessage(data.message || "An appeal has already been submitted for this suspension.");
+        const statusRes = await fetch("/api/feedback/appeal");
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.appeal) setExistingAppeal(statusData.appeal);
+        }
       } else {
         setErrorMessage(data.error || "Unable to submit appeal. Please try again.");
       }
@@ -95,9 +133,12 @@ export default function AppealPage() {
     }
   };
 
-  // While checking session or if user is active (non-banned), do not show appeal form
-  if (status === "loading" || (status === "authenticated" && !session?.user?.isBanned)) {
-    return null;
+  if (status === "loading" || pageLoading || (status === "authenticated" && !session?.user?.isBanned)) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
+      </div>
+    );
   }
 
   return (
@@ -124,34 +165,13 @@ export default function AppealPage() {
         </p>
       </div>
 
-      {/* Review Disclaimer Notice */}
-      <div
-        className="p-4 text-[12px] leading-relaxed space-y-1.5"
-        style={{
-          border: "1px solid var(--border)",
-          backgroundColor: "var(--bg-subtle)",
-          borderRadius: "4px",
-          color: "var(--fg-muted)",
-        }}
-      >
-        <p className="font-semibold text-[13px]" style={{ color: "var(--fg)" }}>
-          Appeal Review Policy
-        </p>
-        <p>
-          Submitting an appeal constitutes a formal review request. The InsidCode security and administrative team will inspect the associated platform logs and security records.
-        </p>
-        <p className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
-          Please note: Submitting an appeal does not guarantee that the suspension will be lifted or that access will be restored.
-        </p>
-      </div>
-
-      {/* Success Notification */}
-      {isSubmitted && successMessage ? (
+      {/* STATE 1: PENDING APPEAL */}
+      {existingAppeal && existingAppeal.status === "PENDING" && (
         <div
           className="p-6 text-center space-y-5"
           style={{
-            border: "1px solid color-mix(in srgb, var(--success) 35%, transparent)",
-            backgroundColor: "color-mix(in srgb, var(--success) 6%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--accent) 35%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--accent) 5%, transparent)",
             borderRadius: "6px",
           }}
         >
@@ -159,20 +179,45 @@ export default function AppealPage() {
             <div
               className="flex h-12 w-12 items-center justify-center rounded-full"
               style={{
-                backgroundColor: "color-mix(in srgb, var(--success) 15%, transparent)",
-                color: "var(--success)",
+                backgroundColor: "color-mix(in srgb, var(--accent) 15%, transparent)",
+                color: "var(--accent)",
               }}
             >
-              <CheckCircle2 className="h-6 w-6" />
+              <Clock className="h-6 w-6" />
             </div>
           </div>
 
           <div className="space-y-2">
+            <div className="flex justify-center">
+              <span className="mono text-[10px] px-2.5 py-0.5 rounded font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                Pending Review
+              </span>
+            </div>
             <h2 className="text-lg font-bold" style={{ color: "var(--fg)" }}>
               Appeal submitted
             </h2>
             <p className="text-[13px] leading-relaxed max-w-md mx-auto" style={{ color: "var(--fg-muted)" }}>
-              {successMessage}
+              Your appeal is currently pending review by the InsidCode administrative team.
+            </p>
+          </div>
+
+          <div
+            className="p-4 text-left text-xs space-y-2 max-w-lg mx-auto"
+            style={{
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg)",
+              borderRadius: "4px",
+            }}
+          >
+            <div className="flex items-center justify-between mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+              <span>Submitted: {new Date(existingAppeal.createdAt).toLocaleString()}</span>
+              <span>1 Appeal / Suspension</span>
+            </div>
+            <p className="font-semibold" style={{ color: "var(--fg)" }}>
+              Reason: {existingAppeal.reason}
+            </p>
+            <p className="font-mono text-[11px] leading-relaxed line-clamp-3" style={{ color: "var(--fg-muted)" }}>
+              {existingAppeal.statement}
             </p>
           </div>
 
@@ -204,9 +249,116 @@ export default function AppealPage() {
             </button>
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* STATE 2: REJECTED APPEAL */}
+      {existingAppeal && existingAppeal.status === "REJECTED" && (
+        <div
+          className="p-6 text-center space-y-5"
+          style={{
+            border: "1px solid color-mix(in srgb, var(--danger) 35%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--danger) 5%, transparent)",
+            borderRadius: "6px",
+          }}
+        >
+          <div className="flex justify-center">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-full"
+              style={{
+                backgroundColor: "color-mix(in srgb, var(--danger) 15%, transparent)",
+                color: "var(--danger)",
+              }}
+            >
+              <XCircle className="h-6 w-6" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-center">
+              <span className="mono text-[10px] px-2.5 py-0.5 rounded font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/30">
+                Appeal Rejected
+              </span>
+            </div>
+            <h2 className="text-lg font-bold" style={{ color: "var(--fg)" }}>
+              Appeal rejected
+            </h2>
+            <p className="text-[13px] leading-relaxed max-w-md mx-auto" style={{ color: "var(--fg-muted)" }}>
+              Your suspension appeal was rejected by the InsidCode administrative team.
+            </p>
+          </div>
+
+          <div
+            className="p-4 text-left text-xs space-y-2 max-w-lg mx-auto"
+            style={{
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg)",
+              borderRadius: "4px",
+            }}
+          >
+            <div className="flex items-center justify-between mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+              <span>
+                Decided: {existingAppeal.reviewedAt ? new Date(existingAppeal.reviewedAt).toLocaleDateString() : "Reviewed"}
+              </span>
+              <span style={{ color: "var(--danger)" }}>Final Decision</span>
+            </div>
+            <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+              This decision is final for your current suspension. Account operations, submissions, and Duels remain restricted in accordance with platform security and integrity policies.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/suspended"
+              className="btn btn-secondary inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5"
+              style={{
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--bg)",
+                color: "var(--fg)",
+              }}
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>Back to Restriction Status</span>
+            </Link>
+
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="btn btn-secondary inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5"
+              style={{
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--bg)",
+                color: "var(--fg)",
+              }}
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STATE 3: NO APPEAL YET -> SUBMISSION FORM */}
+      {!existingAppeal && (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Error Notification */}
+          <div
+            className="p-4 text-[12px] leading-relaxed space-y-1.5"
+            style={{
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg-subtle)",
+              borderRadius: "4px",
+              color: "var(--fg-muted)",
+            }}
+          >
+            <p className="font-semibold text-[13px]" style={{ color: "var(--fg)" }}>
+              Appeal Review Policy
+            </p>
+            <p>
+              Submitting an appeal constitutes a formal review request. The InsidCode security and administrative team will inspect the associated platform logs and security records.
+            </p>
+            <p className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+              Please note: Submitting an appeal does not guarantee that the suspension will be lifted. Each account is limited to one active appeal per suspension.
+            </p>
+          </div>
+
           {errorMessage && (
             <div
               className="flex items-center gap-3 p-4 text-[12px]"
@@ -222,7 +374,6 @@ export default function AppealPage() {
             </div>
           )}
 
-          {/* Read-Only Authenticated Account Identity */}
           <div
             className="p-4 space-y-3"
             style={{
@@ -277,7 +428,6 @@ export default function AppealPage() {
             </div>
           </div>
 
-          {/* Reason for Appeal */}
           <div>
             <label className="section-label block mb-2">Reason for Appeal</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -313,7 +463,6 @@ export default function AppealPage() {
             </div>
           </div>
 
-          {/* Additional Information / Details */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="section-label">Appeal Statement & Supporting Information</label>
@@ -338,7 +487,6 @@ export default function AppealPage() {
             />
           </div>
 
-          {/* Actions */}
           <div
             className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4"
             style={{ borderTop: "1px solid var(--border)" }}
@@ -354,7 +502,7 @@ export default function AppealPage() {
 
             <button
               type="submit"
-              disabled={isSending || isSubmitted || additionalInfo.trim().length < 20}
+              disabled={isSending || additionalInfo.trim().length < 20}
               className="btn btn-primary inline-flex items-center justify-center gap-2 text-[12px] px-6 py-2.5 disabled:opacity-50"
             >
               {isSending ? (
@@ -373,7 +521,6 @@ export default function AppealPage() {
         </form>
       )}
 
-      {/* Legal Footer */}
       <div
         className="pt-6 flex items-center justify-center gap-4 text-[11px]"
         style={{

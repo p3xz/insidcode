@@ -22,8 +22,11 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
     tag: "Latest",
     added: [
       "Dedicated Suspended User Appeal portal (/feedback/appeal) for restricted accounts to submit formal review requests.",
+      "Admin Suspension Appeals console (/admin/appeals) with inspection modal, approval/rejection workflows, and audit trail.",
       "Dedicated full-page Banned Account interface (/suspended) with clear security notice and restricted navigation.",
       "Central window.fetch response interceptor to immediately detect 403 suspension responses across all client components.",
+      "Server-side one-appeal limit per suspension returning HTTP 409 Conflict on duplicate attempts.",
+      "Atomic account restoration lifecycle upon administrator appeal approval.",
       "Global HTTP security headers (HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Permissions-Policy).",
       "Public Changelog & Patch Notes page (/changelog) tracking chronological platform releases.",
     ],
@@ -46,6 +49,7 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
       "Enforced in-flight submission lock to block concurrent double-submissions on the problem workspace.",
     ],
     database: [
+      "Created Appeal collection with partial unique index on (userId) for active pending appeals.",
       "Added 60-day automatic TTL index on the Notification collection to prevent unbounded storage accumulation.",
       "Added compound unique index (userId, problemId, language) on LanguageSolve collection to prevent duplicate points races.",
       "Configured 2-hour TTL index on DuelRoom expiresAt field for automatic ephemeral match cleanup.",
