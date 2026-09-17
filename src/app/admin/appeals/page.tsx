@@ -10,6 +10,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
+import { formatIST, formatISTDateOnly } from "@/lib/dateUtils";
 
 interface AppealItem {
   id: string;
@@ -203,10 +204,10 @@ export default function AdminAppealsPage() {
                       <StatusBadge status={appeal.status} />
                     </td>
                     <td className="px-4 py-3 mono text-[11px] text-[#8B93A7]">
-                      {new Date(appeal.createdAt).toLocaleDateString()}
+                      {formatISTDateOnly(appeal.createdAt)}
                     </td>
                     <td className="px-4 py-3 mono text-[11px] text-[#8B93A7]">
-                      {appeal.reviewedAt ? new Date(appeal.reviewedAt).toLocaleDateString() : "—"}
+                      {appeal.reviewedAt ? formatISTDateOnly(appeal.reviewedAt) : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
@@ -272,13 +273,13 @@ export default function AdminAppealsPage() {
 
               <div className="grid grid-cols-2 gap-3 text-[11px] text-[#8B93A7] mono">
                 <div>
-                  <span>Submitted: </span>
-                  <span className="text-[#F5F7FA]">{new Date(selectedAppeal.createdAt).toLocaleString()}</span>
+                  <span>Submitted (IST): </span>
+                  <span className="text-[#F5F7FA]">{formatIST(selectedAppeal.createdAt)}</span>
                 </div>
                 <div>
-                  <span>Reviewed: </span>
+                  <span>Reviewed (IST): </span>
                   <span className="text-[#F5F7FA]">
-                    {selectedAppeal.reviewedAt ? new Date(selectedAppeal.reviewedAt).toLocaleString() : "Not yet"}
+                    {selectedAppeal.reviewedAt ? formatIST(selectedAppeal.reviewedAt) : "Not yet"}
                   </span>
                 </div>
               </div>

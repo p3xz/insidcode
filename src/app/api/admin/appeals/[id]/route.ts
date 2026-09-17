@@ -111,10 +111,14 @@ export async function PATCH(
       appeal.decision = decisionNotes || "Appeal approved by administrator. Account restored.";
       await appeal.save();
 
-      // 2. Atomically restore user account (remove ban and clear temporary ban metadata)
+      // 2. Atomically restore user account and require legal re-consent before normal access
       targetUser.isBanned = false;
       targetUser.banReason = undefined;
       targetUser.bannedUntil = undefined;
+      targetUser.privacyPolicyAccepted = false;
+      targetUser.termsAccepted = false;
+      targetUser.restoredAt = now;
+      targetUser.requiresRestorationConsent = true;
       await targetUser.save();
 
       // 3. Record immutable audit action

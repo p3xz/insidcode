@@ -17,6 +17,7 @@ declare module "next-auth" {
       currentStreak: number;
       isBanned: boolean;
       onboardingCompleted: boolean;
+      requiresRestorationConsent?: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -202,7 +203,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           await connectToDatabase();
           const dbUser = await User.findById(token.userId)
-            .select("username displayName role xp currentStreak isBanned onboardingCompleted privacyPolicyAccepted termsAccepted")
+            .select("username displayName role xp currentStreak isBanned onboardingCompleted privacyPolicyAccepted termsAccepted requiresRestorationConsent restoredAt")
             .lean();
 
           if (dbUser) {
@@ -212,6 +213,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.xp = dbUser.xp;
             token.currentStreak = dbUser.currentStreak;
             token.isBanned = dbUser.isBanned;
+            const needsLegalConsent = !dbUser.privacyPolicyAccepted || !dbUser.termsAccepted;
+            token.requiresRestorationConsent = Boolean(
+              (dbUser.requiresRestorationConsent || dbUser.restoredAt) && needsLegalConsent
+            );
             token.onboardingCompleted = Boolean(
               dbUser.onboardingCompleted &&
               dbUser.privacyPolicyAccepted &&
@@ -235,6 +240,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.currentStreak = (token.currentStreak as number) || 0;
         session.user.isBanned = (token.isBanned as boolean) || false;
         session.user.onboardingCompleted = (token.onboardingCompleted as boolean) || false;
+        session.user.requiresRestorationConsent = (token.requiresRestorationConsent as boolean) || false;
       }
       return session;
     },

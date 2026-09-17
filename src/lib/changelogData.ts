@@ -22,7 +22,8 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
     tag: "Latest",
     added: [
       "Dedicated Suspended User Appeal portal (/feedback/appeal) for restricted accounts to submit formal review requests.",
-      "Integrated verified Suspension Details card on restricted account screen (/suspended) displaying sanitized ban event metadata and live appeal status.",
+      "Integrated verified Suspension Details card on restricted account screen (/suspended) displaying sanitized ban event metadata and live appeal status in Indian Standard Time (IST).",
+      "Dedicated Account Restored flow (/account-restored) requiring explicit Terms of Use & Privacy Policy re-acknowledgment upon appeal approval.",
       "Admin Suspension Appeals console (/admin/appeals) with inspection modal, approval/rejection workflows, and audit trail.",
       "Dedicated full-page Banned Account interface (/suspended) with clear security notice and restricted navigation.",
       "Central window.fetch response interceptor to immediately detect 403 suspension responses across all client components.",

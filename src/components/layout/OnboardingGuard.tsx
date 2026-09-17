@@ -16,6 +16,7 @@ const BANNED_ALLOWED_ROUTES = [
 
 const ONBOARDING_EXEMPT_ROUTES = [
   "/onboarding",
+  "/account-restored",
   "/login",
   "/changelog",
   "/privacy",
@@ -89,16 +90,26 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     const isCurrentExempt = ONBOARDING_EXEMPT_ROUTES.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`)
     );
+
+    // 2. Account Restoration check: If user account was restored following appeal and requires legal re-consent
+    if (session.user.requiresRestorationConsent) {
+      if (!isCurrentExempt && pathname !== "/account-restored") {
+        router.replace("/account-restored");
+        return;
+      }
+      return;
+    }
+
     const isOnboardingComplete = Boolean(session.user.onboardingCompleted);
 
-    // 2. Onboarding check: If user has not completed onboarding and is attempting to access non-exempt routes
+    // 3. Initial Onboarding check: If user has not completed onboarding and is attempting to access non-exempt routes
     if (!isOnboardingComplete && !isCurrentExempt) {
       router.replace("/onboarding");
       return;
     }
 
-    // 3. If user has completed onboarding and is active, redirect away from /onboarding
-    if (isOnboardingComplete && pathname === "/onboarding") {
+    // 4. If user has completed onboarding/consent and is active, redirect away from /onboarding or /account-restored
+    if (isOnboardingComplete && (pathname === "/onboarding" || pathname === "/account-restored")) {
       router.replace("/problems");
       return;
     }

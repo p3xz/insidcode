@@ -76,6 +76,8 @@ export interface IUser {
   privacyPolicyVersion?: string;
   termsVersion?: string;
   acceptedAt?: Date;
+  restoredAt?: Date;
+  requiresRestorationConsent?: boolean;
   createdAt: Date;
   updatedAt: Date;
   save: () => Promise<this>;

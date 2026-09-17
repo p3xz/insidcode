@@ -158,6 +158,13 @@ const UserSchema = new Schema<IUser>(
     acceptedAt: {
       type: Date,
     },
+    restoredAt: {
+      type: Date,
+    },
+    requiresRestorationConsent: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

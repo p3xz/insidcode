@@ -5,23 +5,7 @@ import { User } from "@/models/User";
 import { AdminAction } from "@/models/AdminAction";
 import { Appeal } from "@/models/Appeal";
 import { ISuspensionDetails } from "@/types";
-
-function formatEventDate(date: Date): string {
-  try {
-    const day = date.getDate();
-    const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${day} ${month} ${year} · ${hours}:${minutes}`;
-  } catch {
-    return date.toLocaleDateString();
-  }
-}
+import { formatIST } from "@/lib/dateUtils";
 
 function sanitizeReason(rawReason?: string): string {
   if (!rawReason || typeof rawReason !== "string") {
@@ -150,7 +134,7 @@ export async function GET() {
       : new Date();
 
     const detectedAt = detectedDate.toISOString();
-    const formattedDate = formatEventDate(detectedDate);
+    const formattedDate = formatIST(detectedDate);
 
     // Determine safe user-facing reason and trigger
     const rawReason = primaryAction?.reason || user.banReason || "Unauthorized access attempts";

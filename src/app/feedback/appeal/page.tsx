@@ -18,6 +18,7 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
+import { formatIST } from "@/lib/dateUtils";
 
 const APPEAL_REASONS = [
   "Misidentified Activity / False Positive",
@@ -210,7 +211,7 @@ export default function AppealPage() {
             }}
           >
             <div className="flex items-center justify-between mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
-              <span>Submitted: {new Date(existingAppeal.createdAt).toLocaleString()}</span>
+              <span>Submitted: {formatIST(existingAppeal.createdAt)}</span>
               <span>1 Appeal / Suspension</span>
             </div>
             <p className="font-semibold" style={{ color: "var(--fg)" }}>
@@ -297,7 +298,7 @@ export default function AppealPage() {
           >
             <div className="flex items-center justify-between mono text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
               <span>
-                Decided: {existingAppeal.reviewedAt ? new Date(existingAppeal.reviewedAt).toLocaleDateString() : "Reviewed"}
+                Decided: {formatIST(existingAppeal.reviewedAt)}
               </span>
               <span style={{ color: "var(--danger)" }}>Final Decision</span>
             </div>
