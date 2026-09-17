@@ -80,11 +80,11 @@ export default function SuspendedPage() {
         {/* Action Buttons */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="/feedback"
+            href="/feedback/appeal"
             className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs px-5 py-2.5"
           >
             <Mail className="h-3.5 w-3.5" />
-            <span>Contact Administrator / Appeal</span>
+            <span>Appeal Suspension</span>
           </Link>
 
           <button
