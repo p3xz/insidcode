@@ -29,6 +29,15 @@ export interface HiddenTestCase {
   expectedOutput: string;
 }
 
+export interface IFailedTestCaseInfo {
+  testCaseIndex: number;
+  isPublic: boolean;
+  input?: string;
+  expectedOutput?: string;
+  actualOutput?: string;
+  remainingFailedCount?: number;
+}
+
 export interface IUser {
   _id: string;
   username: string;

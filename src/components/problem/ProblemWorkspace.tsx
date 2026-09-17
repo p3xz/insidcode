@@ -247,6 +247,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
           awardedXp: data.awardedXp,
           isFirstSolve: data.isFirstSolve,
           errorDetails: data.errorDetails,
+          failedTestCase: data.failedTestCase,
         });
 
         if (data.status === "Accepted") {

@@ -1,4 +1,4 @@
-﻿import { IUser, SubmissionStatus } from "@/types";
+import { IUser, SubmissionStatus, IFailedTestCaseInfo } from "@/types";
 import { Question } from "@/models/Question";
 import { Submission } from "@/models/Submission";
 import { LanguageSolve } from "@/models/LanguageSolve";
@@ -18,6 +18,7 @@ export interface SubmissionEvaluationResult {
   currentStreak: number;
   totalXp: number;
   errorDetails?: string;
+  failedTestCase?: IFailedTestCaseInfo;
 }
 
 /**
@@ -48,6 +49,7 @@ export async function evaluateAndRecordSubmission(
   let testsPassed = 0;
   let totalRuntime = 0;
   let errorDetails: string | undefined = undefined;
+  let failedTestCase: IFailedTestCaseInfo | undefined = undefined;
 
   // Execute test cases sequentially
   for (let i = 0; i < testSuite.length; i++) {
@@ -62,7 +64,7 @@ export async function evaluateAndRecordSubmission(
 
     if (execResult.systemError) {
       status = "System Error";
-      errorDetails = execResult.systemError || "Execution service error occurred.";
+      errorDetails = execResult.systemError || "Execution infrastructure service error occurred.";
       break;
     }
 
@@ -74,13 +76,13 @@ export async function evaluateAndRecordSubmission(
 
     if (execResult.isTimeout) {
       status = "Time Limit Exceeded";
-      errorDetails = "Time Limit Exceeded (30s)";
+      errorDetails = "Time Limit Exceeded (30s execution limit reached).";
       break;
     }
 
     if (!execResult.success || execResult.runtimeError) {
       status = "Runtime Error";
-      errorDetails = execResult.runtimeError || "Runtime execution failed.";
+      errorDetails = execResult.runtimeError || execResult.stderr || "Runtime execution failed.";
       break;
     }
 
@@ -93,15 +95,44 @@ export async function evaluateAndRecordSubmission(
         .map((line) => line.trimEnd())
         .join("\n");
 
-    const actual = normalize(execResult.stdout);
-    const expected = normalize(testCase.expectedOutput);
+    const actual = normalize(execResult.stdout || "");
+    const expected = normalize(testCase.expectedOutput || "");
 
     if (actual === expected) {
       testsPassed++;
     } else {
       status = "Wrong Answer";
-      // Never reveal hidden input/expected output in errorDetails
-      errorDetails = `Failed test case ${i + 1}`;
+
+      // A test case is public if it matches an example in question.examples
+      // or if no hiddenTestCases existed and testSuite was built from examples.
+      const isPublic =
+        Boolean(
+          question.examples &&
+          question.examples.some(
+            (ex) =>
+              normalize(ex.input) === normalize(testCase.input) &&
+              normalize(ex.output) === normalize(testCase.expectedOutput)
+          )
+        ) || (question.hiddenTestCases.length === 0 && i < question.examples.length);
+
+      const remainingFailed = Math.max(0, testSuite.length - (i + 1));
+
+      failedTestCase = {
+        testCaseIndex: i + 1,
+        isPublic,
+        ...(isPublic
+          ? {
+              input: testCase.input,
+              expectedOutput: testCase.expectedOutput,
+              actualOutput: execResult.stdout ? execResult.stdout.trim() : "(empty output)",
+            }
+          : {}),
+        remainingFailedCount: remainingFailed,
+      };
+
+      errorDetails = isPublic
+        ? `Test Case ${i + 1} Failed: Output mismatch`
+        : `A hidden test case failed.`;
       break;
     }
   }
@@ -200,6 +231,7 @@ export async function evaluateAndRecordSubmission(
     isFirstSolve: isFirstAcceptedSolve,
     currentStreak: user.currentStreak,
     totalXp: user.xp,
-    errorDetails: status === "Compilation Error" ? errorDetails : undefined,
+    errorDetails: status !== "Accepted" ? errorDetails : undefined,
+    failedTestCase: status === "Wrong Answer" ? failedTestCase : undefined,
   };
 }

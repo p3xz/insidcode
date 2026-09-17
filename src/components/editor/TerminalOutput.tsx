@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, Clock, Terminal, SlidersHorizontal, Award } from "lucide-react";
-import { SubmissionStatus } from "@/types";
+import { SubmissionStatus, IFailedTestCaseInfo } from "@/types";
 
 export interface ExecutionResultData {
   status?: SubmissionStatus;
@@ -16,6 +16,7 @@ export interface ExecutionResultData {
   isFirstSolve?: boolean;
   errorDetails?: string;
   systemError?: string;
+  failedTestCase?: IFailedTestCaseInfo;
 }
 
 interface TerminalOutputProps {
@@ -61,13 +62,25 @@ export function TerminalOutput({
           label: "Time Limit Exceeded",
         };
       case "Compilation Error":
+        return {
+          icon: AlertTriangle,
+          color: "text-[#FF4D6D]",
+          bg: "bg-[#FF4D6D]/10 border-[#FF4D6D]/30",
+          label: "Compilation Error",
+        };
       case "Runtime Error":
+        return {
+          icon: AlertTriangle,
+          color: "text-[#FF4D6D]",
+          bg: "bg-[#FF4D6D]/10 border-[#FF4D6D]/30",
+          label: "Runtime Error",
+        };
       case "System Error":
         return {
           icon: AlertTriangle,
           color: "text-[#FF4D6D]",
           bg: "bg-[#FF4D6D]/10 border-[#FF4D6D]/30",
-          label: status,
+          label: "Infrastructure Error",
         };
       default:
         return null;
@@ -183,8 +196,93 @@ export function TerminalOutput({
                   </div>
                 )}
 
-                {/* Error Box */}
-                {(result.errorDetails || result.systemError || result.stderr) && (
+                {/* Detailed Test Case Comparison Card for Wrong Answer */}
+                {result.status === "Wrong Answer" && result.failedTestCase && (
+                  <div
+                    className="rounded-lg p-3.5 space-y-3"
+                    style={{
+                      border: "1px solid color-mix(in srgb, #FF4D6D 30%, transparent)",
+                      backgroundColor: "var(--bg-secondary, var(--bg))",
+                    }}
+                  >
+                    <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: "var(--border)" }}>
+                      <span className="font-semibold text-xs text-[#FF4D6D]">
+                        Test Case {result.failedTestCase.testCaseIndex}
+                      </span>
+                      {result.failedTestCase.isPublic ? (
+                        <span className="text-[10px] text-[#8B93A7] uppercase tracking-wider bg-[#181B24] px-2 py-0.5 rounded">
+                          Sample Test
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-[#F59E0B] uppercase tracking-wider bg-[#F59E0B]/10 px-2 py-0.5 rounded border border-[#F59E0B]/30">
+                          Hidden Test
+                        </span>
+                      )}
+                    </div>
+
+                    {result.failedTestCase.isPublic ? (
+                      <div className="space-y-2.5">
+                        {/* Input */}
+                        <div>
+                          <span className="text-[10px] font-semibold text-[#8B93A7] uppercase tracking-wider block mb-1">
+                            Input:
+                          </span>
+                          <pre
+                            className="rounded p-2 text-xs font-mono text-[#F5F7FA] whitespace-pre-wrap"
+                            style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}
+                          >
+                            {result.failedTestCase.input || "(no input)"}
+                          </pre>
+                        </div>
+
+                        {/* Expected Output */}
+                        <div>
+                          <span className="text-[10px] font-semibold text-[#8B93A7] uppercase tracking-wider block mb-1">
+                            Expected Output:
+                          </span>
+                          <pre
+                            className="rounded p-2 text-xs font-mono text-[#39FF14] whitespace-pre-wrap"
+                            style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}
+                          >
+                            {result.failedTestCase.expectedOutput}
+                          </pre>
+                        </div>
+
+                        {/* Your Output */}
+                        <div>
+                          <span className="text-[10px] font-semibold text-[#8B93A7] uppercase tracking-wider block mb-1">
+                            Your Output:
+                          </span>
+                          <pre
+                            className="rounded p-2 text-xs font-mono text-[#FF4D6D] whitespace-pre-wrap"
+                            style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}
+                          >
+                            {result.failedTestCase.actualOutput || "(empty output)"}
+                          </pre>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded bg-[#181B24] border border-[#252936] space-y-1">
+                        <p className="text-xs font-semibold text-[#F5F7FA]">A hidden test case failed.</p>
+                        <p className="text-[11px] text-[#8B93A7] leading-relaxed">
+                          Input and expected output are concealed to preserve problem evaluation integrity.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Remaining failed tests note */}
+                    {result.failedTestCase.remainingFailedCount !== undefined &&
+                      result.failedTestCase.remainingFailedCount > 0 && (
+                        <p className="text-[11px] text-[#8B93A7] pt-1 border-t italic" style={{ borderColor: "var(--border)" }}>
+                          {result.failedTestCase.remainingFailedCount} more test case
+                          {result.failedTestCase.remainingFailedCount > 1 ? "s" : ""} failed or not executed.
+                        </p>
+                      )}
+                  </div>
+                )}
+
+                {/* Compilation / Runtime / System Error Box */}
+                {result.status !== "Wrong Answer" && (result.errorDetails || result.systemError || result.stderr) && (
                   <div
                     className="rounded-lg p-3 text-[#FF4D6D]"
                     style={{
@@ -192,15 +290,23 @@ export function TerminalOutput({
                       backgroundColor: "var(--bg-secondary, var(--bg))",
                     }}
                   >
-                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider">Error Details</div>
+                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider">
+                      {result.status === "Compilation Error"
+                        ? "Compiler Output"
+                        : result.status === "Runtime Error"
+                        ? "Runtime Diagnostic"
+                        : result.status === "Time Limit Exceeded"
+                        ? "Execution Timeout"
+                        : "Infrastructure Error Details"}
+                    </div>
                     <pre className="whitespace-pre-wrap font-mono text-xs">
                       {result.errorDetails || result.systemError || result.stderr}
                     </pre>
                   </div>
                 )}
 
-                {/* Standard Output */}
-                {(result.stdout || result.output) && (
+                {/* Standard Output for Run or when present */}
+                {result.status !== "Wrong Answer" && (result.stdout || result.output) && (
                   <div
                     className="rounded-lg p-3"
                     style={{
