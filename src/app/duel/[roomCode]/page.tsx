@@ -26,6 +26,10 @@ import { TerminalOutput, ExecutionResultData } from "@/components/editor/Termina
 import { SUPPORTED_LANGUAGES, SupportedLanguageId } from "@/lib/constants";
 import { IDuelRoom, IQuestion, SubmissionStatus } from "@/types";
 
+function getDraftKey(roomCode: string, userId: string, round: number, language: string): string {
+  return `duel_draft:${roomCode}:${userId}:${round}:${language}`;
+}
+
 export default function DuelArenaPage() {
   const params = useParams();
   const router = useRouter();
@@ -52,8 +56,28 @@ export default function DuelArenaPage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
-  // Track previous round to auto-reset editor template on round transitions
+  // Track previous round and initialization state to prevent starter code from overwriting drafts
   const previousRoundRef = useRef<number>(1);
+  const codeInitializedRef = useRef<boolean>(false);
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper to retrieve draft or starter template
+  const getInitialCode = useCallback(
+    (targetLang: SupportedLanguageId, targetRound: number) => {
+      if (typeof window !== "undefined" && roomCode && session?.user?.id) {
+        const key = getDraftKey(roomCode, session.user.id, targetRound, targetLang);
+        const saved = localStorage.getItem(key);
+        if (saved !== null) {
+          return saved;
+        }
+      }
+      return (
+        problem?.starterTemplates?.[targetLang] ||
+        `# Write your solution for ${problem?.title || "problem"} here\n`
+      );
+    },
+    [roomCode, session, problem]
+  );
 
   // Poll Duel Status
   const fetchDuelState = useCallback(async () => {
@@ -94,27 +118,49 @@ export default function DuelArenaPage() {
     return () => clearInterval(interval);
   }, [room, fetchDuelState]);
 
-  // Handle round changes (reset starter code and terminal)
+  // Initialize Code on first load once problem and room are available (reads saved draft or starter template)
+  useEffect(() => {
+    if (!problem || !room) return;
+    if (!codeInitializedRef.current) {
+      codeInitializedRef.current = true;
+      previousRoundRef.current = room.currentRound;
+      const initial = getInitialCode(selectedLanguage, room.currentRound);
+      setCode(initial);
+    }
+  }, [problem, room, selectedLanguage, getInitialCode]);
+
+  // Handle round changes (switches code to current round's draft or starter template)
   useEffect(() => {
     if (!room || !problem) return;
-    if (room.currentRound !== previousRoundRef.current) {
+    if (codeInitializedRef.current && room.currentRound !== previousRoundRef.current) {
       previousRoundRef.current = room.currentRound;
-      const template =
-        problem.starterTemplates?.[selectedLanguage] ||
-        `# Write your solution for ${problem.title} here\n`;
-      setCode(template);
+      const nextCode = getInitialCode(selectedLanguage, room.currentRound);
+      setCode(nextCode);
       setExecResult(null);
     }
-  }, [room, problem, selectedLanguage]);
+  }, [room, problem, selectedLanguage, getInitialCode]);
 
-  // Initialize Starter Code on first load
+  // Debounced autosave to localStorage
   useEffect(() => {
-    if (!problem) return;
-    const template =
-      problem.starterTemplates?.[selectedLanguage] ||
-      `# Write your solution for ${problem.title} here\n`;
-    setCode(template);
-  }, [problem, selectedLanguage]);
+    if (!codeInitializedRef.current || !roomCode || !session?.user?.id || !room) return;
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      try {
+        const key = getDraftKey(roomCode, session.user.id, room.currentRound, selectedLanguage);
+        localStorage.setItem(key, code);
+      } catch {
+        // Safe storage fallback
+      }
+    }, 800);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [code, roomCode, session?.user?.id, room?.currentRound, selectedLanguage, room]);
 
   // Countdown & Round Timers
   useEffect(() => {
@@ -265,6 +311,37 @@ export default function DuelArenaPage() {
       }, 2000);
     } catch (err) {
       console.error("Failed to copy code:", err);
+    }
+  };
+
+  // Switch programming language while preserving current draft
+  const handleLanguageChange = (newLang: SupportedLanguageId) => {
+    if (typeof window !== "undefined" && roomCode && session?.user?.id && room) {
+      try {
+        const currentKey = getDraftKey(roomCode, session.user.id, room.currentRound, selectedLanguage);
+        localStorage.setItem(currentKey, code);
+      } catch {
+        // Safe storage fallback
+      }
+    }
+    setSelectedLanguage(newLang);
+    const newCode = getInitialCode(newLang, room?.currentRound || 1);
+    setCode(newCode);
+  };
+
+  // Reset editor template for current language and update draft in storage
+  const handleResetCode = () => {
+    const template =
+      problem?.starterTemplates?.[selectedLanguage] ||
+      `# Write your solution for ${problem?.title || "problem"} here\n`;
+    setCode(template);
+    if (typeof window !== "undefined" && roomCode && session?.user?.id && room) {
+      try {
+        const key = getDraftKey(roomCode, session.user.id, room.currentRound, selectedLanguage);
+        localStorage.setItem(key, template);
+      } catch {
+        // Safe storage fallback
+      }
     }
   };
 
@@ -759,7 +836,7 @@ export default function DuelArenaPage() {
               <span className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>Lang:</span>
               <select
                 value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value as SupportedLanguageId)}
+                onChange={(e) => handleLanguageChange(e.target.value as SupportedLanguageId)}
                 className="py-1 px-2 text-[11px] font-medium cursor-pointer focus:outline-none"
                 style={{
                   border: "1px solid var(--border)",
@@ -806,12 +883,7 @@ export default function DuelArenaPage() {
               </button>
 
               <button
-                onClick={() => {
-                  const template =
-                    problem?.starterTemplates?.[selectedLanguage] ||
-                    `# Write your solution for ${problem?.title} here\n`;
-                  setCode(template);
-                }}
+                onClick={handleResetCode}
                 title="Reset starter template"
                 className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold mono transition-colors"
                 style={{

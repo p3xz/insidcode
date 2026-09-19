@@ -86,7 +86,7 @@ export async function evaluateAndRecordSubmission(
       break;
     }
 
-    // Output comparison with whitespace and newline normalization
+    // Output comparison with whitespace, newline, and case normalization
     const normalize = (str: unknown) =>
       String(str ?? "")
         .replace(/\r\n/g, "\n")
@@ -94,7 +94,8 @@ export async function evaluateAndRecordSubmission(
         .trim()
         .split("\n")
         .map((line) => line.trimEnd())
-        .join("\n");
+        .join("\n")
+        .toLowerCase();
 
     const actual = normalize(execResult.stdout || "");
     const expected = normalize(testCase.expectedOutput || "");

@@ -58,7 +58,7 @@ export async function GET() {
 
     await connectToDatabase();
     const user = await User.findById(session.user.id)
-      .select("username email isBanned banReason bannedAt updatedAt")
+      .select("username email isBanned banReason bannedAt updatedAt requiresRestorationConsent restoredAt")
       .lean();
 
     if (!user) {
@@ -84,6 +84,9 @@ export async function GET() {
             isBanned: false,
             requiresRestorationConsent: true,
           });
+          // Reflect the write so newAccountState is computed correctly below
+          user.isBanned = false;
+          user.requiresRestorationConsent = true;
         }
       } else if (appealStatus === "REJECTED") {
         appealLabel = "Rejected";

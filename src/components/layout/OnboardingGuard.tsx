@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 
 const BANNED_ALLOWED_ROUTES = [
   "/suspended",
+  "/account-restored",
   "/feedback",
   "/changelog",
   "/terms",
@@ -24,7 +25,6 @@ const ONBOARDING_EXEMPT_ROUTES = [
   "/credits",
   "/integrity",
   "/feedback",
-  "/suspended",
 ];
 
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { Appeal } from "@/models/Appeal";
 import { AdminAction } from "@/models/AdminAction";
 import { LEGAL_VERSIONS } from "@/lib/constants";
 import { z } from "zod";
@@ -26,20 +25,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User record not found." }, { status: 404 });
     }
 
-    const latestAppeal = await Appeal.findOne({ userId: user._id.toString() })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const isRestorationEligible = Boolean(
-      (latestAppeal && latestAppeal.status === "APPROVED") ||
-      user.restoredAt ||
-      user.requiresRestorationConsent ||
-      !user.isBanned
-    );
-
-    if (!isRestorationEligible && user.isBanned) {
+    if (user.isBanned) {
       return NextResponse.json(
         { error: "Account is suspended. Cannot accept terms.", isBanned: true },
+        { status: 403 }
+      );
+    }
+
+    if (!user.requiresRestorationConsent) {
+      return NextResponse.json(
+        { error: "No restoration consent required for this account.", isBanned: false },
         { status: 403 }
       );
     }
