@@ -23,29 +23,38 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://insidcode.vercel.app"),
   title: {
-    default: "InsidCode | Master Programming Logic Before DSA",
+    default: "InsidCode — Programming Logic Practice Before DSA",
     template: "%s | InsidCode",
   },
   description:
-    "Master foundational programming logic, recursion, arrays, and algorithms with 330+ structured challenges and isolated code execution before diving into DSA.",
+    "Practice programming logic with beginner-friendly coding problems, instant code execution, submissions, XP, streaks, and coding Duels. Build strong fundamentals before DSA.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "InsidCode | Master Programming Logic Before DSA",
+    title: "InsidCode — Programming Logic Practice Before DSA",
     description:
-      "Master foundational programming logic, recursion, arrays, and algorithms with 330+ structured challenges and isolated code execution before diving into DSA.",
+      "Practice programming logic with beginner-friendly coding problems, instant code execution, submissions, XP, streaks, and coding Duels. Build strong fundamentals before DSA.",
     url: "https://insidcode.vercel.app",
     siteName: "InsidCode",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "InsidCode — Programming Logic Practice Before DSA",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "InsidCode | Master Programming Logic Before DSA",
+    title: "InsidCode — Programming Logic Practice Before DSA",
     description:
-      "Master foundational programming logic, recursion, arrays, and algorithms with 330+ structured challenges and isolated code execution before diving into DSA.",
+      "Practice programming logic with beginner-friendly coding problems, instant code execution, submissions, XP, streaks, and coding Duels. Build strong fundamentals before DSA.",
     creator: "@p3xz",
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
@@ -53,6 +62,9 @@ export const metadata: Metadata = {
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "google-site-verification-placeholder",
+    other: {
+      "strix-verification": "strix-verify-adb8f5d4b7c98147c0e19528a66bb330",
+    },
   },
   icons: {
     icon: "/icon.svg",
@@ -74,7 +86,55 @@ export default function RootLayout({
             __html: `(function(){try{var t=localStorage.getItem('insidcode-theme')||'system';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',r);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://insidcode.vercel.app/#website",
+                  name: "InsidCode",
+                  url: "https://insidcode.vercel.app",
+                  description:
+                    "A programming logic practice platform with 330+ structured challenges, isolated code execution, XP, streaks, and 1v1 Duels — designed to build strong fundamentals before DSA.",
+                  potentialAction: {
+                    "@type": "SearchAction",
+                    target: {
+                      "@type": "EntryPoint",
+                      urlTemplate:
+                        "https://insidcode.vercel.app/problems?search={search_term_string}",
+                    },
+                    "query-input": "required name=search_term_string",
+                  },
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  "@id": "https://insidcode.vercel.app/#application",
+                  name: "InsidCode",
+                  url: "https://insidcode.vercel.app",
+                  applicationCategory: "EducationalApplication",
+                  operatingSystem: "Web",
+                  description:
+                    "InsidCode is a web-based programming logic practice platform. It offers 330+ structured coding challenges across six progressive phases — covering conditionals, loops, recursion, arrays, strings, and placement OA patterns — with isolated sandboxed code execution, server-verified hidden tests, XP, practice streaks, and real-time 1v1 coding Duels.",
+                  offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD",
+                  },
+                  author: {
+                    "@type": "Person",
+                    name: "Namish Yadav",
+                  },
+                  inLanguage: "en",
+                },
+              ],
+            }),
+          }}
+        />
       </head>
+
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} min-h-screen antialiased`}
         style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}

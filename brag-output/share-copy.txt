@@ -1,0 +1,11 @@
+Stop memorizing LeetCode patterns. 
+
+InsidCode is a 330-challenge logic training platform designed to build real algorithmic intuition.
+
+Features:
+• 330 challenges across 6 curated phases
+• Multi-language execution (Python, Java, C++, JavaScript, Go)
+• Real-time 1v1 Best-of-3 Duel Arena
+• Interactive code tracing & visual testbench
+
+Try it live: https://insidcode.vercel.app

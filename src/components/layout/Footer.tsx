@@ -14,6 +14,7 @@ const platformLinks = [
 ];
 
 const aboutLinks = [
+  { href: "/about", label: "About" },
   { href: "/changelog", label: "Patch Notes" },
   { href: "/feedback", label: "Feedback" },
   { href: "/credits", label: "Credits" },

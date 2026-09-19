@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IQuestion, SubmissionStatus } from "@/types";
 import { SUPPORTED_LANGUAGES, SupportedLanguageId } from "@/lib/constants";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -21,9 +21,28 @@ interface ProblemWorkspaceProps {
   initialSolved?: boolean;
 }
 
+function getValidLanguage(lang?: string | null): SupportedLanguageId | null {
+  if (!lang) return null;
+  const normalized = lang.trim().toLowerCase();
+  if (["python", "javascript", "c", "cpp", "java"].includes(normalized)) {
+    return normalized as SupportedLanguageId;
+  }
+  return null;
+}
+
 export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWorkspaceProps) {
   const { data: session } = useSession();
-  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguageId>("python");
+
+  const userManuallySwitchedRef = useRef(false);
+  const prevUserLanguageRef = useRef<string | undefined>(undefined);
+
+  const userProfileLang =
+    getValidLanguage(session?.user?.preferences?.defaultLanguage) ||
+    getValidLanguage(session?.user?.defaultLanguage);
+
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguageId>(
+    userProfileLang || "java"
+  );
   const [code, setCode] = useState<string>("");
   const [customInput, setCustomInput] = useState<string>("");
   const [activeMobileTab, setActiveMobileTab] = useState<"problem" | "code" | "terminal">("problem");
@@ -37,9 +56,23 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
   const [pendingLanguage, setPendingLanguage] = useState<SupportedLanguageId | null>(null);
   const [showLanguageWarning, setShowLanguageWarning] = useState(false);
 
+  // Synchronize language with authenticated user's profile preference
+  useEffect(() => {
+    const currentProfileLang =
+      getValidLanguage(session?.user?.preferences?.defaultLanguage) ||
+      getValidLanguage(session?.user?.defaultLanguage);
+
+    if (!currentProfileLang) return;
+
+    if (prevUserLanguageRef.current !== currentProfileLang || !userManuallySwitchedRef.current) {
+      prevUserLanguageRef.current = currentProfileLang;
+      setSelectedLanguage(currentProfileLang);
+    }
+  }, [session?.user?.preferences?.defaultLanguage, session?.user?.defaultLanguage]);
+
   useEffect(() => {
     const savedCodeKey = `code_${problem.problemId}_${selectedLanguage}`;
-    const saved = localStorage.getItem(savedCodeKey);
+    const saved = typeof window !== "undefined" ? localStorage.getItem(savedCodeKey) : null;
 
     if (saved) {
       setCode(saved);
@@ -66,12 +99,14 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
       setPendingLanguage(lang);
       setShowLanguageWarning(true);
     } else {
+      userManuallySwitchedRef.current = true;
       setSelectedLanguage(lang);
     }
   };
 
   const confirmLanguageSwitch = () => {
     if (pendingLanguage) {
+      userManuallySwitchedRef.current = true;
       setSelectedLanguage(pendingLanguage);
       setPendingLanguage(null);
     }

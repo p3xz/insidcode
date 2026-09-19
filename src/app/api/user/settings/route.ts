@@ -28,7 +28,7 @@ export async function GET() {
         preferences: user.preferences || {
           editorFontSize: 14,
           minimap: false,
-          defaultLanguage: "python",
+          defaultLanguage: "java",
           reducedMotion: false,
           soundEnabled: false,
         },

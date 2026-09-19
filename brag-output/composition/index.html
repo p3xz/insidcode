@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background-color: #090a0f;
+        font-family: 'Inter', system-ui, sans-serif;
+        color: #f5f7fa;
+      }
+
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      #root {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        background-color: #090a0f;
+      }
+
+      /* Cyberpunk Grid Background */
+      .bg-grid {
+        position: absolute;
+        inset: 0;
+        background-image: 
+          linear-gradient(to right, rgba(37, 41, 54, 0.35) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(37, 41, 54, 0.35) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+      }
+
+      .ambient-glow {
+        position: absolute;
+        width: 900px;
+        height: 900px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 240, 255, 0.09) 0%, rgba(9, 10, 15, 0) 70%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      /* Scene Containers */
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px;
+      }
+
+      /* ── Scene 1: The Hook ── */
+      .hook-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 24px;
+        border-radius: 9999px;
+        background: rgba(0, 240, 255, 0.1);
+        border: 1px solid rgba(0, 240, 255, 0.35);
+        color: #00f0ff;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 28px;
+      }
+
+      .hook-title {
+        font-size: 88px;
+        font-weight: 900;
+        line-height: 1.08;
+        text-align: center;
+        letter-spacing: -0.03em;
+        margin-bottom: 20px;
+        max-width: 1400px;
+      }
+
+      .hook-title span {
+        background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .hook-subtitle {
+        font-size: 36px;
+        color: #8b93a7;
+        font-weight: 500;
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .terminal-preview {
+        background: #11131a;
+        border: 1px solid #252936;
+        border-radius: 12px;
+        padding: 24px 36px;
+        width: 860px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
+
+      /* ── Scene 2: Multi-Language Code Editor ── */
+      .editor-window {
+        width: 1300px;
+        background: #11131a;
+        border: 1px solid #252936;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+      }
+
+      .editor-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+        background: #181b24;
+        border-bottom: 1px solid #252936;
+      }
+
+      .lang-tabs {
+        display: flex;
+        gap: 8px;
+      }
+
+      .lang-tab {
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #8b93a7;
+        background: transparent;
+        border: 1px solid transparent;
+      }
+
+      .lang-tab.active {
+        color: #00f0ff;
+        background: rgba(0, 240, 255, 0.1);
+        border: 1px solid rgba(0, 240, 255, 0.3);
+      }
+
+      .editor-body {
+        padding: 28px 36px;
+        font-size: 20px;
+        line-height: 1.6;
+        color: #e2e8f0;
+      }
+
+      .editor-terminal {
+        background: #090a0f;
+        border-top: 1px solid #252936;
+        padding: 20px 36px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .test-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 20px;
+        border-radius: 8px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #10b981;
+        font-weight: 700;
+        font-size: 18px;
+      }
+
+      /* ── Scene 3: Duel Arena ── */
+      .duel-container {
+        width: 1300px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .duel-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 28px;
+        background: #11131a;
+        border: 1px solid #252936;
+        border-radius: 12px;
+      }
+
+      .duel-cards {
+        display: grid;
+        grid-template-columns: 1fr 140px 1fr;
+        gap: 20px;
+        align-items: center;
+        min-height: 280px;
+      }
+
+      .player-card {
+        background: #11131a;
+        border: 1px solid #252936;
+        border-radius: 16px;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .player-card.winner {
+        border-color: rgba(0, 240, 255, 0.6);
+        box-shadow: 0 0 35px rgba(0, 240, 255, 0.15);
+      }
+
+      .vs-badge {
+        font-size: 32px;
+        font-weight: 900;
+        color: #5e667b;
+        text-align: center;
+      }
+
+      .duel-victory-overlay {
+        position: absolute;
+        inset: 0;
+        background: #090a0f;
+        border: 1px solid rgba(0, 240, 255, 0.4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        padding: 40px;
+        min-height: 280px;
+        z-index: 10;
+        box-shadow: 0 0 50px rgba(0, 240, 255, 0.2);
+      }
+
+      /* ── Scene 4: Logo & CTA ── */
+      .brand-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: 24px;
+        background: #181b24;
+        border: 2px solid #252936;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        box-shadow: 0 0 50px rgba(0, 240, 255, 0.2);
+      }
+
+      .brand-title {
+        font-size: 84px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        margin-bottom: 12px;
+      }
+
+      .brand-title span {
+        color: #00f0ff;
+      }
+
+      .brand-tagline {
+        font-size: 28px;
+        color: #8b93a7;
+        margin-bottom: 36px;
+        font-weight: 500;
+      }
+
+      .cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 40px;
+        border-radius: 12px;
+        background: #00f0ff;
+        color: #090a0f;
+        font-size: 24px;
+        font-weight: 800;
+        box-shadow: 0 10px 30px rgba(0, 240, 255, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="20"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="bg-grid"></div>
+      <div class="ambient-glow"></div>
+
+      <!-- Audio Track -->
+      <audio
+        id="bgm"
+        data-start="0"
+        data-duration="20"
+        data-track-index="1"
+        data-volume="0.8"
+        src="assets/music/track.mp3"
+      ></audio>
+
+      <!-- ── SCENE 1: THE HOOK (0s – 4.5s) ── -->
+      <div id="scene1" class="scene clip" data-start="0" data-duration="4.5" data-track-index="0">
+        <div id="s1-badge" class="hook-badge mono">
+          <span>⚡ Phase 1 to 6</span>
+          <span>·</span>
+          <span>330+ Logic Challenges</span>
+        </div>
+        <h1 id="s1-title" class="hook-title">
+          BEFORE YOU GRIND DSA...<br />
+          <span>MASTER PURE LOGIC FIRST.</span>
+        </h1>
+        <p id="s1-sub" class="hook-subtitle">
+          Build authentic algorithmic intuition before memorizing interview templates.
+        </p>
+        <div id="s1-terminal" class="terminal-preview mono">
+          <div style="color: #8b93a7; font-size: 16px; margin-bottom: 8px;">
+            <span style="color: #00f0ff;">$</span> insidcode init --track "pure-logic"
+          </div>
+          <div style="color: #10b981; font-size: 18px; font-weight: 600;">
+            ✓ Warmup &nbsp;✓ Math &nbsp;✓ Recursion &nbsp;✓ Arrays &nbsp;✓ Strings &nbsp;✓ Mixed
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SCENE 2: MULTI-LANGUAGE SANDBOX (4.5s – 9.5s) ── -->
+      <div id="scene2" class="scene clip" data-start="4.5" data-duration="5.0" data-track-index="0">
+        <div id="s2-header" style="text-align: center; margin-bottom: 24px;">
+          <div class="mono" style="color: #00f0ff; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+            Multi-Language Compiler Sandbox
+          </div>
+          <h2 style="font-size: 48px; font-weight: 800;">5 Execution Engines. Zero Boilerplate.</h2>
+        </div>
+
+        <div id="s2-editor" class="editor-window">
+          <div class="editor-header">
+            <div class="lang-tabs mono">
+              <div class="lang-tab active">Java</div>
+              <div class="lang-tab">Python 3</div>
+              <div class="lang-tab">C++</div>
+              <div class="lang-tab">C</div>
+              <div class="lang-tab">JavaScript</div>
+            </div>
+            <div class="mono" style="color: #8b93a7; font-size: 14px;">
+              Problem #042 · Palindrome Check
+            </div>
+          </div>
+
+          <div class="editor-body mono">
+            <div style="color: #8b93a7;">// Phase 5: Two-pointer string validation</div>
+            <div><span style="color: #3b82f6;">public static boolean</span> <span style="color: #00f0ff;">isPalindrome</span>(String s) {</div>
+            <div style="padding-left: 28px;"><span style="color: #3b82f6;">int</span> left = <span style="color: #f59e0b;">0</span>, right = s.length() - <span style="color: #f59e0b;">1</span>;</div>
+            <div style="padding-left: 28px;"><span style="color: #3b82f6;">while</span> (left &lt; right) {</div>
+            <div style="padding-left: 56px;"><span style="color: #3b82f6;">if</span> (s.charAt(left++) != s.charAt(right--)) <span style="color: #3b82f6;">return false</span>;</div>
+            <div style="padding-left: 28px;">}</div>
+            <div style="padding-left: 28px;"><span style="color: #3b82f6;">return true</span>;</div>
+            <div>}</div>
+          </div>
+
+          <div class="editor-terminal mono">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <span style="color: #8b93a7; font-size: 16px;">Output:</span>
+              <span id="s2-test-result" class="test-badge">
+                ✓ Accepted · 10/10 Tests Passed · +50 XP
+              </span>
+            </div>
+            <div style="color: #8b93a7; font-size: 15px;">Runtime: 0.02s · Memory: 32MB</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SCENE 3: 1V1 DUEL ARENA (9.5s – 15.0s) ── -->
+      <div id="scene3" class="scene clip" data-start="9.5" data-duration="5.5" data-track-index="0">
+        <div class="duel-container">
+          <div id="s3-banner" class="duel-banner mono">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="color: #ef4444; font-weight: 800; font-size: 20px;">⚔️ DUEL ARENA</span>
+              <span style="color: #8b93a7;">·</span>
+              <span style="color: #f5f7fa; font-size: 18px;">Best of 3 Rounds</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <span style="color: #f59e0b; font-weight: 700; font-size: 18px;">⏱️ ROUND 3/3 LIVE</span>
+            </div>
+          </div>
+
+          <div class="duel-cards-wrapper" style="position: relative; min-height: 280px;">
+            <div id="s3-cards" class="duel-cards">
+              <!-- Player 1 -->
+              <div class="player-card winner">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-size: 24px; font-weight: 800;">@namish</div>
+                    <div style="color: #8b93a7; font-size: 14px;">Grandmaster Tier</div>
+                  </div>
+                  <div class="mono" style="font-size: 38px; font-weight: 900; color: #00f0ff;">2</div>
+                </div>
+                <div class="mono test-badge" style="justify-content: center; font-size: 16px;">
+                  ✓ SOLVED (10/10 Tests)
+                </div>
+              </div>
+
+              <!-- VS -->
+              <div class="vs-badge mono">VS</div>
+
+              <!-- Player 2 -->
+              <div class="player-card">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-size: 24px; font-weight: 800;">@challenger</div>
+                    <div style="color: #8b93a7; font-size: 14px;">Master Tier</div>
+                  </div>
+                  <div class="mono" style="font-size: 38px; font-weight: 900; color: #f59e0b;">1</div>
+                </div>
+                <div class="mono" style="padding: 8px 16px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; text-align: center; font-size: 16px; font-weight: 700;">
+                  CODING (8/10 Tests)
+                </div>
+              </div>
+            </div>
+
+            <!-- Victory Popup -->
+            <div id="s3-victory" class="duel-victory-overlay" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <div style="font-size: 60px; margin-bottom: 12px; line-height: 1;">🏆</div>
+              <h3 style="font-size: 46px; font-weight: 900; margin-bottom: 12px; color: #00f0ff; line-height: 1.1;">
+                MATCH VICTORY!
+              </h3>
+              <p class="mono" style="font-size: 20px; color: #f5f7fa; line-height: 1.4;">
+                @namish won the Duel match · +120 XP · Streak x7
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SCENE 4: BRAND OUTRO & CTA (15.0s – 20.0s) ── -->
+      <div id="scene4" class="scene clip" data-start="15.0" data-duration="5.0" data-track-index="0">
+        <div id="s4-icon" class="brand-icon">
+          <svg width="52" height="52" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="7" fill="#181B24" stroke="#252936" stroke-width="1.5" />
+            <path d="M10 11L5 16L10 21" stroke="#00F0FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M22 11L27 16L22 21" stroke="#00F0FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M18 10L14 22" stroke="#10B981" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+
+        <h1 id="s4-title" class="brand-title">
+          insid<span>code</span>
+        </h1>
+
+        <p id="s4-tagline" class="brand-tagline">
+          Master Programming Logic Before DSA
+        </p>
+
+        <div id="s4-cta" class="cta-button mono">
+          <span>Start Practicing: insidcode.vercel.app</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // ── Scene 1 Animations (0s - 4.5s) ──
+      tl.fromTo("#s1-badge", { opacity: 0, y: -20, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.7)" }, 0.2);
+      tl.fromTo("#s1-title", { opacity: 0, y: 30, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power3.out" }, 0.5);
+      tl.fromTo("#s1-sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.9);
+      tl.fromTo("#s1-terminal", { opacity: 0, y: 40, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 1.3);
+      tl.to("#scene1", { opacity: 0, scale: 0.98, duration: 0.4, ease: "power2.in" }, 4.1);
+
+      // ── Scene 2 Animations (4.5s - 9.5s) ──
+      tl.fromTo("#s2-header", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 4.6);
+      tl.fromTo("#s2-editor", { opacity: 0, y: 40, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 4.9);
+      tl.fromTo("#s2-test-result", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(2)" }, 6.5);
+      tl.to("#scene2", { opacity: 0, scale: 0.98, duration: 0.4, ease: "power2.in" }, 9.1);
+
+      // ── Scene 3 Animations (9.5s - 15.0s) ──
+      tl.fromTo("#s3-banner", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 9.6);
+      tl.fromTo("#s3-cards", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 9.9);
+      tl.to("#s3-cards", { opacity: 0, duration: 0.3 }, 11.9);
+      tl.fromTo("#s3-victory", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, 12.0);
+      tl.to("#scene3", { opacity: 0, scale: 0.98, duration: 0.4, ease: "power2.in" }, 14.6);
+
+      // ── Scene 4 Animations (15.0s - 20.0s) ──
+      tl.fromTo("#s4-icon", { opacity: 0, scale: 0.5, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.8, ease: "back.out(2)" }, 15.2);
+      tl.fromTo("#s4-title", { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 15.6);
+      tl.fromTo("#s4-tagline", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 16.0);
+      tl.fromTo("#s4-cta", { opacity: 0, scale: 0.88, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: "back.out(1.7)" }, 16.5);
+
+      // Register timeline for Hyperframes renderer
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

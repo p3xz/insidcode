@@ -18,6 +18,14 @@ declare module "next-auth" {
       isBanned: boolean;
       onboardingCompleted: boolean;
       requiresRestorationConsent?: boolean;
+      defaultLanguage?: string;
+      preferences?: {
+        editorFontSize?: number;
+        minimap?: boolean;
+        defaultLanguage?: string;
+        reducedMotion?: boolean;
+        soundEnabled?: boolean;
+      };
     } & DefaultSession["user"];
   }
 }
@@ -91,7 +99,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             preferences: {
               editorFontSize: 14,
               minimap: false,
-              defaultLanguage: "python",
+              defaultLanguage: "java",
               reducedMotion: false,
               soundEnabled: false,
             },
@@ -154,6 +162,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.xp = dbUser.xp;
             token.currentStreak = dbUser.currentStreak;
             token.isBanned = dbUser.isBanned;
+            token.defaultLanguage = dbUser.preferences?.defaultLanguage || "java";
+            token.preferences = dbUser.preferences || { defaultLanguage: "java" };
             token.onboardingCompleted = Boolean(
               dbUser.onboardingCompleted &&
               dbUser.privacyPolicyAccepted &&
@@ -165,13 +175,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      // Handle session update triggers (e.g. when username is changed or onboarding completed)
+      // Handle session update triggers (e.g. when username is changed, preferences updated, or onboarding completed)
       if (trigger === "update") {
         if (session?.username && typeof session.username === "string") {
           token.username = session.username;
         }
         if (session?.onboardingCompleted !== undefined) {
           token.onboardingCompleted = Boolean(session.onboardingCompleted);
+        }
+        if (session?.preferences) {
+          token.preferences = { ...((token.preferences as object) || {}), ...session.preferences };
+          if (session.preferences.defaultLanguage) {
+            token.defaultLanguage = session.preferences.defaultLanguage;
+          }
+        }
+        if (session?.defaultLanguage) {
+          token.defaultLanguage = session.defaultLanguage;
         }
 
         if (token.userId) {
@@ -185,6 +204,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               token.xp = dbUser.xp;
               token.currentStreak = dbUser.currentStreak;
               token.isBanned = dbUser.isBanned;
+              token.defaultLanguage = dbUser.preferences?.defaultLanguage || "java";
+              token.preferences = dbUser.preferences || { defaultLanguage: "java" };
               token.onboardingCompleted = Boolean(
                 dbUser.onboardingCompleted &&
                 dbUser.privacyPolicyAccepted &&
@@ -203,7 +224,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           await connectToDatabase();
           const dbUser = await User.findById(token.userId)
-            .select("username displayName role xp currentStreak isBanned onboardingCompleted privacyPolicyAccepted termsAccepted requiresRestorationConsent restoredAt")
+            .select("username displayName role xp currentStreak isBanned onboardingCompleted privacyPolicyAccepted termsAccepted requiresRestorationConsent restoredAt preferences")
             .lean();
 
           if (dbUser) {
@@ -213,6 +234,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.xp = dbUser.xp;
             token.currentStreak = dbUser.currentStreak;
             token.isBanned = dbUser.isBanned;
+            token.defaultLanguage = dbUser.preferences?.defaultLanguage || "java";
+            token.preferences = dbUser.preferences || { defaultLanguage: "java" };
             const needsLegalConsent = !dbUser.privacyPolicyAccepted || !dbUser.termsAccepted;
             token.requiresRestorationConsent = Boolean(
               (dbUser.requiresRestorationConsent || dbUser.restoredAt) && needsLegalConsent
@@ -241,6 +264,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.isBanned = (token.isBanned as boolean) || false;
         session.user.onboardingCompleted = (token.onboardingCompleted as boolean) || false;
         session.user.requiresRestorationConsent = (token.requiresRestorationConsent as boolean) || false;
+        session.user.defaultLanguage =
+          (token.defaultLanguage as string) ||
+          (token.preferences as { defaultLanguage?: string })?.defaultLanguage ||
+          "java";
+        session.user.preferences =
+          (token.preferences as {
+            editorFontSize?: number;
+            minimap?: boolean;
+            defaultLanguage?: string;
+            reducedMotion?: boolean;
+            soundEnabled?: boolean;
+          }) || { defaultLanguage: session.user.defaultLanguage };
       }
       return session;
     },

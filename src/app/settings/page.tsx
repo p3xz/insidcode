@@ -235,6 +235,9 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
+        if (updateSession) {
+          await updateSession({ preferences: settings.preferences });
+        }
         setStatusMessage("Settings updated successfully.");
         setTimeout(() => setStatusMessage(""), 3000);
       } else {
@@ -547,7 +550,7 @@ export default function SettingsPage() {
             <div>
               <label className="block mb-1 text-xs text-[var(--fg-muted)]">Default Language</label>
               <select
-                value={settings.preferences.defaultLanguage || "python"}
+                value={settings.preferences.defaultLanguage || "java"}
                 onChange={(e) =>
                   setSettings({
                     ...settings,

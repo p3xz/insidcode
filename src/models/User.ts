@@ -103,7 +103,7 @@ const UserSchema = new Schema<IUser>(
     preferences: {
       editorFontSize: { type: Number, default: 14 },
       minimap: { type: Boolean, default: false },
-      defaultLanguage: { type: String, default: "python" },
+      defaultLanguage: { type: String, default: "java" },
       reducedMotion: { type: Boolean, default: false },
       soundEnabled: { type: Boolean, default: false },
     },
