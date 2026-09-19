@@ -118,7 +118,6 @@ export function Navbar() {
     { href: "/problems", label: "Problems" },
     { href: "/leaderboard", label: "Leaderboard" },
     { href: "/stats", label: "Stats" },
-    { href: "/duel", label: "Duel" },
   ];
 
   return (
