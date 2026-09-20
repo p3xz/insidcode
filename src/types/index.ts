@@ -76,6 +76,8 @@ export interface IUser {
     java?: number;
   };
   selectedTitle?: string;
+  duelRating?: number;
+  duelPoints?: number;
   duelsPlayed?: number;
   duelsWon?: number;
   duelsLost?: number;
@@ -168,6 +170,11 @@ export interface IDuelRoom {
   winner?: string | null; // final overall winner userId or null/DRAW
   finishedAt?: Date;
   finalizedAt?: Date; // crash-safe idempotency marker for statistics
+  eloApplied?: boolean;
+  player1RatingDelta?: number;
+  player2RatingDelta?: number;
+  player1PointsDelta?: number;
+  player2PointsDelta?: number;
   cancelReason?: string;
   createdAt: Date;
   updatedAt: Date;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Flame, Zap, Send, Loader2, CheckCircle2, Code2, Swords, Trophy } from "lucide-react";
+import { Flame, Zap, Send, Loader2, CheckCircle2, Code2, Swords } from "lucide-react";
 
 interface UserStatsData {
   totalSolved: number;
@@ -18,10 +18,19 @@ interface UserStatsData {
   totalSubmissions: number;
   acceptedSubmissions: number;
   acceptanceRate: number;
+  duelRating?: number;
   duelsPlayed?: number;
   duelsWon?: number;
   duelsLost?: number;
   duelWinRate?: number;
+  duelKd?: string;
+  duelPoints?: number;
+  duelRank?: string;
+  duelRankTier?: number;
+  duelPointsToNextRank?: number | null;
+  duelNextRankName?: string | null;
+  isChampion?: boolean;
+  duelChampionPosition?: number | null;
   languagePoints?: {
     python?: number;
     javascript?: number;
@@ -214,55 +223,171 @@ export default function UserStatsPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            {
-              label: "Duels Won",
-              value: stats.duelsWon || 0,
-              sub: "Victories",
-              color: "var(--accent)",
-              icon: Trophy,
-            },
-            {
-              label: "Win Rate",
-              value: `${stats.duelWinRate || 0}%`,
-              sub: `${stats.duelsWon || 0}W / ${stats.duelsLost || 0}L`,
-              color: (stats.duelWinRate || 0) >= 50 ? "var(--success)" : "var(--fg)",
-            },
-            {
-              label: "Duels Played",
-              value: stats.duelsPlayed || 0,
-              sub: "Matches",
-              color: "var(--fg)",
-            },
-            {
-              label: "Duel Status",
-              value: (stats.duelsPlayed || 0) >= 3 ? "Ranked" : "Unranked",
-              sub: (stats.duelsPlayed || 0) >= 3 ? "Eligible on Leaderboard" : `${3 - (stats.duelsPlayed || 0)} more to rank`,
-              color: (stats.duelsPlayed || 0) >= 3 ? "var(--success)" : "var(--fg-dimmed)",
-              textValue: true,
-            },
-          ].map(({ label, value, sub, color, textValue }) => (
-            <div
-              key={label}
-              className="p-4"
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: "3px",
-                backgroundColor: "var(--bg)",
-              }}
-            >
-              <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>{label}</p>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span
-                  className={`text-[24px] font-bold ${textValue ? "text-[18px]" : "mono"}`}
-                  style={{ color }}
-                >
-                  {value}
-                </span>
-              </div>
-              <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>{sub}</p>
+          {/* Card 1: Competitive Rank */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Rank</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span
+                className="text-[20px] font-bold mono truncate"
+                style={{ color: stats.isChampion ? "var(--accent)" : "var(--fg)" }}
+              >
+                {stats.duelRank || "Noob I"}
+              </span>
             </div>
-          ))}
+            <p className="text-[11px] mono mt-1 truncate" style={{ color: "var(--fg-dimmed)" }}>
+              {stats.isChampion
+                ? `Champion #${stats.duelChampionPosition}`
+                : stats.duelPointsToNextRank != null
+                ? `${stats.duelPointsToNextRank} DP to ${stats.duelNextRankName}`
+                : "Max Normal Rank"}
+            </p>
+          </div>
+
+          {/* Card 2: Duel Points */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duel Points</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[22px] font-bold mono" style={{ color: "var(--accent)" }}>
+                {(stats.duelPoints || 0).toLocaleString()}
+              </span>
+              <span className="text-[11px] mono" style={{ color: "var(--fg-dimmed)" }}>DP</span>
+            </div>
+            <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>Progression</p>
+          </div>
+
+          {/* Card 3: Duel Rating (Elo) */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duel Rating</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[22px] font-bold mono" style={{ color: "var(--fg)" }}>
+                {stats.duelRating ?? 1000}
+              </span>
+              <span className="text-[11px] mono" style={{ color: "var(--fg-dimmed)" }}>Elo</span>
+            </div>
+            <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>Skill Rating</p>
+          </div>
+
+          {/* Card 4: Duels Played */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duels Played</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[22px] font-bold mono" style={{ color: "var(--fg)" }}>
+                {stats.duelsPlayed || 0}
+              </span>
+              <span className="text-[11px] mono" style={{ color: "var(--fg-dimmed)" }}>matches</span>
+            </div>
+            <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>Total</p>
+          </div>
+
+          {/* Card 5: Wins */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Wins</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[22px] font-bold mono" style={{ color: "var(--success)" }}>
+                {stats.duelsWon || 0}
+              </span>
+              <span className="text-[11px] mono" style={{ color: "var(--fg-dimmed)" }}>victories</span>
+            </div>
+            <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>+25 DP each</p>
+          </div>
+
+          {/* Card 6: Losses */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Losses</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[22px] font-bold mono" style={{ color: "var(--fg-dimmed)" }}>
+                {stats.duelsLost || 0}
+              </span>
+              <span className="text-[11px] mono" style={{ color: "var(--fg-dimmed)" }}>defeats</span>
+            </div>
+            <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>-10 DP each</p>
+          </div>
+
+          {/* Card 7: Win Rate */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Win Rate</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span
+                className="text-[22px] font-bold mono"
+                style={{ color: (stats.duelWinRate || 0) >= 50 ? "var(--success)" : "var(--fg)" }}
+              >
+                {Number(stats.duelWinRate || 0).toFixed(1)}%
+              </span>
+            </div>
+            <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>
+              {stats.duelsWon || 0}W - {stats.duelsLost || 0}L
+            </p>
+          </div>
+
+          {/* Card 8: K/D Ratio */}
+          <div
+            className="p-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>K/D Ratio</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span
+                className="text-[22px] font-bold mono"
+                style={{ color: (stats.duelsWon || 0) >= (stats.duelsLost || 0) && (stats.duelsWon || 0) > 0 ? "var(--accent)" : "var(--fg)" }}
+              >
+                {stats.duelKd ?? (stats.duelsWon && !stats.duelsLost ? "∞" : !stats.duelsWon && !stats.duelsLost ? "—" : ((stats.duelsWon || 0) / (stats.duelsLost || 1)).toFixed(2))}
+              </span>
+            </div>
+            <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>Wins / Losses</p>
+          </div>
         </div>
       </div>
 

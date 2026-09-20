@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Code2, Trophy, BarChart3, User as UserIcon } from "lucide-react";
+import { Code2, Swords, Trophy, BarChart3, User as UserIcon } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export function BottomNav() {
@@ -18,6 +18,7 @@ export function BottomNav() {
 
   const items = [
     { href: "/problems", label: "Problems", icon: Code2 },
+    { href: "/duel", label: "Duel", icon: Swords },
     { href: "/leaderboard", label: "Rank", icon: Trophy },
     { href: "/stats", label: "Stats", icon: BarChart3 },
     {
@@ -40,8 +41,7 @@ export function BottomNav() {
           const Icon = item.icon;
           const isActive =
             pathname === item.href ||
-            (item.href === "/problems" &&
-              pathname.startsWith("/problems"));
+            (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

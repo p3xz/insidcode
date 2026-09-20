@@ -5,6 +5,8 @@ import { Question } from "@/models/Question";
 import { Submission } from "@/models/Submission";
 import { CURRICULUM_PHASES } from "@/lib/constants";
 import { auth } from "@/lib/auth";
+import { calculateDuelKd, calculateDuelWinRate } from "@/lib/duelStats";
+import { getDuelRank, resolveUserChampionPosition } from "@/lib/duelRanks";
 
 export async function GET(
   req: NextRequest,
@@ -25,7 +27,7 @@ export async function GET(
       usernameNormalized: username.toLowerCase(),
       isBanned: false,
     })
-      .select("username displayName image xp currentStreak longestStreak solvedProblems totalSubmissions acceptedSubmissions createdAt role languagePoints selectedTitle duelsPlayed duelsWon duelsLost")
+      .select("username displayName image xp currentStreak longestStreak solvedProblems totalSubmissions acceptedSubmissions createdAt role languagePoints selectedTitle duelsPlayed duelsWon duelsLost duelRating duelPoints")
       .lean();
 
     if (!targetUser) {
@@ -94,7 +96,13 @@ export async function GET(
     const duelsPlayed = targetUser.duelsPlayed || 0;
     const duelsWon = targetUser.duelsWon || 0;
     const duelsLost = targetUser.duelsLost || 0;
-    const duelWinRate = duelsPlayed > 0 ? Math.round((duelsWon / duelsPlayed) * 100) : 0;
+    const duelPoints = targetUser.duelPoints || 0;
+    const duelRating = targetUser.duelRating ?? 1000;
+    const duelWinRate = calculateDuelWinRate(duelsWon, duelsPlayed);
+    const duelKd = calculateDuelKd(duelsWon, duelsLost);
+
+    const championPosition = await resolveUserChampionPosition(targetUser._id.toString(), duelsPlayed);
+    const resolvedRank = getDuelRank(duelPoints, championPosition);
 
     return NextResponse.json({
       profile: {
@@ -123,10 +131,22 @@ export async function GET(
           cpp: 0,
           java: 0,
         },
+        duelRating,
+        duelPoints,
+        duelRank: resolvedRank.rankName,
+        duelRankTier: resolvedRank.tierName,
+        duelRankDivision: resolvedRank.division,
+        duelRankMinPoints: resolvedRank.minPoints,
+        duelRankMaxPoints: resolvedRank.maxPoints,
+        duelPointsToNextRank: resolvedRank.pointsToNextRank,
+        duelNextRankName: resolvedRank.nextRankName,
+        isChampion: resolvedRank.isChampion,
+        duelChampionPosition: resolvedRank.championPosition,
         duelsPlayed,
         duelsWon,
         duelsLost,
         duelWinRate,
+        duelKd,
         isOwnProfile,
       },
     });

@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import { connectToDatabase } from "@/lib/mongodb";
 import { DuelRoom } from "@/models/DuelRoom";
+import { calculateDuelElo, DEFAULT_DUEL_RATING } from "@/lib/elo";
+import { applyDuelPointDelta, WIN_DUEL_POINTS, LOSS_DUEL_POINTS } from "@/lib/duelRanks";
 
 const CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
@@ -37,7 +39,8 @@ export async function generateUniqueRoomCode(): Promise<string> {
 
 /**
  * Crash-safe and idempotent Duel finalization.
- * Atomically marks DuelRoom.finalizedAt and updates User duel statistics exactly once.
+ * Atomically claims DuelRoom (finalizedAt: null -> Date, eloApplied: true)
+ * and updates User duel statistics & Elo ratings exactly once.
  */
 export async function finalizeDuelMatch(roomCode: string): Promise<boolean> {
   await connectToDatabase();
@@ -51,13 +54,16 @@ export async function finalizeDuelMatch(roomCode: string): Promise<boolean> {
       finalizedAt: null,
     },
     {
-      $set: { finalizedAt: new Date() },
+      $set: {
+        finalizedAt: new Date(),
+        eloApplied: true,
+      },
     },
     { new: true }
   );
 
   if (!room) {
-    // Already finalized or not finished
+    // Already finalized, not finished, or claimed by a concurrent worker
     return false;
   }
 
@@ -69,15 +75,52 @@ export async function finalizeDuelMatch(roomCode: string): Promise<boolean> {
     return false;
   }
 
-  // Import User dynamically or directly to avoid circular dependency
+  // Import User dynamically to avoid circular dependency
   const { User } = await import("@/models/User");
 
   try {
     const isP1Winner = winnerId === p1Id;
     const isP2Winner = winnerId === p2Id;
+    const winnerOutcome = isP1Winner ? "player1" : isP2Winner ? "player2" : "draw";
 
-    // Update Player 1 statistics
-    await User.findByIdAndUpdate(p1Id, {
+    // Fetch existing user records for Elo & Points calculation
+    const [p1User, p2User] = await Promise.all([
+      User.findById(p1Id).select("duelRating duelPoints duelsPlayed duelsWon duelsLost"),
+      User.findById(p2Id).select("duelRating duelPoints duelsPlayed duelsWon duelsLost"),
+    ]);
+
+    const p1CurrentRating = p1User?.duelRating ?? DEFAULT_DUEL_RATING;
+    const p2CurrentRating = p2User?.duelRating ?? DEFAULT_DUEL_RATING;
+
+    const eloResult = calculateDuelElo(p1CurrentRating, p2CurrentRating, winnerOutcome);
+
+    // Duel Points calculation: Winner +25, Loser -10, minimum 0
+    const p1CurrentPoints = p1User?.duelPoints ?? 0;
+    const p2CurrentPoints = p2User?.duelPoints ?? 0;
+
+    let p1PointsDelta = 0;
+    let p2PointsDelta = 0;
+
+    if (isP1Winner) {
+      p1PointsDelta = WIN_DUEL_POINTS;
+      p2PointsDelta = LOSS_DUEL_POINTS;
+    } else if (isP2Winner) {
+      p1PointsDelta = LOSS_DUEL_POINTS;
+      p2PointsDelta = WIN_DUEL_POINTS;
+    }
+
+    const p1NewPoints = applyDuelPointDelta(p1CurrentPoints, p1PointsDelta);
+    const p2NewPoints = applyDuelPointDelta(p2CurrentPoints, p2PointsDelta);
+
+    const p1ActualPointsDelta = p1NewPoints - p1CurrentPoints;
+    const p2ActualPointsDelta = p2NewPoints - p2CurrentPoints;
+
+    // Update Player 1 statistics, Elo & Duel Points
+    const p1Update = User.findByIdAndUpdate(p1Id, {
+      $set: {
+        duelRating: eloResult.player1NewRating,
+        duelPoints: p1NewPoints,
+      },
       $inc: {
         duelsPlayed: 1,
         duelsWon: isP1Winner ? 1 : 0,
@@ -85,8 +128,12 @@ export async function finalizeDuelMatch(roomCode: string): Promise<boolean> {
       },
     });
 
-    // Update Player 2 statistics
-    await User.findByIdAndUpdate(p2Id, {
+    // Update Player 2 statistics, Elo & Duel Points
+    const p2Update = User.findByIdAndUpdate(p2Id, {
+      $set: {
+        duelRating: eloResult.player2NewRating,
+        duelPoints: p2NewPoints,
+      },
       $inc: {
         duelsPlayed: 1,
         duelsWon: isP2Winner ? 1 : 0,
@@ -94,9 +141,24 @@ export async function finalizeDuelMatch(roomCode: string): Promise<boolean> {
       },
     });
 
+    // Record rating and point changes on the DuelRoom document for auditability
+    const roomUpdate = DuelRoom.updateOne(
+      { roomCode: normalizedCode },
+      {
+        $set: {
+          player1RatingDelta: eloResult.player1Delta,
+          player2RatingDelta: eloResult.player2Delta,
+          player1PointsDelta: p1ActualPointsDelta,
+          player2PointsDelta: p2ActualPointsDelta,
+        },
+      }
+    );
+
+    await Promise.all([p1Update, p2Update, roomUpdate]);
+
     return true;
   } catch (err) {
-    console.error(`Error finalizing duel stats for room ${normalizedCode}:`, err);
+    console.error(`Error finalizing duel stats and Elo for room ${normalizedCode}:`, err);
     return false;
   }
 }

@@ -116,6 +116,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/problems", label: "Problems" },
+    { href: "/duel", label: "Duel" },
     { href: "/leaderboard", label: "Leaderboard" },
     { href: "/stats", label: "Stats" },
   ];

@@ -26,10 +26,22 @@ interface ProfileData {
   mediumSolved: number;
   hardSolved: number;
   totalQuestions: number;
+  duelRating?: number;
+  duelPoints?: number;
+  duelRank?: string;
+  duelRankTier?: string;
+  duelRankDivision?: string | null;
+  duelRankMinPoints?: number;
+  duelRankMaxPoints?: number | null;
+  duelPointsToNextRank?: number | null;
+  duelNextRankName?: string | null;
+  isChampion?: boolean;
+  duelChampionPosition?: number | null;
   duelsPlayed?: number;
   duelsWon?: number;
   duelsLost?: number;
   duelWinRate?: number;
+  duelKd?: string;
   languagePoints?: {
     python?: number;
     javascript?: number;
@@ -244,6 +256,7 @@ export default function UserProfilePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Card 1: Competitive Rank */}
           <div
             className="p-3.5"
             style={{
@@ -252,15 +265,44 @@ export default function UserProfilePage() {
               backgroundColor: "var(--bg)",
             }}
           >
-            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duels Won</p>
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Rank</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span
+                className="text-[18px] font-bold mono truncate"
+                style={{ color: profile.isChampion ? "var(--accent)" : "var(--fg)" }}
+              >
+                {profile.duelRank || "Noob I"}
+              </span>
+            </div>
+            <p className="text-[10px] mono mt-0.5 truncate" style={{ color: "var(--fg-dimmed)" }}>
+              {profile.isChampion
+                ? `Champion #${profile.duelChampionPosition}`
+                : profile.duelPointsToNextRank != null
+                ? `${profile.duelPointsToNextRank} DP to ${profile.duelNextRankName}`
+                : "Max Normal Rank"}
+            </p>
+          </div>
+
+          {/* Card 2: Duel Points */}
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duel Points</p>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-[20px] font-bold mono" style={{ color: "var(--accent)" }}>
-                {profile.duelsWon || 0}
+                {(profile.duelPoints || 0).toLocaleString()}
               </span>
-              <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>victories</span>
+              <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>DP</span>
             </div>
+            <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>Progression</p>
           </div>
 
+          {/* Card 3: Duel Rating (Elo) */}
           <div
             className="p-3.5"
             style={{
@@ -269,14 +311,17 @@ export default function UserProfilePage() {
               backgroundColor: "var(--bg)",
             }}
           >
-            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Win Rate</p>
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duel Rating</p>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-[20px] font-bold mono" style={{ color: (profile.duelWinRate || 0) >= 50 ? "var(--success)" : "var(--fg)" }}>
-                {profile.duelWinRate || 0}%
+              <span className="text-[20px] font-bold mono" style={{ color: "var(--fg)" }}>
+                {profile.duelRating ?? 1000}
               </span>
+              <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>Elo</span>
             </div>
+            <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>Skill Rating</p>
           </div>
 
+          {/* Card 4: Duels Played */}
           <div
             className="p-3.5"
             style={{
@@ -292,8 +337,10 @@ export default function UserProfilePage() {
               </span>
               <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>matches</span>
             </div>
+            <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>Total</p>
           </div>
 
+          {/* Card 5: Wins */}
           <div
             className="p-3.5"
             style={{
@@ -302,15 +349,71 @@ export default function UserProfilePage() {
               backgroundColor: "var(--bg)",
             }}
           >
-            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Arena Status</p>
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Wins</p>
             <div className="flex items-baseline gap-1 mt-1">
-              <span
-                className="text-[13px] font-bold"
-                style={{ color: (profile.duelsPlayed || 0) >= 3 ? "var(--success)" : "var(--fg-dimmed)" }}
-              >
-                {(profile.duelsPlayed || 0) >= 3 ? "Ranked Duelist" : "Unranked (needs 3)"}
+              <span className="text-[20px] font-bold mono" style={{ color: "var(--success)" }}>
+                {profile.duelsWon || 0}
+              </span>
+              <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>victories</span>
+            </div>
+            <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>+25 DP each</p>
+          </div>
+
+          {/* Card 6: Losses */}
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Losses</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[20px] font-bold mono" style={{ color: "var(--fg-dimmed)" }}>
+                {profile.duelsLost || 0}
+              </span>
+              <span className="text-[10px] mono" style={{ color: "var(--fg-dimmed)" }}>defeats</span>
+            </div>
+            <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>-10 DP each</p>
+          </div>
+
+          {/* Card 7: Win Rate */}
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Win Rate</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[20px] font-bold mono" style={{ color: (profile.duelWinRate || 0) >= 50 ? "var(--success)" : "var(--fg)" }}>
+                {Number(profile.duelWinRate || 0).toFixed(1)}%
               </span>
             </div>
+            <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>
+              {profile.duelsWon || 0}W - {profile.duelsLost || 0}L
+            </p>
+          </div>
+
+          {/* Card 8: K/D Ratio */}
+          <div
+            className="p-3.5"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>K/D Ratio</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[20px] font-bold mono" style={{ color: (profile.duelsWon || 0) >= (profile.duelsLost || 0) && (profile.duelsWon || 0) > 0 ? "var(--accent)" : "var(--fg)" }}>
+                {profile.duelKd ?? (profile.duelsWon && !profile.duelsLost ? "∞" : !profile.duelsWon && !profile.duelsLost ? "—" : ((profile.duelsWon || 0) / (profile.duelsLost || 1)).toFixed(2))}
+              </span>
+            </div>
+            <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>Wins / Losses</p>
           </div>
         </div>
       </div>

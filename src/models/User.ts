@@ -119,6 +119,18 @@ const UserSchema = new Schema<IUser>(
       default: null,
       trim: true,
     },
+    duelRating: {
+      type: Number,
+      default: 1000,
+      min: 0,
+      index: true,
+    },
+    duelPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
+      index: true,
+    },
     duelsPlayed: {
       type: Number,
       default: 0,
@@ -174,6 +186,8 @@ const UserSchema = new Schema<IUser>(
 UserSchema.index({ provider: 1, providerAccountId: 1 }, { unique: true });
 UserSchema.index({ xp: -1, solvedProblems: -1 });
 UserSchema.index({ duelsWon: -1, duelsPlayed: -1 });
+UserSchema.index({ duelRating: -1 });
+UserSchema.index({ duelPoints: -1 });
 
 export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 

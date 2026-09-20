@@ -122,6 +122,26 @@ const DuelRoomSchema = new Schema<IDuelRoom>(
       default: null,
       index: true,
     },
+    eloApplied: {
+      type: Boolean,
+      default: false,
+    },
+    player1RatingDelta: {
+      type: Number,
+      default: 0,
+    },
+    player2RatingDelta: {
+      type: Number,
+      default: 0,
+    },
+    player1PointsDelta: {
+      type: Number,
+      default: 0,
+    },
+    player2PointsDelta: {
+      type: Number,
+      default: 0,
+    },
     cancelReason: {
       type: String,
     },

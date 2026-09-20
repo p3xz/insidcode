@@ -4,6 +4,8 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { Question } from "@/models/Question";
 import { Submission } from "@/models/Submission";
 import { CURRICULUM_PHASES } from "@/lib/constants";
+import { calculateDuelKd, calculateDuelWinRate } from "@/lib/duelStats";
+import { getDuelRank, resolveUserChampionPosition } from "@/lib/duelRanks";
 
 export async function GET() {
   try {
@@ -89,7 +91,13 @@ export async function GET() {
     const duelsPlayed = user.duelsPlayed || 0;
     const duelsWon = user.duelsWon || 0;
     const duelsLost = user.duelsLost || 0;
-    const duelWinRate = duelsPlayed > 0 ? Math.round((duelsWon / duelsPlayed) * 100) : 0;
+    const duelPoints = user.duelPoints || 0;
+    const duelRating = user.duelRating ?? 1000;
+    const duelWinRate = calculateDuelWinRate(duelsWon, duelsPlayed);
+    const duelKd = calculateDuelKd(duelsWon, duelsLost);
+
+    const championPosition = await resolveUserChampionPosition(user._id.toString(), duelsPlayed);
+    const resolvedRank = getDuelRank(duelPoints, championPosition);
 
     return NextResponse.json({
       stats: {
@@ -117,10 +125,22 @@ export async function GET() {
           cpp: 0,
           java: 0,
         },
+        duelRating,
+        duelPoints,
+        duelRank: resolvedRank.rankName,
+        duelRankTier: resolvedRank.tierName,
+        duelRankDivision: resolvedRank.division,
+        duelRankMinPoints: resolvedRank.minPoints,
+        duelRankMaxPoints: resolvedRank.maxPoints,
+        duelPointsToNextRank: resolvedRank.pointsToNextRank,
+        duelNextRankName: resolvedRank.nextRankName,
+        isChampion: resolvedRank.isChampion,
+        duelChampionPosition: resolvedRank.championPosition,
         duelsPlayed,
         duelsWon,
         duelsLost,
         duelWinRate,
+        duelKd,
       },
     });
   } catch (error) {
