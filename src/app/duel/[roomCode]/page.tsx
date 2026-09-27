@@ -462,10 +462,10 @@ export default function DuelArenaPage() {
           </div>
 
           <h1 className="text-[22px] font-bold mb-1" style={{ color: "var(--fg)" }}>
-            Best of 3 Match
+            {room.rounds === 1 ? "1v1 Problem Duel" : "Best of 3 Match"}
           </h1>
           <p className="text-[12px] mb-6 mono" style={{ color: "var(--fg-dimmed)" }}>
-            Difficulty: <span className="font-bold" style={{ color: "var(--fg)" }}>{room.difficulty}</span> · 3 Rounds · 5m/Round
+            Difficulty: <span className="font-bold" style={{ color: "var(--fg)" }}>{room.difficulty}</span> · {room.rounds === 1 ? "1 Target Round" : `${room.rounds} Rounds`} · 5m/Round
           </p>
 
           {/* Room Code Display */}
@@ -602,7 +602,7 @@ export default function DuelArenaPage() {
             }}
           >
             <Swords className="h-3.5 w-3.5" />
-            <span>ROUND {room.currentRound} / 3</span>
+            <span>{room.rounds === 1 ? "1v1 TARGET DUEL" : `ROUND ${room.currentRound} / ${room.rounds}`}</span>
           </div>
 
           {/* Live Score */}
@@ -990,7 +990,7 @@ export default function DuelArenaPage() {
                   MATCH VICTORY!
                 </h2>
                 <p className="text-[12px] mb-4" style={{ color: "var(--fg-muted)" }}>
-                  You won the Best of 3 Duel match!
+                  {room.rounds === 1 ? "You solved the target problem first and won the Duel!" : "You won the Best of 3 Duel match!"}
                 </p>
               </>
             ) : isDraw ? (
@@ -1008,7 +1008,7 @@ export default function DuelArenaPage() {
                   MATCH DRAW
                 </h2>
                 <p className="text-[12px] mb-4" style={{ color: "var(--fg-muted)" }}>
-                  The 3-round Duel match ended in an equal draw.
+                  {room.rounds === 1 ? "The 1v1 target Duel round ended in a draw." : "The 3-round Duel match ended in an equal draw."}
                 </p>
               </>
             ) : (
@@ -1026,7 +1026,7 @@ export default function DuelArenaPage() {
                   MATCH DEFEAT
                 </h2>
                 <p className="text-[12px] mb-4" style={{ color: "var(--fg-muted)" }}>
-                  Your opponent won the Best of 3 match.
+                  {room.rounds === 1 ? "Your opponent solved the target problem first." : "Your opponent won the Best of 3 match."}
                 </p>
               </>
             )}

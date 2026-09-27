@@ -3,7 +3,11 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { validateUsername } from "@/lib/username";
 import { recordAbuseAttemptAndCheckEscalation } from "@/lib/moderation/usernameModeration";
 import { OnboardingSchema } from "@/lib/validations";
-import { LEGAL_VERSIONS } from "@/lib/constants";
+import {
+  CURRENT_PRIVACY_POLICY_VERSION,
+  CURRENT_TERMS_VERSION,
+  CURRENT_COOKIE_POLICY_VERSION,
+} from "@/config/legal";
 import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
 import { AdminAction } from "@/models/AdminAction";
@@ -120,12 +124,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Apply legal consent and mark onboarding complete
+    const now = new Date();
     user.privacyPolicyAccepted = true;
     user.termsAccepted = true;
-    user.privacyPolicyVersion = LEGAL_VERSIONS.PRIVACY_POLICY;
-    user.termsVersion = LEGAL_VERSIONS.TERMS_OF_USE;
-    user.acceptedAt = new Date();
+    user.privacyPolicyVersion = CURRENT_PRIVACY_POLICY_VERSION;
+    user.termsVersion = CURRENT_TERMS_VERSION;
+    user.cookiePolicyVersion = CURRENT_COOKIE_POLICY_VERSION;
+    user.consentVersion = CURRENT_COOKIE_POLICY_VERSION;
+    user.acceptedAt = now;
     user.onboardingCompleted = true;
+    user.legalConsent = {
+      accepted: true,
+      privacyPolicyVersion: CURRENT_PRIVACY_POLICY_VERSION,
+      termsVersion: CURRENT_TERMS_VERSION,
+      cookiePolicyVersion: CURRENT_COOKIE_POLICY_VERSION,
+      acceptedAt: now,
+      consentVersion: CURRENT_COOKIE_POLICY_VERSION,
+    };
 
     await user.save();
 

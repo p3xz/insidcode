@@ -1,16 +1,16 @@
 /**
- * Pure server-side calculations for Duel W/L, Win Rate, and KD statistics.
+ * Pure server-side calculations for Duel W/L, Win Rate, and Duel Ratio statistics.
  */
 
 /**
- * Calculates Duel K/D ratio safely.
+ * Calculates Duel Ratio (Wins / Losses) safely.
  *
  * Rules:
  * - If wins = 0 and losses = 0: "—"
  * - If losses = 0 and wins > 0: "∞"
  * - Otherwise: (wins / losses).toFixed(2) (e.g. "2.00", "1.00", "0.50")
  */
-export function calculateDuelKd(wins: number = 0, losses: number = 0): string {
+export function calculateDuelRatio(wins: number = 0, losses: number = 0): string {
   const w = Math.max(0, wins || 0);
   const l = Math.max(0, losses || 0);
 
@@ -22,6 +22,11 @@ export function calculateDuelKd(wins: number = 0, losses: number = 0): string {
   }
   return (w / l).toFixed(2);
 }
+
+/**
+ * Backward-compatible alias for calculateDuelRatio.
+ */
+export const calculateDuelKd = calculateDuelRatio;
 
 /**
  * Calculates Duel win rate percentage rounded to 1 decimal place.

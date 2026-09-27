@@ -5,6 +5,7 @@ import { IQuestion, SubmissionStatus } from "@/types";
 import { SUPPORTED_LANGUAGES, SupportedLanguageId } from "@/lib/constants";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { TerminalOutput, ExecutionResultData } from "@/components/editor/TerminalOutput";
+import { useRouter } from "next/navigation";
 import {
   Play,
   Send,
@@ -13,6 +14,7 @@ import {
   Code2,
   Terminal,
   RotateCcw,
+  Swords,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -31,6 +33,7 @@ function getValidLanguage(lang?: string | null): SupportedLanguageId | null {
 }
 
 export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWorkspaceProps) {
+  const router = useRouter();
   const { data: session } = useSession();
 
   const userManuallySwitchedRef = useRef(false);
@@ -49,6 +52,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingDuel, setIsCreatingDuel] = useState(false);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [execResult, setExecResult] = useState<ExecutionResultData | null>(null);
   const [isSolved, setIsSolved] = useState(initialSolved);
@@ -298,6 +302,33 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
     }
   };
 
+  const handleStartProblemDuel = async () => {
+    if (!session?.user) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/problems/${problem.slug || problem.problemId}`)}`);
+      return;
+    }
+
+    setIsCreatingDuel(true);
+    try {
+      const res = await fetch("/api/duel/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problemId: problem.problemId }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.roomCode) {
+        router.push(`/duel/${data.roomCode}`);
+      } else {
+        alert(data.error || "Failed to create Per-Problem Duel.");
+      }
+    } catch {
+      alert("Network error creating Duel challenge. Please try again.");
+    } finally {
+      setIsCreatingDuel(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] w-full bg-[#090A0F] text-[#F5F7FA]">
       {/* Mobile Tab Switcher (Visible on < 1024px) */}
@@ -486,11 +517,21 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
               <button
                 onClick={handleSubmitCode}
-                disabled={isRunning || isSubmitting}
+                disabled={isRunning || isSubmitting || isCreatingDuel}
                 className="flex items-center gap-1.5 rounded-md bg-[#00F0FF] px-3.5 py-1 text-xs font-bold text-[#090A0F] hover:bg-[#00F0FF]/90 disabled:opacity-50 transition shadow-lg shadow-[#00F0FF]/10"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>{isSubmitting ? "Submitting..." : "Submit"}</span>
+              </button>
+
+              <button
+                onClick={handleStartProblemDuel}
+                disabled={isRunning || isSubmitting || isCreatingDuel}
+                title="Challenge another developer on this exact problem in a 1v1 Duel"
+                className="flex items-center gap-1.5 rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-3 py-1 text-xs font-bold text-[var(--warning)] hover:bg-[var(--warning)]/20 disabled:opacity-50 transition"
+              >
+                <Swords className="h-3.5 w-3.5" />
+                <span>{isCreatingDuel ? "Creating..." : "DUEL"}</span>
               </button>
             </div>
           </div>

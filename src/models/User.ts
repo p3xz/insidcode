@@ -167,6 +167,12 @@ const UserSchema = new Schema<IUser>(
     termsVersion: {
       type: String,
     },
+    cookiePolicyVersion: {
+      type: String,
+    },
+    consentVersion: {
+      type: String,
+    },
     acceptedAt: {
       type: Date,
     },
@@ -176,6 +182,22 @@ const UserSchema = new Schema<IUser>(
     requiresRestorationConsent: {
       type: Boolean,
       default: false,
+    },
+    cookieConsent: {
+      necessary: { type: Boolean, default: true },
+      analytics: { type: Boolean, default: false },
+      functional: { type: Boolean, default: false },
+      version: { type: String, default: null },
+      acceptedAt: { type: Date },
+      updatedAt: { type: Date },
+    },
+    legalConsent: {
+      accepted: { type: Boolean, default: false },
+      privacyPolicyVersion: { type: String, default: null },
+      termsVersion: { type: String, default: null },
+      cookiePolicyVersion: { type: String, default: null },
+      acceptedAt: { type: Date, default: null },
+      consentVersion: { type: String, default: null },
     },
   },
   {

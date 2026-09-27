@@ -7,6 +7,8 @@ import { Footer } from "@/components/layout/Footer";
 import { SessionProvider } from "@/components/layout/SessionProvider";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { OnboardingGuard } from "@/components/layout/OnboardingGuard";
+import { CookieConsent } from "@/components/layout/CookieConsent";
+import { LegalReconsentModal } from "@/components/layout/LegalReconsentModal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -152,6 +154,8 @@ export default function RootLayout({
                 </main>
                 <Footer />
                 <BottomNav />
+                <CookieConsent />
+                <LegalReconsentModal />
               </div>
             </OnboardingGuard>
           </SessionProvider>

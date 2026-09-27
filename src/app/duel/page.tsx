@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Swords, ArrowRight, Loader2, Zap, Shield, Flame, Eye } from "lucide-react";
+import { Swords, ArrowRight, Loader2, Zap, Shield, Flame, Eye, Sparkles } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function DuelHubPage() {
@@ -10,7 +10,7 @@ export default function DuelHubPage() {
   const { data: session } = useSession();
 
   // Create Duel Setup State
-  const [selectedDifficulty, setSelectedDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<"Very Easy" | "Easy" | "Medium" | "Hard">("Medium");
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -84,6 +84,13 @@ export default function DuelHubPage() {
   };
 
   const difficulties = [
+    {
+      id: "Very Easy",
+      name: "Very Easy",
+      icon: Sparkles,
+      desc: "Basic variables, arithmetic, simple if/else, and counting. 5m per round.",
+      color: "var(--accent)",
+    },
     {
       id: "Easy",
       name: "Easy",

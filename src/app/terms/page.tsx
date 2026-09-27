@@ -90,7 +90,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-5 space-y-1.5" style={{ color: "var(--fg-muted)" }}>
             <li>Attempting unauthorized administrative access, privilege escalation, or modifying protected system settings.</li>
             <li>Directly calling or bypassing API authorization boundaries to execute privileged administrator operations.</li>
-            <li>Artificially manipulating XP, language points, achievements, streaks, leaderboard ranks, or 1v1 Duel statistics.</li>
+            <li>Artificially manipulating XP, language points, achievements, streaks, leaderboard ranks, Elo rating, Duel Points, Duel Rank, Duel Ratio, or any other 1v1 Duel statistics.</li>
             <li>Attempting to break, escape, or exploit the sandbox code execution containers.</li>
             <li>Executing malicious code, fork bombs, cryptominers, or denial-of-service attack scripts.</li>
             <li>Using automated bots, scrapers, or third-party automation tools to mass-submit solutions or tamper with platform telemetry.</li>
@@ -167,7 +167,10 @@ export default function TermsPage() {
               <strong>Automatic Suspension:</strong> Confirmed unauthorized attempts to perform administrative mutations, repeated malicious attempts to bypass naming filters, tamper with platform settings, or exploit security vulnerabilities will result in immediate automated suspension.
             </li>
             <li>
-              <strong>Progress Revocation:</strong> Illegitimately gained XP, fake streak days, manipulated language points, and invalid leaderboard rankings will be removed.
+              <strong>Progress Revocation:</strong> Illegitimately gained XP, fake streak days, manipulated language points, manipulated Elo rating, Duel Points, and invalid leaderboard rankings will be removed.
+            </li>
+            <li>
+              <strong>Voluntary Account Deletion:</strong> You may permanently delete your account at any time via Account Settings. Deletion removes your profile, submissions, and associated personal data. This action is irreversible.
             </li>
             <li>
               <strong>Appeals:</strong> Suspended users may submit an inquiry or appeal via the official Feedback and appeal review channel.

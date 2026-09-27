@@ -28,12 +28,11 @@ export const RESERVED_USERNAMES = [
   "staff",
 ] as const;
 
-export const LEGAL_VERSIONS = {
-  PRIVACY_POLICY: "2026-09",
-  TERMS_OF_USE: "2026-09",
-} as const;
+import { LEGAL_VERSIONS } from "@/config/legal";
+export { LEGAL_VERSIONS };
 
 export const XP_REWARDS = {
+  "Very Easy": 10,
   Easy: 10,
   Medium: 20,
   Hard: 30,

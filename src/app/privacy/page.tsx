@@ -71,16 +71,19 @@ export default function PrivacyPage() {
           </p>
           <ul className="list-disc pl-5 space-y-1.5" style={{ color: "var(--fg-muted)" }}>
             <li>
-              <strong style={{ color: "var(--fg)" }}>Authentication & Social Profile Data:</strong> We operate a password-free platform. When you sign in via Google OAuth or GitHub OAuth, we receive your verified <strong>email address</strong>, <strong>display name</strong>, public <strong>profile image (avatar)</strong>, and provider-specific account identifier.
+              <strong style={{ color: "var(--fg)" }}>Authentication &amp; Social Profile Data:</strong> We operate a password-free platform. When you sign in via Google OAuth or GitHub OAuth, we receive your verified <strong>email address</strong>, <strong>display name</strong>, public <strong>profile image (avatar)</strong>, and provider-specific account identifier. You may disconnect a linked OAuth provider at any time via Account Settings; disconnection removes the token from our systems but does not affect the third-party provider&apos;s own records.
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>User-Provided Account Details:</strong> You may customize your platform username, display name, biography, college branch, and selected titles.
+              <strong style={{ color: "var(--fg)" }}>User-Provided Account Details:</strong> You may customize your platform username, display name, biography, college branch, and selected titles. You may permanently delete your account via Account Settings at any time.
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>Code Submissions & Practice Metrics:</strong> We store source code submissions, selected programming languages (Python, JavaScript, C, C++, Java), execution runtimes, problem completion status, practice streaks, 1v1 Duel outcomes, and earned Experience Points (XP).
+              <strong style={{ color: "var(--fg)" }}>Code Submissions &amp; Practice Metrics:</strong> We store source code submissions, selected programming languages (Python, JavaScript, C, C++, Java), execution runtimes, problem completion status, practice streaks, 1v1 Duel outcomes (wins, losses, Elo rating, Duel Points, Duel Rank, Duel Ratio), and earned Experience Points (XP).
             </li>
             <li>
-              <strong style={{ color: "var(--fg)" }}>Security & Audit Metadata:</strong> Safe request metadata including system IP addresses, user agent headers, and request timestamps are processed solely for security audits, automated abuse prevention, sliding-window rate limiting, DDoS mitigation, and server integrity.
+              <strong style={{ color: "var(--fg)" }}>Cookie &amp; Consent Preferences:</strong> We store your cookie preference selections (Necessary, Functional, Analytics) and the version of the cookie policy you consented to. You can review or update these at any time via the <strong>Privacy Choices</strong> link in the site footer.
+            </li>
+            <li>
+              <strong style={{ color: "var(--fg)" }}>Security &amp; Audit Metadata:</strong> Safe request metadata including system IP addresses, user agent headers, and request timestamps are processed solely for security audits, automated abuse prevention, sliding-window rate limiting, DDoS mitigation, and server integrity.
             </li>
           </ul>
           <p className="text-[11px] pt-2" style={{ borderTop: "1px solid var(--border)", color: "var(--fg-dimmed)" }}>
@@ -105,8 +108,11 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
             <li>To provision your user account and verify code solutions against server-side test suites.</li>
             <li>To compute fair ranking metrics, calculate daily practice streaks, and reward XP achievements.</li>
+            <li>To calculate and display Duel competitive metrics including Elo rating, Duel Points, Duel Rank, and Duel Ratio.</li>
             <li>To enforce community safety, detect automated malicious scripts, and prevent unauthorized scraping.</li>
             <li>To communicate critical account alerts, system updates, and security announcements.</li>
+            <li>To process voluntary account deletion requests and remove associated data upon request.</li>
+            <li>To honor cookie consent preferences and restrict optional data collection accordingly.</li>
           </ul>
           <p className="text-[11px] font-semibold" style={{ color: "var(--success)" }}>
             * We never sell, rent, monetize, or trade your personal information with third-party advertisers.

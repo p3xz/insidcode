@@ -27,7 +27,7 @@ const DuelRoundSchema = new Schema<IDuelRound>(
     problemTitle: { type: String, required: true },
     difficulty: {
       type: String,
-      enum: ["Easy", "Medium", "Hard"],
+      enum: ["Very Easy", "Easy", "Medium", "Hard"],
       required: true,
     },
     startedAt: { type: Date },
@@ -68,7 +68,7 @@ const DuelRoomSchema = new Schema<IDuelRoom>(
     },
     difficulty: {
       type: String,
-      enum: ["Easy", "Medium", "Hard"],
+      enum: ["Very Easy", "Easy", "Medium", "Hard"],
       required: true,
     },
     rounds: {

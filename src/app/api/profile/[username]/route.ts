@@ -147,6 +147,7 @@ export async function GET(
         duelsLost,
         duelWinRate,
         duelKd,
+        duelRatio: duelKd,
         isOwnProfile,
       },
     });

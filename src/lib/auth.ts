@@ -5,6 +5,7 @@ import { connectToDatabase } from "./mongodb";
 import { User } from "@/models/User";
 import { generateUniqueUsername } from "./username";
 import { IUser } from "@/types";
+import { checkUserConsentStatus, UserConsentStatus } from "@/config/legal";
 
 declare module "next-auth" {
   interface Session {
@@ -18,6 +19,8 @@ declare module "next-auth" {
       isBanned: boolean;
       onboardingCompleted: boolean;
       requiresRestorationConsent?: boolean;
+      requiresLegalReconsent?: boolean;
+      legalConsentStatus?: UserConsentStatus;
       defaultLanguage?: string;
       preferences?: {
         editorFontSize?: number;
@@ -164,10 +167,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.isBanned = dbUser.isBanned;
             token.defaultLanguage = dbUser.preferences?.defaultLanguage || "java";
             token.preferences = dbUser.preferences || { defaultLanguage: "java" };
+            const consentStatus = checkUserConsentStatus(dbUser);
+            token.requiresLegalReconsent = !consentStatus.isCurrent;
+            token.legalConsentStatus = consentStatus;
             token.onboardingCompleted = Boolean(
-              dbUser.onboardingCompleted &&
-              dbUser.privacyPolicyAccepted &&
-              dbUser.termsAccepted
+              dbUser.onboardingCompleted && consentStatus.isCurrent
             );
           }
         } catch (error) {
@@ -206,10 +210,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               token.isBanned = dbUser.isBanned;
               token.defaultLanguage = dbUser.preferences?.defaultLanguage || "java";
               token.preferences = dbUser.preferences || { defaultLanguage: "java" };
+              const consentStatus = checkUserConsentStatus(dbUser);
+              token.requiresLegalReconsent = !consentStatus.isCurrent;
+              token.legalConsentStatus = consentStatus;
               token.onboardingCompleted = Boolean(
-                dbUser.onboardingCompleted &&
-                dbUser.privacyPolicyAccepted &&
-                dbUser.termsAccepted
+                dbUser.onboardingCompleted && consentStatus.isCurrent
               );
             }
           } catch (error) {
@@ -224,7 +229,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           await connectToDatabase();
           const dbUser = await User.findById(token.userId)
-            .select("username displayName role xp currentStreak isBanned onboardingCompleted privacyPolicyAccepted termsAccepted requiresRestorationConsent restoredAt preferences")
+            .select("username displayName role xp currentStreak isBanned onboardingCompleted privacyPolicyAccepted termsAccepted privacyPolicyVersion termsVersion cookiePolicyVersion legalConsent requiresRestorationConsent restoredAt preferences")
             .lean();
 
           if (dbUser) {
@@ -236,14 +241,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.isBanned = dbUser.isBanned;
             token.defaultLanguage = dbUser.preferences?.defaultLanguage || "java";
             token.preferences = dbUser.preferences || { defaultLanguage: "java" };
-            const needsLegalConsent = !dbUser.privacyPolicyAccepted || !dbUser.termsAccepted;
+            const consentStatus = checkUserConsentStatus(dbUser);
+            token.requiresLegalReconsent = !consentStatus.isCurrent;
+            token.legalConsentStatus = consentStatus;
+            const needsLegalConsent = !consentStatus.isCurrent;
             token.requiresRestorationConsent = Boolean(
               (dbUser.requiresRestorationConsent || dbUser.restoredAt) && needsLegalConsent
             );
             token.onboardingCompleted = Boolean(
-              dbUser.onboardingCompleted &&
-              dbUser.privacyPolicyAccepted &&
-              dbUser.termsAccepted
+              dbUser.onboardingCompleted && consentStatus.isCurrent
             );
           }
         } catch (error) {
@@ -264,6 +270,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.isBanned = (token.isBanned as boolean) || false;
         session.user.onboardingCompleted = (token.onboardingCompleted as boolean) || false;
         session.user.requiresRestorationConsent = (token.requiresRestorationConsent as boolean) || false;
+        session.user.requiresLegalReconsent = Boolean(token.requiresLegalReconsent);
+        session.user.legalConsentStatus = (token.legalConsentStatus as UserConsentStatus) || undefined;
         session.user.defaultLanguage =
           (token.defaultLanguage as string) ||
           (token.preferences as { defaultLanguage?: string })?.defaultLanguage ||
@@ -324,16 +332,15 @@ export async function getAuthenticatedUser(options?: {
       }
     }
 
+    const consentStatus = checkUserConsentStatus(dbUser);
     const hasCompletedOnboarding = Boolean(
-      dbUser.onboardingCompleted &&
-      dbUser.privacyPolicyAccepted &&
-      dbUser.termsAccepted
+      dbUser.onboardingCompleted && consentStatus.isCurrent
     );
 
     if (!options?.allowIncompleteOnboarding && !hasCompletedOnboarding) {
       return {
         user: null,
-        error: "Onboarding and consent required before proceeding.",
+        error: "Legal consent or onboarding update required before proceeding.",
         status: 403,
       };
     }

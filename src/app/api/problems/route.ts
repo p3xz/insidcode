@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       query.phase = parseInt(phaseParam, 10);
     }
 
-    if (difficultyParam && ["Easy", "Medium", "Hard"].includes(difficultyParam)) {
+    if (difficultyParam && ["Very Easy", "Easy", "Medium", "Hard"].includes(difficultyParam)) {
       query.difficulty = difficultyParam;
     }
 

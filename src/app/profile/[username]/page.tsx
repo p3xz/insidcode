@@ -42,6 +42,7 @@ interface ProfileData {
   duelsLost?: number;
   duelWinRate?: number;
   duelKd?: string;
+  duelRatio?: string;
   languagePoints?: {
     python?: number;
     javascript?: number;
@@ -398,7 +399,7 @@ export default function UserProfilePage() {
             </p>
           </div>
 
-          {/* Card 8: K/D Ratio */}
+          {/* Card 8: Duel Ratio */}
           <div
             className="p-3.5"
             style={{
@@ -407,10 +408,10 @@ export default function UserProfilePage() {
               backgroundColor: "var(--bg)",
             }}
           >
-            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>K/D Ratio</p>
+            <p className="text-[11px] font-medium" style={{ color: "var(--fg-muted)" }}>Duel Ratio</p>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-[20px] font-bold mono" style={{ color: (profile.duelsWon || 0) >= (profile.duelsLost || 0) && (profile.duelsWon || 0) > 0 ? "var(--accent)" : "var(--fg)" }}>
-                {profile.duelKd ?? (profile.duelsWon && !profile.duelsLost ? "∞" : !profile.duelsWon && !profile.duelsLost ? "—" : ((profile.duelsWon || 0) / (profile.duelsLost || 1)).toFixed(2))}
+                {profile.duelRatio ?? profile.duelKd ?? (profile.duelsWon && !profile.duelsLost ? "∞" : !profile.duelsWon && !profile.duelsLost ? "—" : ((profile.duelsWon || 0) / (profile.duelsLost || 1)).toFixed(2))}
               </span>
             </div>
             <p className="text-[10px] mono mt-0.5" style={{ color: "var(--fg-dimmed)" }}>Wins / Losses</p>

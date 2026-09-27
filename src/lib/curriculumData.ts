@@ -71,21 +71,21 @@ export function createSeedQuestion(
 }
 
 export const CURRICULUM_QUESTIONS: QuestionSeedItem[] = [
-createSeedQuestion(1, "Positive, Negative, or Zero", 1, "Easy", "Take a number and print whether it is 'Positive', 'Negative', or 'Zero'.", "5", "Positive", [
+createSeedQuestion(1, "Positive, Negative, or Zero", 1, "Very Easy", "Take a number and print whether it is 'Positive', 'Negative', or 'Zero'.", "5", "Positive", [
     { input: "5", expectedOutput: "Positive" },
     { input: "-12", expectedOutput: "Negative" },
     { input: "0", expectedOutput: "Zero" },
     { input: "1000", expectedOutput: "Positive" },
   ]),
 
-createSeedQuestion(2, "Even or Odd", 1, "Easy", "Check whether a given integer is 'Even' or 'Odd'.", "4", "Even", [
+createSeedQuestion(2, "Even or Odd", 1, "Very Easy", "Check whether a given integer is 'Even' or 'Odd'.", "4", "Even", [
     { input: "4", expectedOutput: "Even" },
     { input: "7", expectedOutput: "Odd" },
     { input: "0", expectedOutput: "Even" },
     { input: "-5", expectedOutput: "Odd" },
   ]),
 
-createSeedQuestion(3, "Divisible by 5", 1, "Easy", "Check if a number is divisible by 5. Print 'Yes' or 'No'.", "25", "Yes", [
+createSeedQuestion(3, "Divisible by 5", 1, "Very Easy", "Check if a number is divisible by 5. Print 'Yes' or 'No'.", "25", "Yes", [
     { input: "25", expectedOutput: "Yes" },
     { input: "14", expectedOutput: "No" },
     { input: "0", expectedOutput: "Yes" },
@@ -105,7 +105,7 @@ createSeedQuestion(5, "Leap Year Checker", 1, "Easy", "Check if a given year is 
     { input: "2023", expectedOutput: "Not Leap Year" },
   ]),
 
-createSeedQuestion(6, "Larger of Two Numbers", 1, "Easy", "Take two numbers on separate lines and print the larger one.", "10\n20", "20", [
+createSeedQuestion(6, "Larger of Two Numbers", 1, "Very Easy", "Take two numbers on separate lines and print the larger one.", "10\n20", "20", [
     { input: "10\n20", expectedOutput: "20" },
     { input: "-5\n-10", expectedOutput: "-5" },
     { input: "8\n8", expectedOutput: "8" },
@@ -117,21 +117,21 @@ createSeedQuestion(7, "Largest of Three Numbers", 1, "Easy", "Take three numbers
     { input: "100\n100\n50", expectedOutput: "100" },
   ]),
 
-createSeedQuestion(8, "Temperature Classifier", 1, "Easy", "Take temperature T in Celsius. If T < 15 print 'Cold', if 15 <= T <= 30 print 'Warm', else print 'Hot'.", "22", "Warm", [
+createSeedQuestion(8, "Temperature Classifier", 1, "Very Easy", "Take temperature T in Celsius. If T < 15 print 'Cold', if 15 <= T <= 30 print 'Warm', else print 'Hot'.", "22", "Warm", [
     { input: "10", expectedOutput: "Cold" },
     { input: "22", expectedOutput: "Warm" },
     { input: "35", expectedOutput: "Hot" },
     { input: "15", expectedOutput: "Warm" },
   ]),
 
-createSeedQuestion(9, "Vowel or Consonant", 1, "Easy", "Take a single alphabet character and check if it is a 'Vowel' or 'Consonant' (case-insensitive).", "a", "Vowel", [
+createSeedQuestion(9, "Vowel or Consonant", 1, "Very Easy", "Take a single alphabet character and check if it is a 'Vowel' or 'Consonant' (case-insensitive).", "a", "Vowel", [
     { input: "a", expectedOutput: "Vowel" },
     { input: "Z", expectedOutput: "Consonant" },
     { input: "E", expectedOutput: "Vowel" },
     { input: "b", expectedOutput: "Consonant" },
   ]),
 
-createSeedQuestion(10, "Character Classifier", 1, "Easy", "Take a character and print 'Uppercase', 'Lowercase', 'Digit', or 'Special Character'.", "G", "Uppercase", [
+createSeedQuestion(10, "Character Classifier", 1, "Very Easy", "Take a character and print 'Uppercase', 'Lowercase', 'Digit', or 'Special Character'.", "G", "Uppercase", [
     { input: "G", expectedOutput: "Uppercase" },
     { input: "m", expectedOutput: "Lowercase" },
     { input: "7", expectedOutput: "Digit" },
@@ -175,33 +175,33 @@ createSeedQuestion(15, "Greeting by Hour", 1, "Easy", "Take hour (0-23) and prin
     { input: "2", expectedOutput: "Good Night" },
   ]),
 
-createSeedQuestion(16, "Voting Eligibility", 1, "Easy", "Given age N, print 'Eligible' if age >= 18, else print 'Not Eligible'.", "19", "Eligible", [
+createSeedQuestion(16, "Voting Eligibility", 1, "Very Easy", "Given age N, print 'Eligible' if age >= 18, else print 'Not Eligible'.", "19", "Eligible", [
     { input: "19", expectedOutput: "Eligible" },
     { input: "17", expectedOutput: "Not Eligible" },
     { input: "18", expectedOutput: "Eligible" },
   ]),
 
-createSeedQuestion(17, "Parity Comparison", 1, "Easy", "Take two integers. Print 'Both Even', 'Both Odd', or 'One Even One Odd'.", "4\n8", "Both Even", [
+createSeedQuestion(17, "Parity Comparison", 1, "Very Easy", "Take two integers. Print 'Both Even', 'Both Odd', or 'One Even One Odd'.", "4\n8", "Both Even", [
     { input: "4\n8", expectedOutput: "Both Even" },
     { input: "3\n7", expectedOutput: "Both Odd" },
     { input: "2\n5", expectedOutput: "One Even One Odd" },
   ]),
 
-createSeedQuestion(18, "Alphabet Half Checker", 1, "Easy", "Take a lowercase letter. Print 'First Half' if between 'a' and 'm', else 'Second Half'.", "f", "First Half", [
+createSeedQuestion(18, "Alphabet Half Checker", 1, "Very Easy", "Take a lowercase letter. Print 'First Half' if between 'a' and 'm', else 'Second Half'.", "f", "First Half", [
     { input: "f", expectedOutput: "First Half" },
     { input: "m", expectedOutput: "First Half" },
     { input: "n", expectedOutput: "Second Half" },
     { input: "z", expectedOutput: "Second Half" },
   ]),
 
-createSeedQuestion(19, "Day Number to Name", 1, "Easy", "Take day number (1-7, where 1=Monday). Print day name. If invalid, print 'Invalid'.", "1", "Monday", [
+createSeedQuestion(19, "Day Number to Name", 1, "Very Easy", "Take day number (1-7, where 1=Monday). Print day name. If invalid, print 'Invalid'.", "1", "Monday", [
     { input: "1", expectedOutput: "Monday" },
     { input: "5", expectedOutput: "Friday" },
     { input: "7", expectedOutput: "Sunday" },
     { input: "9", expectedOutput: "Invalid" },
   ]),
 
-createSeedQuestion(20, "Days in Month", 1, "Easy", "Take month number (1-12) and print number of days in that month (non-leap year, Feb=28).", "2", "28", [
+createSeedQuestion(20, "Days in Month", 1, "Very Easy", "Take month number (1-12) and print number of days in that month (non-leap year, Feb=28).", "2", "28", [
     { input: "1", expectedOutput: "31" },
     { input: "2", expectedOutput: "28" },
     { input: "4", expectedOutput: "30" },
@@ -210,19 +210,19 @@ createSeedQuestion(20, "Days in Month", 1, "Easy", "Take month number (1-12) and
 
   // Level 3: Math and Number Logic (Medium),
 
-createSeedQuestion(21, "Print 1 to 10", 2, "Easy", "Print numbers from 1 to 10, each on a new line.", "", "1\n2\n3\n4\n5\n6\n7\n8\n9\n10", [
+createSeedQuestion(21, "Print 1 to 10", 2, "Very Easy", "Print numbers from 1 to 10, each on a new line.", "", "1\n2\n3\n4\n5\n6\n7\n8\n9\n10", [
     { input: "", expectedOutput: "1\n2\n3\n4\n5\n6\n7\n8\n9\n10" },
   ]),
 
-createSeedQuestion(22, "Even Numbers 1 to 100", 2, "Easy", "Print all even numbers between 1 and 100 inclusive, separated by space.", "", "2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100", [
+createSeedQuestion(22, "Even Numbers 1 to 100", 2, "Very Easy", "Print all even numbers between 1 and 100 inclusive, separated by space.", "", "2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100", [
     { input: "", expectedOutput: "2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100" },
   ]),
 
-createSeedQuestion(23, "Odd Numbers 1 to 100", 2, "Easy", "Print all odd numbers between 1 and 100 inclusive, separated by space.", "", "1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31 33 35 37 39 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69 71 73 75 77 79 81 83 85 87 89 91 93 95 97 99", [
+createSeedQuestion(23, "Odd Numbers 1 to 100", 2, "Very Easy", "Print all odd numbers between 1 and 100 inclusive, separated by space.", "", "1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31 33 35 37 39 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69 71 73 75 77 79 81 83 85 87 89 91 93 95 97 99", [
     { input: "", expectedOutput: "1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31 33 35 37 39 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69 71 73 75 77 79 81 83 85 87 89 91 93 95 97 99" },
   ]),
 
-createSeedQuestion(24, "Countdown 10 to 1", 2, "Easy", "Print numbers from 10 down to 1, each on a new line.", "", "10\n9\n8\n7\n6\n5\n4\n3\n2\n1", [
+createSeedQuestion(24, "Countdown 10 to 1", 2, "Very Easy", "Print numbers from 10 down to 1, each on a new line.", "", "10\n9\n8\n7\n6\n5\n4\n3\n2\n1", [
     { input: "", expectedOutput: "10\n9\n8\n7\n6\n5\n4\n3\n2\n1" },
   ]),
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { ArrowUpRight } from "lucide-react";
+import { openPrivacyChoices } from "@/components/layout/CookieConsent";
 
 const platformLinks = [
   { href: "/problems", label: "Problems" },
@@ -126,7 +127,18 @@ export function Footer() {
           style={{ borderTop: "1px solid var(--border)", color: "var(--fg-dimmed)" }}
         >
           <span>© 2026 insidcode. Developed by Namish Yadav (@p3xz).</span>
-          <span className="mono">Built for disciplined logic growth.</span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={openPrivacyChoices}
+              className="transition-colors hover:underline underline-offset-2 cursor-pointer"
+              style={{ color: "var(--fg-dimmed)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-dimmed)")}
+            >
+              Privacy Choices
+            </button>
+            <span className="mono">Built for disciplined logic growth.</span>
+          </div>
         </div>
       </div>
     </footer>

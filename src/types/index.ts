@@ -1,6 +1,6 @@
 export type UserRole = "user" | "admin";
 
-export type DifficultyLevel = "Easy" | "Medium" | "Hard";
+export type DifficultyLevel = "Very Easy" | "Easy" | "Medium" | "Hard";
 
 export type SubmissionStatus =
   | "Accepted"
@@ -86,9 +86,27 @@ export interface IUser {
   termsAccepted: boolean;
   privacyPolicyVersion?: string;
   termsVersion?: string;
+  cookiePolicyVersion?: string;
+  consentVersion?: string;
   acceptedAt?: Date;
   restoredAt?: Date;
   requiresRestorationConsent?: boolean;
+  cookieConsent?: {
+    necessary: boolean;
+    analytics: boolean;
+    functional: boolean;
+    version: string | null;
+    acceptedAt: Date | null;
+    updatedAt: Date;
+  };
+  legalConsent?: {
+    accepted: boolean;
+    privacyPolicyVersion: string | null;
+    termsVersion: string | null;
+    cookiePolicyVersion: string | null;
+    acceptedAt: Date | null;
+    consentVersion: string | null;
+  };
   createdAt: Date;
   updatedAt: Date;
   save: () => Promise<this>;

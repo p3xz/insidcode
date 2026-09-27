@@ -3,7 +3,11 @@ import { auth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { AdminAction } from "@/models/AdminAction";
-import { LEGAL_VERSIONS } from "@/lib/constants";
+import {
+  CURRENT_PRIVACY_POLICY_VERSION,
+  CURRENT_TERMS_VERSION,
+  CURRENT_COOKIE_POLICY_VERSION,
+} from "@/config/legal";
 import { z } from "zod";
 
 const RestoreConsentSchema = z.object({
@@ -51,11 +55,21 @@ export async function POST(req: NextRequest) {
     // Atomically record legal consent and clear restoration requirement
     user.privacyPolicyAccepted = true;
     user.termsAccepted = true;
-    user.privacyPolicyVersion = LEGAL_VERSIONS.PRIVACY_POLICY;
-    user.termsVersion = LEGAL_VERSIONS.TERMS_OF_USE;
+    user.privacyPolicyVersion = CURRENT_PRIVACY_POLICY_VERSION;
+    user.termsVersion = CURRENT_TERMS_VERSION;
+    user.cookiePolicyVersion = CURRENT_COOKIE_POLICY_VERSION;
+    user.consentVersion = CURRENT_COOKIE_POLICY_VERSION;
     user.acceptedAt = now;
     user.requiresRestorationConsent = false;
     user.onboardingCompleted = true;
+    user.legalConsent = {
+      accepted: true,
+      privacyPolicyVersion: CURRENT_PRIVACY_POLICY_VERSION,
+      termsVersion: CURRENT_TERMS_VERSION,
+      cookiePolicyVersion: CURRENT_COOKIE_POLICY_VERSION,
+      acceptedAt: now,
+      consentVersion: CURRENT_COOKIE_POLICY_VERSION,
+    };
     await user.save();
 
     // Record immutable audit action
@@ -68,8 +82,9 @@ export async function POST(req: NextRequest) {
       newValue: JSON.stringify({
         privacyPolicyAccepted: true,
         termsAccepted: true,
-        privacyPolicyVersion: LEGAL_VERSIONS.PRIVACY_POLICY,
-        termsVersion: LEGAL_VERSIONS.TERMS_OF_USE,
+        privacyPolicyVersion: CURRENT_PRIVACY_POLICY_VERSION,
+        termsVersion: CURRENT_TERMS_VERSION,
+        cookiePolicyVersion: CURRENT_COOKIE_POLICY_VERSION,
         acceptedAt: now.toISOString(),
       }),
       reason: "User acknowledged Terms of Use and Privacy Policy following suspension appeal restoration.",

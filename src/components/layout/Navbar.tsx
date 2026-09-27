@@ -237,7 +237,10 @@ export function Navbar() {
                 {/* Notification bell */}
                 <div className="relative">
                   <button
-                    onClick={() => setIsNotifOpen((prev) => !prev)}
+                    onClick={() => {
+                      setIsNotifOpen((prev) => !prev);
+                      setIsAvatarMenuOpen(false);
+                    }}
                     aria-label="View notifications"
                     className="relative flex h-8 w-8 items-center justify-center transition-colors"
                     style={{ color: "var(--fg-muted)", borderRadius: "3px" }}
@@ -272,7 +275,10 @@ export function Navbar() {
                 {/* Avatar / Profile dropdown */}
                 <div className="relative" ref={avatarRef}>
                   <button
-                    onClick={() => setIsAvatarMenuOpen((prev) => !prev)}
+                    onClick={() => {
+                      setIsAvatarMenuOpen((prev) => !prev);
+                      setIsNotifOpen(false);
+                    }}
                     aria-label="User menu"
                     className="flex h-7 w-7 items-center justify-center text-[11px] font-bold overflow-hidden transition"
                     style={{

@@ -13,12 +13,14 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { Question } from "@/models/Question";
 
+import { DifficultyLevel } from "@/types";
+
 export interface PublicProblemData {
   problemId: string;
   title: string;
   slug: string;
   phase: number;
-  difficulty: "Easy" | "Medium" | "Hard";
+  difficulty: DifficultyLevel;
   description: string;
   constraints: string[];
   examples: Array<{
