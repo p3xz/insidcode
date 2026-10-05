@@ -107,7 +107,7 @@ export function AdminProblemManagement() {
         );
       }
     } catch {
-      alert("Failed to toggle publish status");
+      setErrorMessage("Failed to toggle publish status");
     }
   };
 
@@ -125,10 +125,10 @@ export function AdminProblemManagement() {
         setProblems((prev) => prev.filter((p) => p.problemId !== prob.problemId));
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to delete problem");
+        setErrorMessage(data.error || "Failed to delete problem");
       }
     } catch {
-      alert("Error deleting problem");
+      setErrorMessage("Error deleting problem");
     }
   };
 

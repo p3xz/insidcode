@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Search, Ban, Zap, Loader2, ShieldAlert } from "lucide-react";
+import InlineNotice from "@/components/ui/InlineNotice";
 
 interface AdminUserItem {
   id: string;
@@ -32,6 +33,7 @@ export default function AdminUsersPage() {
   const [xpChange, setXpChange] = useState<number>(0);
   const [xpReason, setXpReason] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchUsers = React.useCallback(async () => {
     setLoading(true);
@@ -74,16 +76,17 @@ export default function AdminUsersPage() {
       });
 
       if (res.ok) {
+        setActionError(null);
         fetchUsers();
       }
     } catch {
-      alert("Failed to update user ban status");
+      setActionError("Failed to update user ban status");
     }
   };
 
   const handleApplyXp = async () => {
     if (!selectedUser || xpChange === 0 || !xpReason.trim()) {
-      alert("Please provide a valid XP change amount and reason.");
+      setActionError("Please provide a valid XP change amount and reason.");
       return;
     }
 
@@ -103,13 +106,14 @@ export default function AdminUsersPage() {
         setSelectedUser(null);
         setXpChange(0);
         setXpReason("");
+        setActionError(null);
         fetchUsers();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to adjust XP");
+        setActionError(data.error || "Failed to adjust XP");
       }
     } catch {
-      alert("Error adjusting XP");
+      setActionError("Error adjusting XP");
     } finally {
       setActionLoading(false);
     }
@@ -117,6 +121,9 @@ export default function AdminUsersPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-6">
+      {actionError && (
+        <InlineNotice message={actionError} onDismiss={() => setActionError(null)} />
+      )}
       <div className="flex items-center justify-between">
         <Link
           href="/admin"
@@ -261,6 +268,9 @@ export default function AdminUsersPage() {
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl border border-[#252936] bg-[#11131A] p-6 shadow-2xl space-y-4">
+            {actionError && (
+              <InlineNotice message={actionError} onDismiss={() => setActionError(null)} />
+            )}
             <h3 className="text-sm font-bold text-[#F5F7FA]">
               Adjust XP for @{selectedUser.username}
             </h3>
@@ -292,7 +302,7 @@ export default function AdminUsersPage() {
 
             <div className="flex justify-end gap-2 pt-2">
               <button
-                onClick={() => setSelectedUser(null)}
+                onClick={() => { setSelectedUser(null); setActionError(null); }}
                 className="rounded-lg border border-[#252936] bg-[#181B24] px-3.5 py-1.5 text-xs text-[#8B93A7] hover:text-[#F5F7FA]"
               >
                 Cancel

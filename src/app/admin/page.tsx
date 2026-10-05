@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
+import InlineNotice from "@/components/ui/InlineNotice";
   Users,
   Code2,
   Send,
@@ -32,6 +33,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isLeaderboardFrozen, setIsLeaderboardFrozen] = useState(false);
   const [freezeLoading, setFreezeLoading] = useState(false);
+  const [freezeError, setFreezeError] = useState<string | null>(null);
 
   // Announcement state
   const [announcementTitle, setAnnouncementTitle] = useState("");
@@ -76,9 +78,10 @@ export default function AdminDashboardPage() {
       });
       if (res.ok) {
         setIsLeaderboardFrozen(!isLeaderboardFrozen);
+        setFreezeError(null);
       }
     } catch {
-      alert("Failed to toggle leaderboard freeze");
+      setFreezeError("Failed to toggle leaderboard freeze");
     } finally {
       setFreezeLoading(false);
     }
@@ -121,6 +124,9 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-8">
+      {freezeError && (
+        <InlineNotice message={freezeError} onDismiss={() => setFreezeError(null)} />
+      )}
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#252936] pb-6">
         <div>

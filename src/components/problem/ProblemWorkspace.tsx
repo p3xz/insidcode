@@ -17,6 +17,7 @@ import {
   Swords,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import InlineNotice from "@/components/ui/InlineNotice";
 
 interface ProblemWorkspaceProps {
   problem: IQuestion;
@@ -59,6 +60,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   const [pendingLanguage, setPendingLanguage] = useState<SupportedLanguageId | null>(null);
   const [showLanguageWarning, setShowLanguageWarning] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Synchronize language with authenticated user's profile preference
   useEffect(() => {
@@ -130,7 +132,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
     if (isRunning || isSubmitting) return;
 
     if (!session?.user) {
-      alert("Please sign in to run code.");
+      setNotice("Please sign in to run code.");
       return;
     }
 
@@ -255,7 +257,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   const handleSubmitCode = async () => {
     if (!session?.user) {
-      alert("Please sign in to submit your solution and record your progress.");
+      setNotice("Please sign in to submit your solution and record your progress.");
       return;
     }
 
@@ -320,10 +322,10 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
       if (res.ok && data.roomCode) {
         router.push(`/duel/${data.roomCode}`);
       } else {
-        alert(data.error || "Failed to create Per-Problem Duel.");
+        setNotice(data.error || "Failed to create Per-Problem Duel.");
       }
     } catch {
-      alert("Network error creating Duel challenge. Please try again.");
+      setNotice("Network error creating Duel challenge. Please try again.");
     } finally {
       setIsCreatingDuel(false);
     }
@@ -331,6 +333,11 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] w-full bg-[#090A0F] text-[#F5F7FA]">
+      {notice && (
+        <div className="px-3 pt-3 lg:px-4">
+          <InlineNotice message={notice} onDismiss={() => setNotice(null)} />
+        </div>
+      )}
       {/* Mobile Tab Switcher (Visible on < 1024px) */}
       <div className="flex lg:hidden items-center justify-between border-b border-[#252936] bg-[#11131A] px-3 py-2">
         <div className="flex items-center gap-1">

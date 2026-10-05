@@ -25,6 +25,7 @@ import { CodeEditor } from "@/components/editor/CodeEditor";
 import { TerminalOutput, ExecutionResultData } from "@/components/editor/TerminalOutput";
 import { SUPPORTED_LANGUAGES, SupportedLanguageId } from "@/lib/constants";
 import { IDuelRoom, IQuestion, SubmissionStatus } from "@/types";
+import InlineNotice from "@/components/ui/InlineNotice";
 
 function getDraftKey(roomCode: string, userId: string, round: number, language: string): string {
   return `duel_draft:${roomCode}:${userId}:${round}:${language}`;
@@ -40,6 +41,7 @@ export default function DuelArenaPage() {
   const [problem, setProblem] = useState<IQuestion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Editor & Execution State
   const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguageId>("python");
@@ -214,7 +216,7 @@ export default function DuelArenaPage() {
   const handleRunCode = async () => {
     if (isRunning || isSubmitting) return;
     if (!session?.user) {
-      alert("Please sign in to run code.");
+      setNotice("Please sign in to run code.");
       return;
     }
 
@@ -349,7 +351,7 @@ export default function DuelArenaPage() {
   const handleSubmitDuel = async () => {
     if (!problem || isSubmitting || isRunning) return;
     if (!session?.user) {
-      alert("Please sign in to submit.");
+      setNotice("Please sign in to submit.");
       return;
     }
 
@@ -579,6 +581,13 @@ export default function DuelArenaPage() {
           <p className="text-[13px] text-white/70 mt-2 font-mono">
             Round 1 of 3 · {room.difficulty} Difficulty
           </p>
+        </div>
+      )}
+
+      {/* INLINE NOTICE (replaces native alert()) */}
+      {notice && (
+        <div className="px-4 pt-2 shrink-0">
+          <InlineNotice message={notice} onDismiss={() => setNotice(null)} />
         </div>
       )}
 
