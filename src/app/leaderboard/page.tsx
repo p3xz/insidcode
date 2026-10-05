@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Flame, Lock, Loader2, Swords, Trophy, Award } from "lucide-react";
 
@@ -247,7 +248,7 @@ export default function LeaderboardPage() {
                     className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
                   >
                     <div
-                      className="flex h-7 w-7 items-center justify-center shrink-0 overflow-hidden text-[11px] font-bold"
+                      className="relative flex h-7 w-7 items-center justify-center shrink-0 overflow-hidden text-[11px] font-bold"
                       style={{
                         border: "1px solid var(--border-strong)",
                         borderRadius: "3px",
@@ -256,8 +257,7 @@ export default function LeaderboardPage() {
                       }}
                     >
                       {u.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={u.image} alt={u.displayName} className="h-full w-full object-cover" />
+                        <Image src={u.image} alt={u.displayName} fill sizes="28px" className="object-cover" />
                       ) : (
                         u.username.slice(0, 2).toUpperCase()
                       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import {
   Calendar,
@@ -135,7 +136,7 @@ export default function UserProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div
-              className="flex h-16 w-16 items-center justify-center shrink-0 overflow-hidden text-xl font-bold"
+              className="relative flex h-16 w-16 items-center justify-center shrink-0 overflow-hidden text-xl font-bold"
               style={{
                 border: "1.5px solid var(--border-strong)",
                 borderRadius: "4px",
@@ -144,8 +145,7 @@ export default function UserProfilePage() {
               }}
             >
               {profile.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.image} alt={profile.displayName} className="h-full w-full object-cover" />
+                <Image src={profile.image} alt={profile.displayName} fill sizes="64px" className="object-cover" />
               ) : (
                 <span>{profile.username.slice(0, 2).toUpperCase()}</span>
               )}

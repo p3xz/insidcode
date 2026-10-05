@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Code2, Home } from "lucide-react";
 
 export default function NotFound() {
@@ -18,18 +19,20 @@ export default function NotFound() {
       >
         {/* 404 Visual */}
         <div
-          className="relative mx-auto w-full overflow-hidden"
+          className="relative mx-auto w-full h-48 sm:h-56 overflow-hidden"
           style={{
             border: "1px solid var(--border)",
             borderRadius: "3px",
             backgroundColor: "var(--bg-subtle)",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="https://cdn.dribbble.com/users/285475/screenshots/2083086/dribbble_1.gif"
             alt="404 Page Not Found"
-            className="w-full h-48 sm:h-56 object-cover object-center"
+            fill
+            sizes="100vw"
+            className="object-cover object-center"
+            unoptimized
           />
         </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { useSession, signOut } from "next-auth/react";
@@ -280,7 +281,7 @@ export function Navbar() {
                       setIsNotifOpen(false);
                     }}
                     aria-label="User menu"
-                    className="flex h-7 w-7 items-center justify-center text-[11px] font-bold overflow-hidden transition"
+                    className="relative flex h-7 w-7 items-center justify-center text-[11px] font-bold overflow-hidden transition"
                     style={{
                       border: "1.5px solid var(--border-strong)",
                       borderRadius: "3px",
@@ -291,11 +292,12 @@ export function Navbar() {
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border-strong)")}
                   >
                     {session.user.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={session.user.image}
                         alt={session.user.name || "Avatar"}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="28px"
+                        className="object-cover"
                       />
                     ) : (
                       <span>{session.user.username?.slice(0, 2).toUpperCase() || "U"}</span>
