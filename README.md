@@ -78,7 +78,7 @@ Fill in the environment variables:
 - `AUTH_SECRET`: Random 32-character secret string.
 - `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`: From Google Cloud Console.
 - `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`: From GitHub Developer Settings.
-- `ONLINECOMPILER_URL`: `https://emkc.org/api/v2/ONLINECOMPILER` or your self-hosted instance.
+- `ONLINECOMPILER_URL`: the base URL of an OnlineCompiler-compatible execution API (your self-hosted instance or a compatible provider).
 
 ### 3. Install Dependencies
 
