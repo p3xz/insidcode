@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { DuelRoom } from "@/models/DuelRoom";
 import { Question } from "@/models/Question";
@@ -34,6 +35,10 @@ export async function GET(
     }
 
     const currentUserId = user._id.toString();
+    const rateLimit = checkRateLimit(`duel_room_${currentUserId}`, { limit: 150, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const isPlayer1 = room.player1.userId === currentUserId;
     const isPlayer2 = room.player2?.userId === currentUserId;
 

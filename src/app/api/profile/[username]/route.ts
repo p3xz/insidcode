@@ -7,6 +7,7 @@ import { CURRICULUM_PHASES } from "@/lib/constants";
 import { auth } from "@/lib/auth";
 import { calculateDuelKd, calculateDuelWinRate } from "@/lib/duelStats";
 import { getDuelRank, resolveUserChampionPosition } from "@/lib/duelRanks";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET(
   req: NextRequest,
@@ -22,6 +23,10 @@ export async function GET(
 
     const session = await auth();
     const currentUserId = session?.user?.id;
+    const profileRateLimit = checkRateLimit(`profile_${currentUserId || req.headers.get("x-forwarded-for") || "profile_anon"}`, { limit: 120, windowMs: 60000 });
+    if (!profileRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     const targetUser = await User.findOne({
       usernameNormalized: username.toLowerCase(),

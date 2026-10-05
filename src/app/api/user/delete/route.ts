@@ -4,6 +4,7 @@ import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
 import { FriendRequest } from "@/models/FriendRequest";
 import { Notification } from "@/models/Notification";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,10 @@ export async function POST(req: NextRequest) {
     }
 
     const user = authResult.user;
+    const userDeleteRateLimit = checkRateLimit(`user_delete_${user._id.toString()}`, { limit: 5, windowMs: 60000 });
+    if (!userDeleteRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
 
     if (body.confirmation !== "DELETE") {

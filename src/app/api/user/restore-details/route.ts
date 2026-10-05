@@ -4,12 +4,18 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { Appeal } from "@/models/Appeal";
 import { formatIST } from "@/lib/dateUtils";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
+
+    const restoreDetailsRateLimit = checkRateLimit(`restore_details_${session.user.id}`, { limit: 60, windowMs: 60000 });
+    if (!restoreDetailsRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
     }
 
     await connectToDatabase();

@@ -6,6 +6,7 @@ import { ProfileUpdateSchema } from "@/lib/validations";
 import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
 import { AdminAction } from "@/models/AdminAction";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET() {
   try {
@@ -15,6 +16,10 @@ export async function GET() {
     }
 
     const user = authResult.user;
+    const settingsGetRateLimit = checkRateLimit(`settings_get_${user._id.toString()}`, { limit: 60, windowMs: 60000 });
+    if (!settingsGetRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     return NextResponse.json({
       user: {
@@ -49,6 +54,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     const user = authResult.user;
+    const settingsMutRateLimit = checkRateLimit(`settings_mut_${user._id.toString()}`, { limit: 30, windowMs: 60000 });
+    if (!settingsMutRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
 
     const parseResult = ProfileUpdateSchema.safeParse(body);

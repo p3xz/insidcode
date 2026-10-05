@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { requireAdminMutationUser } from "@/lib/security";
 import { SystemConfig } from "@/models/SystemConfig";
@@ -12,6 +13,18 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = adminCheck.admin;
+
+    const rateLimit = checkRateLimit(`admin_lb_${admin._id.toString()}`, {
+      limit: 30,
+      windowMs: 60000,
+    });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again shortly." },
+        { status: 429 }
+      );
+    }
+
     const { freeze } = await req.json();
 
     if (typeof freeze !== "boolean") {

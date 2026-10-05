@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { Notification } from "@/models/Notification";
 
 export async function GET() {
@@ -10,6 +11,11 @@ export async function GET() {
     }
 
     const userId = authResult.user._id.toString();
+
+    const rateLimit = checkRateLimit(`notif_${userId}`, { limit: 120, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     const notifications = await Notification.find({ userId })
       .sort({ createdAt: -1 })
@@ -44,6 +50,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     const userId = authResult.user._id.toString();
+    const rateLimit = checkRateLimit(`notif_mut_${userId}`, { limit: 60, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
 
     if (body.action === "mark_all_read") {

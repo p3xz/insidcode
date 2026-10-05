@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { requireAdminUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Appeal } from "@/models/Appeal";
@@ -8,6 +9,17 @@ export async function GET(req: NextRequest) {
     const authResult = await requireAdminUser();
     if (!authResult.admin) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
+    const rateLimit = checkRateLimit(`admin_appeals_get_${authResult.admin._id.toString()}`, {
+      limit: 120,
+      windowMs: 60000,
+    });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again shortly." },
+        { status: 429 }
+      );
     }
 
     await connectToDatabase();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { AVAILABLE_TITLES, getUnlockedTitles, isTitleUnlocked } from "@/lib/titles";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET() {
   try {
@@ -14,6 +15,10 @@ export async function GET() {
     }
 
     const user = authResult.user;
+    const titlesGetRateLimit = checkRateLimit(`titles_get_${user._id.toString()}`, { limit: 60, windowMs: 60000 });
+    if (!titlesGetRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     await connectToDatabase();
 
     const unlockedSet = new Set(await getUnlockedTitles(user));
@@ -45,6 +50,10 @@ export async function PATCH(req: NextRequest) {
 
 
     const user = authResult.user;
+    const titlesMutRateLimit = checkRateLimit(`titles_mut_${user._id.toString()}`, { limit: 30, windowMs: 60000 });
+    if (!titlesMutRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
     const title = body.title === null ? null : typeof body.title === "string" ? body.title.trim() : undefined;
 

@@ -6,6 +6,7 @@ import { AdminAction } from "@/models/AdminAction";
 import { Appeal } from "@/models/Appeal";
 import { ISuspensionDetails } from "@/types";
 import { formatIST } from "@/lib/dateUtils";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 function sanitizeReason(rawReason?: string): string {
   if (!rawReason || typeof rawReason !== "string") {
@@ -54,6 +55,11 @@ export async function GET() {
         { error: "Unauthorized. Please sign in." },
         { status: 401 }
       );
+    }
+
+    const suspDetailsRateLimit = checkRateLimit(`susp_details_${session.user.id}`, { limit: 60, windowMs: 60000 });
+    if (!suspDetailsRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
     }
 
     await connectToDatabase();

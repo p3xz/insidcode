@@ -4,6 +4,7 @@ import { Question } from "@/models/Question";
 import { auth } from "@/lib/auth";
 import { User } from "@/models/User";
 import { CURRICULUM_PHASES, LIMITS } from "@/lib/constants";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,6 +23,10 @@ export async function GET(req: NextRequest) {
 
     // Get current user solve list if logged in
     const session = await auth();
+    const problemsRateLimit = checkRateLimit(`problems_${session?.user?.id || req.headers.get("x-forwarded-for") || "problems_anon"}`, { limit: 120, windowMs: 60000 });
+    if (!problemsRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     let userSolvedProblems: string[] = [];
     let userAttemptedProblems: string[] = [];
 

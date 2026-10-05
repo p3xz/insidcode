@@ -9,6 +9,7 @@ import {
   CURRENT_COOKIE_POLICY_VERSION,
 } from "@/config/legal";
 import { z } from "zod";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const RestoreConsentSchema = z.object({
   consent: z.literal(true, {
@@ -21,6 +22,11 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
+
+    const restoreConsentRateLimit = checkRateLimit(`restore_consent_${session.user.id}`, { limit: 20, windowMs: 60000 });
+    if (!restoreConsentRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
     }
 
     await connectToDatabase();

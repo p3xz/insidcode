@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Execution } from "@/models/Execution";
 import { getQueuePosition, tryClaimAndExecute, cleanupStaleExecutions } from "@/lib/executionQueue";
@@ -15,6 +16,10 @@ export async function GET(req: NextRequest) {
     }
 
     const user = authResult.user;
+    const rateLimit = checkRateLimit(`exec_status_${user._id.toString()}`, { limit: 400, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const { searchParams } = new URL(req.url);
     const executionId = searchParams.get("id");
 

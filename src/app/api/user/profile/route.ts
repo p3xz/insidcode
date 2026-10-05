@@ -6,6 +6,7 @@ import { UsernameSchema, DisplayNameSchema } from "@/lib/validations";
 import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
 import { AdminAction } from "@/models/AdminAction";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { z } from "zod";
 
 const ProfilePatchSchema = z.object({
@@ -21,6 +22,10 @@ export async function GET() {
     }
 
     const user = authResult.user;
+    const profileSelfRateLimit = checkRateLimit(`profile_self_${user._id.toString()}`, { limit: 60, windowMs: 60000 });
+    if (!profileSelfRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     return NextResponse.json({
       user: {
@@ -51,6 +56,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     const user = authResult.user;
+    const profileEditRateLimit = checkRateLimit(`profile_edit_${user._id.toString()}`, { limit: 30, windowMs: 60000 });
+    if (!profileEditRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
 
     const parseResult = ProfilePatchSchema.safeParse(body);

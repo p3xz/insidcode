@@ -7,6 +7,7 @@ import {
   CURRENT_COOKIE_POLICY_VERSION,
   checkUserConsentStatus,
 } from "@/config/legal";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 /**
  * POST /api/user/legal-consent
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
     }
 
     const user = authResult.user;
+    const legalConsentPostRateLimit = checkRateLimit(`legal_consent_${user._id.toString()}`, { limit: 20, windowMs: 60000 });
+    if (!legalConsentPostRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
 
     const now = new Date();
@@ -143,6 +148,10 @@ export async function GET() {
     }
 
     const user = authResult.user;
+    const legalConsentGetRateLimit = checkRateLimit(`legal_status_${user._id.toString()}`, { limit: 60, windowMs: 60000 });
+    if (!legalConsentGetRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const consentStatus = checkUserConsentStatus(user);
 
     return NextResponse.json({

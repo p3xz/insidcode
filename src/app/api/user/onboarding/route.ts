@@ -11,6 +11,7 @@ import {
 import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
 import { AdminAction } from "@/models/AdminAction";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET() {
   try {
@@ -20,6 +21,10 @@ export async function GET() {
     }
 
     const user = authResult.user;
+    const onboardingGetRateLimit = checkRateLimit(`onboarding_get_${user._id.toString()}`, { limit: 60, windowMs: 60000 });
+    if (!onboardingGetRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     return NextResponse.json({
       user: {
@@ -47,6 +52,10 @@ export async function POST(req: NextRequest) {
     }
 
     const user = authResult.user;
+    const onboardingPostRateLimit = checkRateLimit(`onboarding_post_${user._id.toString()}`, { limit: 20, windowMs: 60000 });
+    if (!onboardingPostRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
 
     // Server-side strict consent verification

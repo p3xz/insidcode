@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { auth } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { LIMITS } from "@/lib/constants";
 
 export async function GET(req: NextRequest) {
@@ -9,6 +10,10 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
     const session = await auth();
     const currentUserId = session?.user?.id;
+    const rateLimit = checkRateLimit(`friend_search_${session?.user?.id || req.headers.get("x-forwarded-for") || "friend_search_anon"}`, { limit: 60, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     const { searchParams } = new URL(req.url);
     const query = (searchParams.get("q") || "").trim().slice(0, LIMITS.SEARCH_MAX);

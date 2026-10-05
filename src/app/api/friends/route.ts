@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { FriendRequest } from "@/models/FriendRequest";
 import { User } from "@/models/User";
 
@@ -11,6 +12,10 @@ export async function GET() {
     }
 
     const currentUserId = authResult.user._id.toString();
+    const rateLimit = checkRateLimit(`friends_list_${currentUserId}`, { limit: 60, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     // Accepted friendships
     const friendships = await FriendRequest.find({

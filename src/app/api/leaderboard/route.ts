@@ -4,6 +4,7 @@ import { User } from "@/models/User";
 import { FriendRequest } from "@/models/FriendRequest";
 import { SystemConfig } from "@/models/SystemConfig";
 import { auth } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,6 +14,10 @@ export async function GET(req: NextRequest) {
     const tab = searchParams.get("tab") || searchParams.get("type") || "global"; // "global", "friends", "duel"
     const session = await auth();
     const currentUserId = session?.user?.id;
+    const rateLimit = checkRateLimit(`leaderboard_${currentUserId || req.headers.get("x-forwarded-for") || "leaderboard_anon"}`, { limit: 60, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
 
     const config = await SystemConfig.findOne({ key: "main" }).lean();
     const isFrozen = config?.leaderboardFrozen || false;

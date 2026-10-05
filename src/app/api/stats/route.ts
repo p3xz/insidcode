@@ -6,6 +6,7 @@ import { Submission } from "@/models/Submission";
 import { CURRICULUM_PHASES } from "@/lib/constants";
 import { calculateDuelKd, calculateDuelWinRate } from "@/lib/duelStats";
 import { getDuelRank, resolveUserChampionPosition } from "@/lib/duelRanks";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET() {
   try {
@@ -15,6 +16,10 @@ export async function GET() {
     }
 
     const user = authResult.user;
+    const statsRateLimit = checkRateLimit(`stats_${user._id.toString()}`, { limit: 60, windowMs: 60000 });
+    if (!statsRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     await connectToDatabase();
 
     const solvedIds = user.solvedProblems || [];

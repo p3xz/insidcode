@@ -4,6 +4,7 @@ import { Question } from "@/models/Question";
 import { auth } from "@/lib/auth";
 import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET(
   req: NextRequest,
@@ -30,6 +31,10 @@ export async function GET(
     }
 
     const session = await auth();
+    const problemRateLimit = checkRateLimit(`problem_${session?.user?.id || req.headers.get("x-forwarded-for") || "problem_anon"}`, { limit: 120, windowMs: 60000 });
+    if (!problemRateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     let isSolved = false;
     let isAttempted = false;
     let lastSubmission = null;

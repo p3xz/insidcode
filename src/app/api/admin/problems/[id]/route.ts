@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { requireAdminUser } from "@/lib/auth";
 import { requireAdminMutationUser } from "@/lib/security";
@@ -13,6 +14,17 @@ export async function GET(
     const adminCheck = await requireAdminUser();
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
+    const rateLimit = checkRateLimit(`admin_prob_get_${adminCheck.admin._id.toString()}`, {
+      limit: 120,
+      windowMs: 60000,
+    });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again shortly." },
+        { status: 429 }
+      );
     }
 
     await connectToDatabase();
@@ -41,6 +53,17 @@ export async function PUT(
     const adminCheck = await requireAdminMutationUser(req, "PROBLEM_EDIT");
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
+    const rateLimit = checkRateLimit(`admin_prob_put_${adminCheck.admin._id.toString()}`, {
+      limit: 30,
+      windowMs: 60000,
+    });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again shortly." },
+        { status: 429 }
+      );
     }
 
     const admin = adminCheck.admin;
@@ -117,6 +140,17 @@ export async function DELETE(
     const adminCheck = await requireAdminMutationUser(req, "PROBLEM_DELETE");
     if (!adminCheck.admin) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
+    const rateLimit = checkRateLimit(`admin_prob_del_${adminCheck.admin._id.toString()}`, {
+      limit: 20,
+      windowMs: 60000,
+    });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again shortly." },
+        { status: 429 }
+      );
     }
 
     const admin = adminCheck.admin;

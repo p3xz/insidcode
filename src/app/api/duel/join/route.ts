@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { DuelRoom } from "@/models/DuelRoom";
 
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest) {
     }
 
     const user = authResult.user;
+    const rateLimit = checkRateLimit(`duel_join_${user._id.toString()}`, { limit: 20, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
     const body = await req.json();
     const { roomCode } = body;
 
