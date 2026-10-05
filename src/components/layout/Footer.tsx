@@ -25,9 +25,9 @@ const aboutLinks = [
 ];
 
 const creatorLinks = [
-  { href: "https://namishhh.vercel.app/", label: "Portfolio", external: true },
+  { href: "https://namishhh.vercel.app", label: "Portfolio", external: true },
   { href: "https://github.com/p3xz", label: "GitHub", external: true },
-  { href: "https://www.linkedin.com/in/namish-yadav-639769408/", label: "LinkedIn", external: true },
+  { href: "https://linkedin.com/in/namish-yadav-639769408", label: "LinkedIn", external: true },
   { href: "https://instagram.com/nam7sh", label: "Instagram", external: true },
 ];
 
