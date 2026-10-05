@@ -105,12 +105,12 @@ export const CURRICULUM_PLACEMENT: QuestionSeedItem[] = [
     { input: "6\n3 1 -2 -5 2 -4", expectedOutput: "3 -2 1 -5 2 -4" }
   ]),
 
-  createSeedQuestion(301, "Implement Run-Length Encoding on a string (e.g., \"aaabbc\" → \"a3b2c1\").", 6, "Medium", "Given string S, perform Run-Length Encoding (e.g. 'aaabbc' -> 'a3b2c1').", "aaabbc", "a3b2c1", [
+  createSeedQuestion(301, "Implement Run-Length Encoding on a string (e.g., \"aaabbc\" becomes \"a3b2c1\").", 6, "Medium", "Given string S, perform Run-Length Encoding (e.g. 'aaabbc' -> 'a3b2c1').", "aaabbc", "a3b2c1", [
     { input: "aaabbc", expectedOutput: "a3b2c1" },
     { input: "abcd", expectedOutput: "a1b1c1d1" }
   ]),
 
-  createSeedQuestion(302, "Decode a Run-Length Encoded string back to original form (e.g., \"a3b2c1\" → \"aaabbc\").", 6, "Hard", "Given run-length encoded string (e.g. 'a3b2c1'), decode back to original full string.", "a3b2c1", "aaabbc", [
+  createSeedQuestion(302, "Decode a Run-Length Encoded string back to original form (e.g., \"a3b2c1\" becomes \"aaabbc\").", 6, "Hard", "Given run-length encoded string (e.g. 'a3b2c1'), decode back to original full string.", "a3b2c1", "aaabbc", [
     { input: "a3b2c1", expectedOutput: "aaabbc" }
   ]),
 

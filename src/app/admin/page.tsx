@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-import InlineNotice from "@/components/ui/InlineNotice";
   Users,
   Code2,
   Send,
@@ -16,6 +15,7 @@ import InlineNotice from "@/components/ui/InlineNotice";
   Loader2,
   FileText,
 } from "lucide-react";
+import InlineNotice from "@/components/ui/InlineNotice";
 
 interface AdminStats {
   totalUsers: number;

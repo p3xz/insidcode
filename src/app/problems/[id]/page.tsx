@@ -35,8 +35,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const phaseLabel = PHASE_LABELS[problem.phase] ?? `Phase ${problem.phase}`;
   const canonicalUrl = `${BASE_URL}/problems/${problem.slug}`;
 
-  const title = `${problem.title} — ${problem.difficulty} Programming Problem`;
-  const description = `Practice "${problem.title}" on InsidCode. A ${problem.difficulty.toLowerCase()} ${phaseLabel.toLowerCase()} challenge — solve it in Python, JavaScript, C, C++, or Java with instant code execution and server-verified tests.`;
+  const title = `${problem.title}: ${problem.difficulty} Programming Problem`;
+  const description = `Practice "${problem.title}" on InsidCode. A ${problem.difficulty.toLowerCase()} ${phaseLabel.toLowerCase()} challenge. Solve it in Python, JavaScript, C, C++, or Java with instant code execution and server-verified tests.`;
 
   return {
     title,
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: "/og-image.jpg",
           width: 1200,
           height: 630,
-          alt: `InsidCode — ${problem.title}`,
+          alt: `InsidCode: ${problem.title}`,
         },
       ],
     },
@@ -160,7 +160,7 @@ export default async function SingleProblemPage({ params }: Props) {
           <header>
             <h1>{problem.title}</h1>
             <p>Difficulty: {problem.difficulty}</p>
-            <p>Phase: {problem.phase} — {phaseLabel}</p>
+            <p>Phase: {problem.phase} · {phaseLabel}</p>
             <p>XP Reward: {problem.xp} XP</p>
             {problem.tags.length > 0 && (
               <p>Topics: {problem.tags.join(", ")}</p>

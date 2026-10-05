@@ -211,7 +211,7 @@ export default function DuelSpectatorPage() {
             href="/duel"
             className="px-4 py-2 text-xs font-semibold text-[#00F0FF] bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/30 rounded transition"
           >
-            ← Back to Duel Hub
+            Back to Duel Hub
           </Link>
         </div>
       </div>
@@ -429,7 +429,7 @@ export default function DuelSpectatorPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-[#F5F7FA]">
-              {winnerUser ? `🏆 @${winnerUser.username} Won the Duel!` : "Match Ended in a Draw!"}
+              {winnerUser ? `@${winnerUser.username} Won the Duel!` : "Match Ended in a Draw!"}
             </h2>
             <p className="text-xs text-[#8B93A7] mt-1 font-mono">
               Final Score: {room.player1Score} - {room.player2Score} ({room.rounds} Rounds)
@@ -474,7 +474,7 @@ export default function DuelSpectatorPage() {
                 </div>
                 <p className="text-xs text-[#8B93A7] truncate">{rd.problemTitle}</p>
                 <p className="font-mono text-[11px] text-[#00F0FF] mt-1">
-                  {rd.finishedAt ? `Winner: @${roundWinnerUser}` : isCurrent ? "⚡ Live Now" : "Upcoming"}
+                  {rd.finishedAt ? `Winner: @${roundWinnerUser}` : isCurrent ? "Live Now" : "Upcoming"}
                 </p>
               </div>
             );

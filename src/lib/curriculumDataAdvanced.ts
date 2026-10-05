@@ -75,11 +75,11 @@ export const CURRICULUM_ADVANCED: QuestionSeedItem[] = [
     { input: "3", expectedOutput: "*****\n ***\n  *" }
   ]),
 
-  createSeedQuestion(238, "Print the reverse of a number (123 → 321).", 6, "Easy", "Given N, print a rhombus pattern of stars of size N.", "3", "  ***\n ***\n***", [
+  createSeedQuestion(238, "Print the reverse of a number (123 becomes 321).", 6, "Easy", "Given N, print a rhombus pattern of stars of size N.", "3", "  ***\n ***\n***", [
     { input: "3", expectedOutput: "  ***\n ***\n***" }
   ]),
 
-  createSeedQuestion(239, "Check if a number is palindrome (121 → true).", 6, "Easy", "Given odd integer N, print an X cross pattern of stars in an N x N grid.", "5", "*   *\n * *\n  *\n * *\n*   *", [
+  createSeedQuestion(239, "Check if a number is palindrome (121 is one).", 6, "Easy", "Given odd integer N, print an X cross pattern of stars in an N x N grid.", "5", "*   *\n * *\n  *\n * *\n*   *", [
     { input: "5", expectedOutput: "*   *\n * *\n  *\n * *\n*   *" },
     { input: "3", expectedOutput: "* *\n *\n* *" }
   ]),

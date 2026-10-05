@@ -21,13 +21,13 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
       "Very Easy Duel mode for beginners, Per-Problem Duels from any problem page, Duel Ratio replacing K/D, cookie consent banner with granular preferences, centralized legal versioning, and a refreshed Privacy Policy and Terms of Service.",
     tag: "Latest",
     added: [
-      "Very Easy Duel mode — a beginner-friendly difficulty tier covering variables, arithmetic, basic I/O, simple conditionals, and counting. Fully integrated with the existing Elo & Duel Points engine.",
-      "Per-Problem Duel — a DUEL action button on individual problem pages that creates a locked 1-round Duel match using that specific problem. Problem identity and difficulty are derived server-side; clients cannot forge the difficulty.",
-      "Cookie Consent banner — non-intrusive, accessible UI with Accept All, Reject Optional, and Manage Preferences actions. Preferences are persisted to localStorage (versioned) and synced server-side for authenticated users.",
-      "Cookie Preferences Modal — granular toggles for Necessary (always on), Functional, and Analytics cookie categories with ARIA switch roles.",
+      "Very Easy Duel mode: a beginner-friendly difficulty tier covering variables, arithmetic, basic I/O, simple conditionals, and counting. Fully integrated with the existing Elo & Duel Points engine.",
+      "Per-Problem Duel: a DUEL action button on individual problem pages that creates a locked 1-round Duel match using that specific problem. Problem identity and difficulty are derived server-side; clients cannot forge the difficulty.",
+      "Cookie Consent banner: non-intrusive, accessible UI with Accept All, Reject Optional, and Manage Preferences actions. Preferences are persisted to localStorage (versioned) and synced server-side for authenticated users.",
+      "Cookie Preferences Modal: granular toggles for Necessary (always on), Functional, and Analytics cookie categories with ARIA switch roles.",
       "Privacy Choices button in the site footer, allowing users to reopen the Cookie Preferences Modal at any time.",
-      "POST /api/user/legal-consent — server-authoritative endpoint for recording cookie consent preferences and/or full Privacy Policy + Terms of Service re-consent.",
-      "GET /api/user/legal-consent — endpoint returning the user's current consent status against active legal document versions.",
+      "POST /api/user/legal-consent: server-authoritative endpoint for recording cookie consent preferences and/or full Privacy Policy + Terms of Service re-consent.",
+      "GET /api/user/legal-consent: endpoint returning the user's current consent status against active legal document versions.",
       "Centralized legal version configuration (src/config/legal.ts) with CURRENT_PRIVACY_POLICY_VERSION, CURRENT_TERMS_VERSION, CURRENT_COOKIE_POLICY_VERSION constants and checkUserConsentStatus helper.",
     ],
     changed: [
@@ -37,7 +37,7 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
       "Duel difficulty enum extended to include 'Very Easy' across Question, DuelRoom, and DuelRound models.",
     ],
     security: [
-      "Per-Problem Duel difficulty derived exclusively from the server-fetched problem record — client-supplied difficulty is ignored to prevent match difficulty forgery.",
+      "Per-Problem Duel difficulty derived exclusively from the server-fetched problem record: client-supplied difficulty is ignored to prevent match difficulty forgery.",
       "Cookie consent version validated server-side on every POST to /api/user/legal-consent; version mismatches return 409 Conflict.",
     ],
     database: [
@@ -135,7 +135,7 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
     releaseDate: "September 1, 2026",
     title: "Initial Platform Release",
     summary:
-      "The foundational launch of InsidCode — a disciplined logic-first coding platform designed to master algorithmic thinking before jumping into complex DSA.",
+      "The foundational launch of InsidCode: a disciplined logic-first coding platform designed to master algorithmic thinking before jumping into complex DSA.",
     tag: "Major",
     added: [
       "330+ structured coding challenges categorized into Logic, Arrays, Recursion, and Algorithms.",

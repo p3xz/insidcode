@@ -15,7 +15,7 @@ export function calculateDuelRatio(wins: number = 0, losses: number = 0): string
   const l = Math.max(0, losses || 0);
 
   if (w === 0 && l === 0) {
-    return "—";
+    return "-";
   }
   if (l === 0) {
     return "∞";

@@ -130,10 +130,10 @@ export default function CreditsPage() {
             style={{ borderTop: "1px solid var(--border)" }}
           >
             {[
-              { label: "Portfolio →", href: "https://namishhh.vercel.app/" },
-              { label: "LinkedIn →", href: "https://www.linkedin.com/in/namish-yadav-639769408/" },
-              { label: "GitHub →", href: "https://github.com/p3xz" },
-              { label: "Instagram →", href: "https://instagram.com/nam7sh" },
+              { label: "Portfolio", href: "https://namishhh.vercel.app/" },
+              { label: "LinkedIn", href: "https://www.linkedin.com/in/namish-yadav-639769408/" },
+              { label: "GitHub", href: "https://github.com/p3xz" },
+              { label: "Instagram", href: "https://instagram.com/nam7sh" },
             ].map((link) => (
               <a
                 key={link.label}

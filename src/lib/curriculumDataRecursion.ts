@@ -91,7 +91,7 @@ export const CURRICULUM_RECURSION: QuestionSeedItem[] = [
     { input: "1", expectedOutput: "1" }
   ]),
 
-  createSeedQuestion(197, "Print digits of a number in words recursively (e.g., 123 → \"one two three\").", 3, "Hard", "Given positive integer N, print its digits in words separated by space recursively (e.g., 123 -> 'one two three').", "123", "one two three", [
+  createSeedQuestion(197, "Print digits of a number in words recursively (e.g., 123 becomes \"one two three\").", 3, "Hard", "Given positive integer N, print its digits in words separated by space recursively (e.g., 123 -> 'one two three').", "123", "one two three", [
     { input: "123", expectedOutput: "one two three" },
     { input: "50", expectedOutput: "five zero" }
   ]),
@@ -180,7 +180,7 @@ export const CURRICULUM_RECURSION: QuestionSeedItem[] = [
     { input: "hello world", expectedOutput: "helloworld" }
   ]),
 
-  createSeedQuestion(215, "Replace all occurrences of a character (say 'a' → 'x') recursively.", 3, "Hard", "Given string S, target char C1, and replacement char C2 on separate lines, replace all C1 with C2 recursively.", "banana\na\nx", "bxnxnx", [
+  createSeedQuestion(215, "Replace all occurrences of a character (say 'a' to get 'x') recursively.", 3, "Hard", "Given string S, target char C1, and replacement char C2 on separate lines, replace all C1 with C2 recursively.", "banana\na\nx", "bxnxnx", [
     { input: "banana\na\nx", expectedOutput: "bxnxnx" }
   ]),
 

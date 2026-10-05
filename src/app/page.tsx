@@ -463,9 +463,6 @@ export default function LandingPage() {
                       <span className="mono text-[11px] font-medium" style={{ color: "var(--fg-dimmed)" }}>
                         {metric?.problems}
                       </span>
-                      <span className="text-[11px] font-bold group-hover:translate-x-0.5 transition-transform" style={{ color: "var(--accent)" }}>
-                        →
-                      </span>
                     </div>
                   </Link>
                 );

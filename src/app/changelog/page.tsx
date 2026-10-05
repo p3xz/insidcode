@@ -170,7 +170,7 @@ function ReleaseSection({
             icon={ShieldCheck}
             items={release.security}
             color="var(--danger)"
-            prefix="🔒"
+            prefix="!"
           />
         )}
 
@@ -181,7 +181,7 @@ function ReleaseSection({
             icon={Database}
             items={release.database}
             color="#8b5cf6"
-            prefix="⛁"
+            prefix="="
           />
         )}
 

@@ -384,7 +384,7 @@ export default function UserStatsPage() {
                 className="text-[22px] font-bold mono"
                 style={{ color: (stats.duelsWon || 0) >= (stats.duelsLost || 0) && (stats.duelsWon || 0) > 0 ? "var(--accent)" : "var(--fg)" }}
               >
-                {stats.duelRatio ?? stats.duelKd ?? (stats.duelsWon && !stats.duelsLost ? "∞" : !stats.duelsWon && !stats.duelsLost ? "—" : ((stats.duelsWon || 0) / (stats.duelsLost || 1)).toFixed(2))}
+                {stats.duelRatio ?? stats.duelKd ?? (stats.duelsWon && !stats.duelsLost ? "∞" : !stats.duelsWon && !stats.duelsLost ? "-" : ((stats.duelsWon || 0) / (stats.duelsLost || 1)).toFixed(2))}
               </span>
             </div>
             <p className="text-[11px] mono mt-1" style={{ color: "var(--fg-dimmed)" }}>Wins / Losses</p>

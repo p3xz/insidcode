@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
@@ -25,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://insidcode.vercel.app"),
   title: {
-    default: "InsidCode — Programming Logic Practice Before DSA",
+    default: "InsidCode: Programming Logic Practice Before DSA",
     template: "%s | InsidCode",
   },
   description:
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "InsidCode — Programming Logic Practice Before DSA",
+    title: "InsidCode: Programming Logic Practice Before DSA",
     description:
       "Practice programming logic with beginner-friendly coding problems, instant code execution, submissions, XP, streaks, and coding Duels. Build strong fundamentals before DSA.",
     url: "https://insidcode.vercel.app",
@@ -46,13 +46,13 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "InsidCode — Programming Logic Practice Before DSA",
+        alt: "InsidCode: Programming Logic Practice Before DSA",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "InsidCode — Programming Logic Practice Before DSA",
+    title: "InsidCode: Programming Logic Practice Before DSA",
     description:
       "Practice programming logic with beginner-friendly coding problems, instant code execution, submissions, XP, streaks, and coding Duels. Build strong fundamentals before DSA.",
     creator: "@p3xz",
@@ -73,6 +73,13 @@ export const metadata: Metadata = {
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#080910" },
+    { media: "(prefers-color-scheme: light)", color: "#F5F6F8" },
+  ],
 };
 
 export default function RootLayout({
@@ -100,7 +107,7 @@ export default function RootLayout({
                   name: "InsidCode",
                   url: "https://insidcode.vercel.app",
                   description:
-                    "A programming logic practice platform with 330+ structured challenges, isolated code execution, XP, streaks, and 1v1 Duels — designed to build strong fundamentals before DSA.",
+                    "A programming logic practice platform with 330+ structured challenges, isolated code execution, XP, streaks, and 1v1 Duels, designed to build strong fundamentals before DSA.",
                   potentialAction: {
                     "@type": "SearchAction",
                     target: {
@@ -119,7 +126,7 @@ export default function RootLayout({
                   applicationCategory: "EducationalApplication",
                   operatingSystem: "Web",
                   description:
-                    "InsidCode is a web-based programming logic practice platform. It offers 330+ structured coding challenges across six progressive phases — covering conditionals, loops, recursion, arrays, strings, and placement OA patterns — with isolated sandboxed code execution, server-verified hidden tests, XP, practice streaks, and real-time 1v1 coding Duels.",
+                    "InsidCode is a web-based programming logic practice platform. It offers 330+ structured coding challenges across six progressive phases, covering conditionals, loops, recursion, arrays, strings, and placement OA patterns, with isolated sandboxed code execution, server-verified hidden tests, XP, practice streaks, and real-time 1v1 coding Duels.",
                   offers: {
                     "@type": "Offer",
                     price: "0",

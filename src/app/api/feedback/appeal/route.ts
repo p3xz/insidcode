@@ -212,14 +212,14 @@ export async function POST(req: NextRequest) {
 
     if (resendApiKey) {
       try {
-        const emailSubject = `[InsidCode Appeal] Suspension Appeal — @${username}`;
+        const emailSubject = `[InsidCode Appeal] Suspension Appeal: @${username}`;
         const SENDER = "InsidCode Appeal <onboarding@resend.dev>";
 
         const htmlBody = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Suspension Appeal</title></head>
 <body style="font-family:sans-serif;padding:20px;background:#f4f4f5;">
   <div style="max-width:600px;margin:0 auto;background:#fff;padding:24px;border-radius:6px;border:1px solid #e4e4e7;">
-    <h2 style="margin:0 0 16px;color:#ef4444;">Suspension Appeal — @${escapeHtml(username)}</h2>
+    <h2 style="margin:0 0 16px;color:#ef4444;">Suspension Appeal: @${escapeHtml(username)}</h2>
     <p><strong>Appeal ID:</strong> ${newAppeal._id.toString()}</p>
     <p><strong>Status:</strong> PENDING</p>
     <p><strong>Username:</strong> @${escapeHtml(username)}</p>

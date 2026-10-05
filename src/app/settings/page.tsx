@@ -509,7 +509,7 @@ export default function SettingsPage() {
                   value={t.title}
                   disabled={!t.unlocked}
                 >
-                  {t.title} {t.unlocked ? "✓" : `(Locked: ${t.description})`}
+                  {t.title} {t.unlocked ? "(Unlocked)" : `(Locked: ${t.description})`}
                 </option>
               ))}
             </select>

@@ -9,6 +9,7 @@ import {
   XCircle,
   Clock,
   Loader2,
+  X,
 } from "lucide-react";
 import { formatIST, formatISTDateOnly } from "@/lib/dateUtils";
 
@@ -207,7 +208,7 @@ export default function AdminAppealsPage() {
                       {formatISTDateOnly(appeal.createdAt)}
                     </td>
                     <td className="px-4 py-3 mono text-[11px] text-[#8B93A7]">
-                      {appeal.reviewedAt ? formatISTDateOnly(appeal.reviewedAt) : "—"}
+                      {appeal.reviewedAt ? formatISTDateOnly(appeal.reviewedAt) : "-"}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
@@ -235,15 +236,16 @@ export default function AdminAppealsPage() {
                   <span className="mono text-xs text-[#8B93A7]">ID: {selectedAppeal.id}</span>
                 </div>
                 <h2 className="text-lg font-bold text-[#F5F7FA] mt-1">
-                  Appeal Review — @{selectedAppeal.username}
+                  Appeal Review: @{selectedAppeal.username}
                 </h2>
                 <p className="text-xs text-[#8B93A7]">{selectedAppeal.email}</p>
               </div>
               <button
                 onClick={() => setSelectedAppeal(null)}
+                aria-label="Close appeal details"
                 className="text-[#8B93A7] hover:text-[#F5F7FA] text-sm p-1"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 

@@ -5,21 +5,21 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About InsidCode",
   description:
-    "InsidCode is a programming logic practice platform built to help learners master foundational coding skills — conditionals, loops, recursion, arrays, and strings — before progressing into data structures and algorithms.",
+    "InsidCode is a programming logic practice platform built to help learners master foundational coding skills: conditionals, loops, recursion, arrays, and strings, before progressing into data structures and algorithms.",
   alternates: {
     canonical: "/about",
   },
   openGraph: {
     title: "About InsidCode",
     description:
-      "InsidCode is a programming logic practice platform built to help learners master foundational coding skills — conditionals, loops, recursion, arrays, and strings — before progressing into data structures and algorithms.",
+      "InsidCode is a programming logic practice platform built to help learners master foundational coding skills: conditionals, loops, recursion, arrays, and strings, before progressing into data structures and algorithms.",
     url: "https://insidcode.vercel.app/about",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "InsidCode — Programming Logic Practice Before DSA",
+        alt: "InsidCode: Programming Logic Practice Before DSA",
       },
     ],
   },
@@ -36,7 +36,7 @@ const PHASES = [
     id: 2,
     title: "Looping and Patterns",
     description:
-      "Master iterative logic — for loops, while loops, nested loops, and pattern printing.",
+      "Master iterative logic: for loops, while loops, nested loops, and pattern printing.",
   },
   {
     id: 3,
@@ -60,7 +60,7 @@ const PHASES = [
     id: 6,
     title: "Mixed Logical Challenges",
     description:
-      "Apply everything — bitwise logic, two-pointer patterns, number theory, and placement OA-style problems.",
+      "Apply everything: bitwise logic, two-pointer patterns, number theory, and placement OA-style problems.",
   },
 ];
 
@@ -122,14 +122,14 @@ export default function AboutPage() {
           <p>
             Most beginners encounter complex data structures before they have fully internalized the
             logic patterns that make those structures work. InsidCode addresses this by providing a
-            purely logic-focused curriculum — starting from simple conditionals and building
+            purely logic-focused curriculum, starting from simple conditionals and building
             progressively through loops, recursion, arrays, and strings before reaching more advanced
             OA-style challenges.
           </p>
           <p>
             Each problem on InsidCode has a clear problem statement, input/output format, worked
             examples, and constraints. When you submit a solution, it is evaluated against a set of
-            hidden test cases on the server — you only see whether each test passed or failed, not
+            hidden test cases on the server: you only see whether each test passed or failed, not
             the test inputs themselves. This prevents gaming the system and simulates real assessment
             conditions.
           </p>
@@ -200,24 +200,24 @@ export default function AboutPage() {
           style={{ color: "var(--fg-muted)" }}
         >
           <p>
-            <strong style={{ color: "var(--fg)" }}>Run</strong> — Execute your code against a
+            <strong style={{ color: "var(--fg)" }}>Run</strong>: Execute your code against a
             custom test input in an isolated sandbox. The runner uses strict 3-second wall-clock
             timeouts and non-root process boundaries. You see stdout/stderr immediately.
           </p>
           <p>
-            <strong style={{ color: "var(--fg)" }}>Submit</strong> — Evaluate your solution against
+            <strong style={{ color: "var(--fg)" }}>Submit</strong>: Evaluate your solution against
             the hidden test suite on the server. Results show which tests passed and which failed,
             but hidden test inputs are never exposed to the client.
           </p>
           <p>
-            <strong style={{ color: "var(--fg)" }}>XP and Streaks</strong> — Earn XP for your first
+            <strong style={{ color: "var(--fg)" }}>XP and Streaks</strong>: Earn XP for your first
             accepted submission on each problem. Maintain a daily practice streak to track
             consistency. XP and streaks are tracked per account.
           </p>
           <p>
-            <strong style={{ color: "var(--fg)" }}>1v1 Duels</strong> — Challenge another user to a
+            <strong style={{ color: "var(--fg)" }}>1v1 Duels</strong>: Challenge another user to a
             real-time best-of-three coding Duel. Both players receive the same problem. The first to
-            submit an accepted solution wins the round. Duel sessions are ephemeral — they expire
+            submit an accepted solution wins the round. Duel sessions are ephemeral; they expire
             and are not permanently public.
           </p>
         </div>

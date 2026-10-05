@@ -198,17 +198,17 @@ export const CURRICULUM_STRINGS: QuestionSeedItem[] = [
     { input: "hello", expectedOutput: "helo" }
   ]),
 
-  createSeedQuestion(168, "Remove consecutive duplicate characters (e.g., \"aaabb\" → \"ab\").", 5, "Medium", "Remove adjacent consecutive duplicate characters (e.g., 'aaabb' becomes 'ab').", "aaabbcddd", "abcd", [
+  createSeedQuestion(168, "Remove consecutive duplicate characters (e.g., \"aaabb\" becomes \"ab\").", 5, "Medium", "Remove adjacent consecutive duplicate characters (e.g., 'aaabb' becomes 'ab').", "aaabbcddd", "abcd", [
     { input: "aaabbcddd", expectedOutput: "abcd" },
     { input: "aabbcc", expectedOutput: "abc" }
   ]),
 
-  createSeedQuestion(169, "Swap case: uppercase → lowercase and lowercase → uppercase.", 5, "Easy", "Swap case of each letter: uppercase to lowercase, and lowercase to uppercase.", "Hello World", "hELLO wORLD", [
+  createSeedQuestion(169, "Swap case: uppercase to lowercase and lowercase to uppercase.", 5, "Easy", "Swap case of each letter: uppercase to lowercase, and lowercase to uppercase.", "Hello World", "hELLO wORLD", [
     { input: "Hello World", expectedOutput: "hELLO wORLD" },
     { input: "ABC", expectedOutput: "abc" }
   ]),
 
-  createSeedQuestion(170, "Shift each character by 1 (e.g., \"abc\" → \"bcd\").", 5, "Medium", "Shift each alphabetic letter forward by 1 in the alphabet (z wraps to a, Z wraps to A).", "abcXYZ", "bcdYZA", [
+  createSeedQuestion(170, "Shift each character by 1 (e.g., \"abc\" becomes \"bcd\").", 5, "Medium", "Shift each alphabetic letter forward by 1 in the alphabet (z wraps to a, Z wraps to A).", "abcXYZ", "bcdYZA", [
     { input: "abcXYZ", expectedOutput: "bcdYZA" },
     { input: "zebra", expectedOutput: "afbsb" }
   ]),

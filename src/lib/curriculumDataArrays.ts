@@ -164,7 +164,7 @@ export const CURRICULUM_ARRAYS: QuestionSeedItem[] = [
     { input: "3\n10 20 30", expectedOutput: "30 10 20" }
   ]),
 
-  createSeedQuestion(109, "Swap alternate elements (1st ↔ 2nd, 3rd ↔ 4th, etc.).", 4, "Medium", "Given N followed by N integers, swap alternate elements (1st with 2nd, 3rd with 4th, etc.) and print the array.", "4\n1 2 3 4", "2 1 4 3", [
+  createSeedQuestion(109, "Swap alternate elements (1st with 2nd, 3rd with 4th, etc.).", 4, "Medium", "Given N followed by N integers, swap alternate elements (1st with 2nd, 3rd with 4th, etc.) and print the array.", "4\n1 2 3 4", "2 1 4 3", [
     { input: "4\n1 2 3 4", expectedOutput: "2 1 4 3" },
     { input: "5\n1 2 3 4 5", expectedOutput: "2 1 4 3 5" }
   ]),
