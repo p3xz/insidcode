@@ -91,6 +91,7 @@ export function GlobalSearchModal({ onClose }: { onClose: () => void }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search problems, topics, or developers..."
+            aria-label="Search problems, topics, or developers"
             className="w-full bg-transparent text-[13px] focus:outline-none"
             style={{ color: "var(--fg)" }}
           />
