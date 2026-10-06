@@ -1,5 +1,7 @@
 # InsidCode
 
+![Preview](preview.png)
+
 > InsidCode is a full-stack, LeetCode-style programming practice platform: a serious, distraction-free environment for mastering logical thinking, recursion, arrays, strings, and problem solving before data structures and algorithms.
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue)
