@@ -1,10 +1,16 @@
 # insidcode
 
-A private, full-stack LeetCode-style programming practice platform built for mastering logical thinking, recursion, arrays, strings, and problem solving before data structures and algorithms.
+## What
 
-## Overview
+insidcode is a full-stack, LeetCode-style programming practice platform: a serious, distraction-free environment for mastering logical thinking, recursion, arrays, strings, and problem solving before data structures and algorithms. It ships with a six-phase curriculum directory, an in-browser Monaco code editor with multi-language sandboxed execution, server-evaluated hidden test cases, first-solve XP rewards, practice streaks, GitHub-style activity heatmaps, global and friends leaderboards, and a guarded admin control center.
 
-insidcode is built for developers who want a serious, distraction-free environment to practice coding challenges with isolated multi-language code execution, automated hidden test evaluation, practice streaks, and social leaderboards.
+## Why
+
+Built as a personal project to have a focused space for practicing programming fundamentals, with a curriculum aimed at mastering logical thinking, recursion, arrays, and strings before moving on to data structures and algorithms.
+
+## When
+
+Built in September 2026.
 
 ## Key Features
 
@@ -56,7 +62,32 @@ insidcode is built for developers who want a serious, distraction-free environme
 - Database: MongoDB Atlas, Mongoose ODM with cached serverless connections
 - Authentication: NextAuth (Auth.js) with Google and GitHub OAuth
 - Execution Engine: ONLINECOMPILER API (isolated sandbox)
+- Email: Resend (feedback and ban-appeal forms)
 - Deployment Target: Vercel
+
+## Why We Used This
+
+- Next.js (App Router): frontend pages and backend API routes live in one codebase and deploy as a single app.
+- React: component-based UI for the editor, dashboard, and admin screens.
+- TypeScript: type safety shared across client, server, and database models.
+- Tailwind CSS and Lucide Icons: utility-first dark developer styling with consistent icons.
+- Monaco Editor: the same editor engine that powers VS Code, running in the browser.
+- MongoDB Atlas and Mongoose: document storage for problems, curriculum phases, users, submissions, and streaks, with cached connections suited to serverless.
+- NextAuth: password-free sign in with Google and GitHub, so no passwords are ever stored.
+- ONLINECOMPILER API: isolated sandboxed code execution with strict timeouts and size limits, so untrusted code never runs on the app server.
+- Zod: request validation on API routes.
+- Sliding-window rate limiting: keeps execution and API endpoints from being abused.
+- Resend: email delivery for the feedback and ban-appeal forms.
+- Vercel: deployment target, matching the Next.js stack.
+
+## How It Works
+
+- Users sign in with Google or GitHub OAuth and get a unique username automatically.
+- The six-phase curriculum directory offers searchable, filterable problems with difficulty labels and progress tracking.
+- Solutions are written in the Monaco editor and run in an isolated ONLINECOMPILER sandbox with a 10s timeout.
+- Submissions are evaluated on the server against hidden test cases that are projected out of API responses and never reach the browser.
+- First solves earn XP; practice streaks, heatmaps, and leaderboards track progress over time, with in-app notifications for achievements.
+- Admins manage problems, hidden tests, users, and leaderboards from a role-guarded control center with immutable audit logs.
 
 ## Getting Started
 
@@ -117,13 +148,11 @@ Your account will now have `role = "admin"` and access to `/admin`.
 - Hidden Test Privacy: Problem endpoints project test cases out of responses, ensuring test inputs and expected outputs remain strictly on the server.
 - Execution Rate Limiting: Sliding-window rate limiters prevent execution abuse.
 
-## Developer
+## Credits
 
-**Namish Yadav**
+Built by **Namish Yadav**
 - GitHub: [https://github.com/p3xz](https://github.com/p3xz)
 - LinkedIn: [https://www.linkedin.com/in/namish-yadav-639769408/](https://www.linkedin.com/in/namish-yadav-639769408/)
 - Instagram: [https://instagram.com/nam7sh](https://instagram.com/nam7sh)
-
-## License
 
 MIT License. See CREDITS for third-party acknowledgements.
