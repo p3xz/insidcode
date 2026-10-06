@@ -1,60 +1,21 @@
-# insidcode
+# InsidCode
 
-## What
+> InsidCode is a full-stack, LeetCode-style programming practice platform: a serious, distraction-free environment for mastering logical thinking, recursion, arrays, strings, and problem solving before data structures and algorithms.
 
-insidcode is a full-stack, LeetCode-style programming practice platform: a serious, distraction-free environment for mastering logical thinking, recursion, arrays, strings, and problem solving before data structures and algorithms. It ships with a six-phase curriculum directory, an in-browser Monaco code editor with multi-language sandboxed execution, server-evaluated hidden test cases, first-solve XP rewards, practice streaks, GitHub-style activity heatmaps, global and friends leaderboards, and a guarded admin control center.
+![Status](https://img.shields.io/badge/status-active-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue)
 
-## Why
+Built as a personal project to have a focused space for practicing programming fundamentals, with a curriculum aimed at mastering logical thinking, recursion, arrays, and strings before moving on to data structures and algorithms. Built in September 2026.
 
-Built as a personal project to have a focused space for practicing programming fundamentals, with a curriculum aimed at mastering logical thinking, recursion, arrays, and strings before moving on to data structures and algorithms.
+## Features
 
-## When
+- **Password-free OAuth sign-in**: Google and GitHub OAuth with automatic unique username generation, case-insensitive validation, and reserved username protection. No passwords are ever stored.
+- **Six-phase curriculum directory**: searchable, filterable problems across Conditional Thinking, Looping and Patterns, Recursion, Basic Arrays, Strings, and Mixed Logical Challenges, with difficulty labels and phase progress tracking.
+- **Monaco editor with sandboxed execution**: dark developer theme with Python 3, JavaScript (Node.js), C, C++, and Java, run through the OnlineCompiler API with a strict 10s timeout, 100 KB code limit, and 32 KB stdin limit.
+- **Server-evaluated hidden tests and XP**: submissions run on the server against hidden test cases that never reach the browser; first solves earn 10 XP for Easy, 20 XP for Medium, and 30 XP for Hard, while repeat solves earn nothing.
+- **Gamification and social**: timezone-safe practice streaks, 12-month GitHub-style activity heatmaps, global and friends leaderboards, and in-app notifications for achievements and admin announcements.
+- **Admin control center**: server-validated role guards, problem and hidden test case management, user moderation with suspensions, role updates, and manual XP adjustments, leaderboard freeze toggles, and immutable audit logs.
 
-Built in September 2026.
-
-## Key Features
-
-1. Password-Free OAuth Authentication
-   - Sign in via Google and GitHub OAuth.
-   - Automatic unique username generation with case-insensitive validation and reserved username protection.
-   - Zero password storage or email registration workflows.
-
-2. Curriculum & Problem Directory
-   - Six progressive phases:
-     - Phase 1: Conditional Thinking
-     - Phase 2: Looping and Patterns
-     - Phase 3: Recursion
-     - Phase 4: Basic Arrays
-     - Phase 5: Strings
-     - Phase 6: Mixed Logical Challenges
-   - Searchable, filterable directory with difficulty categorization and phase progress tracking.
-
-3. Monaco Code Editor & Execution Engine
-   - Monaco Editor with dark developer theme tokens.
-   - Supported languages: Python 3, JavaScript (Node.js), C, C++, and Java.
-   - Real-time compilation and execution via ONLINECOMPILER API with strict 10s timeouts, 100 KB code limit, and 32 KB stdin limit.
-   - Language starter templates with unsaved modification alerts.
-
-4. Server-Evaluated Hidden Tests & XP System
-   - Submissions are evaluated sequentially on the server against hidden test cases.
-   - Hidden tests are never exposed to client browsers.
-   - First-solve XP rewards (Easy: 10 XP, Medium: 20 XP, Hard: 30 XP).
-   - Duplicate solves do not award duplicate XP.
-
-5. Gamification, Streaks & Social
-   - Practice streaks calculated with timezone-safe UTC comparisons.
-   - 12-month GitHub-style activity heatmaps.
-   - Global and Friends circle leaderboards.
-   - In-app notification dispatcher for achievements and admin announcements.
-
-6. Administrator Control Center
-   - Secure server-validated admin role guards.
-   - Problem management: manual creation, editing, publishing, and hidden test case authoring.
-   - User moderation: suspensions, role updates, and reason-backed manual XP adjustments.
-   - Leaderboard freeze and unfreeze toggles.
-   - Immutable audit logs for administrative tracking.
-
-## Technology Stack
+## Tech Stack
 
 ![TypeScript](https://skillicons.dev/icons?i=ts) ![Next.js](https://skillicons.dev/icons?i=nextjs) ![React](https://skillicons.dev/icons?i=react) ![Tailwind CSS](https://skillicons.dev/icons?i=tailwind) ![Node.js](https://skillicons.dev/icons?i=nodejs) ![MongoDB](https://skillicons.dev/icons?i=mongodb) ![Vercel](https://skillicons.dev/icons?i=vercel)
 
@@ -67,7 +28,7 @@ Built in September 2026.
 - Email: Resend (feedback and ban-appeal forms)
 - Deployment Target: Vercel
 
-## Why We Used This
+### Why this stack
 
 - Next.js (App Router): frontend pages and backend API routes live in one codebase and deploy as a single app.
 - React: component-based UI for the editor, dashboard, and admin screens.
@@ -82,7 +43,66 @@ Built in September 2026.
 - Resend: email delivery for the feedback and ban-appeal forms.
 - Vercel: deployment target, matching the Next.js stack.
 
-## How It Works
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18.17+ or 20+
+- Next.js 15.5.25 (installed via `npm install`)
+- MongoDB Atlas cluster (free tier works)
+- Google OAuth Client ID and Client Secret
+- GitHub OAuth Client ID and Client Secret
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/p3xz/insidcode.git
+cd insidcode
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Configure the environment:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in the variables described in [Configuration](#configuration).
+
+4. Seed the curriculum problems:
+
+```bash
+npm run seed
+```
+
+5. Start the development server:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+## Usage
+
+Sign in with Google or GitHub OAuth, pick a phase from the curriculum directory, write a solution in the Monaco editor, and submit it to be evaluated against hidden test cases.
+
+To grant yourself admin access after signing in:
+
+```bash
+npm run seed:admin <your_username>
+```
+
+Your account gets `role = "admin"` and access to `/admin`.
+
+### How it works
 
 - Users sign in with Google or GitHub OAuth and get a unique username automatically.
 - The six-phase curriculum directory offers searchable, filterable problems with difficulty labels and progress tracking.
@@ -91,64 +111,36 @@ Built in September 2026.
 - First solves earn XP; practice streaks, heatmaps, and leaderboards track progress over time, with in-app notifications for achievements.
 - Admins manage problems, hidden tests, users, and leaderboards from a role-guarded control center with immutable audit logs.
 
-## Getting Started
+## Configuration
 
-### 1. Prerequisites
-- Node.js 18.17+ or 20+
-- MongoDB Atlas free cluster
-- Google OAuth Client ID & Secret
-- GitHub OAuth Client ID & Secret
+| Variable | Description | Default | Required |
+|---|---|---|---|
+| `MONGODB_URI` | MongoDB connection string | None | Yes |
+| `AUTH_SECRET` | Random 32-character secret used by Auth.js to encrypt sessions | None | Yes |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID from Google Cloud Console | None | Yes |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret from Google Cloud Console | None | Yes |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID from GitHub Developer Settings | None | Yes |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret from GitHub Developer Settings | None | Yes |
+| `ONLINECOMPILER_API_KEY` | API key for the OnlineCompiler execution sandbox | None | Yes |
+| `RESEND_API_KEY` | Resend API key for the feedback and ban-appeal emails | None | No |
+| `FEEDBACK_TO_EMAIL` | Recipient address for the feedback form | None | No |
+| `ADMIN_EMAIL` | Email address automatically granted the admin role on sign in | None | No |
+| `MAX_CONCURRENT_EXECUTIONS` | Maximum concurrent code executions in the server queue | `4` | No |
+| `MAX_QUEUE_CAPACITY` | Maximum pending executions the server queue holds | `100` | No |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console site verification token | None | No |
 
-### 2. Environment Configuration
-Copy the example environment template:
+Never commit real values for these variables; keep them in `.env.local`, which is gitignored.
 
-```bash
-cp .env.example .env.local
-```
-
-Fill in the environment variables:
-- `MONGODB_URI`: MongoDB connection string.
-- `AUTH_SECRET`: Random 32-character secret string.
-- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`: From Google Cloud Console.
-- `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`: From GitHub Developer Settings.
-- `ONLINECOMPILER_URL`: the base URL of an OnlineCompiler-compatible execution API (your self-hosted instance or a compatible provider).
-
-### 3. Install Dependencies
-
-```bash
-npm install
-```
-
-### 4. Seed Curriculum Problems
-
-```bash
-npm run seed
-```
-
-### 5. Start Development Server
-
-```bash
-npm run dev
-```
-
-Navigate to `http://localhost:3000`.
-
-### 6. Promote Administrator Account
-
-Once you have signed in via OAuth with your account:
-
-```bash
-npm run seed:admin <your_username>
-```
-
-Your account will now have `role = "admin"` and access to `/admin`.
-
-## Security Architecture
+## Security
 
 - Server-Side Authorization: API routes verify role and ban status directly against the database on every sensitive operation.
 - No Hard-Coded Passwords: Admin promotion is handled through server scripts and database records.
 - Hidden Test Privacy: Problem endpoints project test cases out of responses, ensuring test inputs and expected outputs remain strictly on the server.
 - Execution Rate Limiting: Sliding-window rate limiters prevent execution abuse.
+
+## Contributing
+
+Contributions are welcome. Open an issue first to discuss the change, then submit a pull request with a clear description of what changed and why.
 
 ## Credits
 
@@ -157,4 +149,6 @@ Built by **Namish Yadav**
 - LinkedIn: [https://www.linkedin.com/in/namish-yadav-639769408/](https://www.linkedin.com/in/namish-yadav-639769408/)
 - Instagram: [https://instagram.com/nam7sh](https://instagram.com/nam7sh)
 
-MIT License. See CREDITS for third-party acknowledgements.
+## License
+
+MIT License. Copyright (c) 2026 p3xz. See [LICENSE](LICENSE) for the full text.
