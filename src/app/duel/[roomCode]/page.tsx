@@ -56,6 +56,7 @@ export default function DuelArenaPage() {
   const [remainingSec, setRemainingSec] = useState<number | null>(null);
   const [countdownSec, setCountdownSec] = useState<number | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
   // Track previous round and initialization state to prevent starter code from overwriting drafts
@@ -311,8 +312,12 @@ export default function DuelArenaPage() {
       setTimeout(() => {
         setCopiedCode(false);
       }, 2000);
-    } catch (err) {
-      console.error("Failed to copy code:", err);
+    } catch {
+      // Surface copy failures to the user the same way success is shown
+      setCopyFailed(true);
+      setTimeout(() => {
+        setCopyFailed(false);
+      }, 2000);
     }
   };
 
@@ -868,20 +873,25 @@ export default function DuelArenaPage() {
                 type="button"
                 onClick={handleCopyCode}
                 disabled={!code}
-                aria-label={copiedCode ? "Code copied to clipboard" : "Copy code"}
-                title={copiedCode ? "Copied to clipboard" : "Copy code"}
+                aria-label={copiedCode ? "Code copied to clipboard" : copyFailed ? "Failed to copy code" : "Copy code"}
+                title={copiedCode ? "Copied to clipboard" : copyFailed ? "Copy failed" : "Copy code"}
                 className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold mono transition-colors disabled:opacity-40"
                 style={{
                   border: "1px solid var(--border)",
                   borderRadius: "3px",
                   backgroundColor: "var(--bg)",
-                  color: copiedCode ? "var(--success)" : "var(--fg-muted)",
+                  color: copiedCode ? "var(--success)" : copyFailed ? "var(--danger)" : "var(--fg-muted)",
                 }}
               >
                 {copiedCode ? (
                   <>
                     <Check className="h-3 w-3" style={{ color: "var(--success)" }} />
                     <span className="hidden sm:inline">Copied</span>
+                  </>
+                ) : copyFailed ? (
+                  <>
+                    <XCircle className="h-3 w-3" style={{ color: "var(--danger)" }} />
+                    <span className="hidden sm:inline">Failed</span>
                   </>
                 ) : (
                   <>
