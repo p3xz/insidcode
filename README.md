@@ -56,6 +56,8 @@ Built in September 2026.
 
 ## Technology Stack
 
+![TypeScript](https://skillicons.dev/icons?i=ts) ![Next.js](https://skillicons.dev/icons?i=nextjs) ![React](https://skillicons.dev/icons?i=react) ![Tailwind CSS](https://skillicons.dev/icons?i=tailwind) ![Node.js](https://skillicons.dev/icons?i=nodejs) ![MongoDB](https://skillicons.dev/icons?i=mongodb) ![Vercel](https://skillicons.dev/icons?i=vercel)
+
 - Frontend: Next.js (App Router), React, TypeScript, Tailwind CSS, Lucide Icons
 - Code Editor: Monaco Editor (@monaco-editor/react)
 - Backend: Next.js API Route Handlers, Zod Validation, Sliding-Window Rate Limiting
