@@ -31,6 +31,10 @@ export function LegalReconsentModal() {
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  // Dismiss locally once the server confirms consent is current, instead of
+  // relying solely on the session refresh (which can return stale data and
+  // make the modal reappear right after accepting).
+  const [dismissed, setDismissed] = useState(false);
 
   const isAuthenticated = status === "authenticated" && Boolean(session?.user);
   const isBanned = Boolean(session?.user?.isBanned);
@@ -50,6 +54,12 @@ export function LegalReconsentModal() {
     return null;
   }
   if (session?.user?.requiresRestorationConsent && pathname === "/account-restored") {
+    return null;
+  }
+
+  // Hide after this session's consent was accepted, even if the refreshed
+  // session token still carries the stale re-consent flag.
+  if (dismissed) {
     return null;
   }
 
@@ -87,8 +97,16 @@ export function LegalReconsentModal() {
         return;
       }
 
+      const data = await res.json();
+
       // Refresh session token so client state immediately reflects valid consent
       await update();
+
+      // The server returns the authoritative consent status. Dismiss locally
+      // when consent is current so the modal cannot reappear on a stale session.
+      if (data?.consentStatus?.isCurrent) {
+        setDismissed(true);
+      }
     } catch {
       setErrorMessage("A network error occurred. Please try again.");
     } finally {
