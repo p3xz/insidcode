@@ -170,9 +170,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             const consentStatus = checkUserConsentStatus(dbUser);
             token.requiresLegalReconsent = !consentStatus.isCurrent;
             token.legalConsentStatus = consentStatus;
-            token.onboardingCompleted = Boolean(
-              dbUser.onboardingCompleted && consentStatus.isCurrent
-            );
+            // NOTE: onboardingCompleted mirrors the raw DB flag. Legal re-consent
+            // is handled separately via requiresLegalReconsent + the global
+            // re-consent modal. ANDing consent currency here made the
+            // OnboardingGuard bounce consent-outdated users between
+            // /problems and /onboarding in an infinite redirect loop.
+            token.onboardingCompleted = Boolean(dbUser.onboardingCompleted);
           }
         } catch (error) {
           console.error("[Auth] JWT database sync error:", error);
@@ -213,9 +216,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               const consentStatus = checkUserConsentStatus(dbUser);
               token.requiresLegalReconsent = !consentStatus.isCurrent;
               token.legalConsentStatus = consentStatus;
-              token.onboardingCompleted = Boolean(
-                dbUser.onboardingCompleted && consentStatus.isCurrent
-              );
+              // NOTE: mirrors the raw DB flag; see comment above. ANDing
+              // consent currency here caused an infinite /problems <->
+              // /onboarding redirect loop for consent-outdated users.
+              token.onboardingCompleted = Boolean(dbUser.onboardingCompleted);
             }
           } catch (error) {
             console.error("[Auth] JWT session refresh error:", error);
@@ -248,9 +252,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.requiresRestorationConsent = Boolean(
               (dbUser.requiresRestorationConsent || dbUser.restoredAt) && needsLegalConsent
             );
-            token.onboardingCompleted = Boolean(
-              dbUser.onboardingCompleted && consentStatus.isCurrent
-            );
+            // NOTE: onboardingCompleted mirrors the raw DB flag. Legal re-consent
+            // is handled separately via requiresLegalReconsent + the global
+            // re-consent modal. ANDing consent currency here made the
+            // OnboardingGuard bounce consent-outdated users between
+            // /problems and /onboarding in an infinite redirect loop.
+            token.onboardingCompleted = Boolean(dbUser.onboardingCompleted);
           }
         } catch (error) {
           console.error("[Auth] JWT auto-sync error:", error);
