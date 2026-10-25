@@ -25,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://insidcode.vercel.app"),
   title: {
-    default: "InsidCode: Programming Logic Practice Before DSA",
+    default: "InsidCode",
     template: "%s | InsidCode",
   },
   description:
