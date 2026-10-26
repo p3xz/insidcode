@@ -14,12 +14,41 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: "v1.4.1",
+    releaseDate: "October 26, 2026",
+    title: "Game-Style Submission Animations & UI Alert Feedback",
+    summary:
+      "Interactive 4-phase submission feedback with celebration overlays and test case reveal, a responsive Alert component with smooth entrance and exit animations, server-confirmed Profile Updated notifications, and live animated XP counters.",
+    tag: "Latest",
+    added: [
+      "Game-style submission lifecycle animation on problem pages with instant submit button feedback and 'Judging…' state.",
+      "Indeterminate cyan progress scan and neutral test slot indicators while the evaluation suite is running.",
+      "Full-panel Accepted celebration inside the results pane featuring radial glow, self-drawing checkmark, test pass count-up, XP floating badge, and streak flame pulse.",
+      "Staggered per-test reveal grid displaying explicit Pass, Fail, or Skip statuses for each evaluated test case.",
+      "Reusable Alert component with semantic color tokens, auto-layout container queries, and animated dismiss transitions.",
+      "Server-confirmed 'Profile updated' status alert on the account settings page upon saving changes.",
+      "Live animated XP ticker in the navigation bar that counts up when new XP is earned.",
+    ],
+    changed: [
+      "Clear plain-language explanations for Compilation Error, Runtime Error, and Execution Timeout directly in the output console.",
+      "Wrong Answer verdict now features a focused status shake animation, test case breakdown, and sample test input/output comparisons.",
+      "Submissions lock against rapid double-clicks to prevent duplicate evaluation requests.",
+      "Celebration overlay is keyboard dismissible with Escape or by clicking anywhere, and auto-settles after 3 seconds into a compact banner.",
+      "Repeated problem solves display a quiet 'Previously solved' indicator without award celebrations or zero-XP badges.",
+      "Responsive top action bar and navigation bar layout prevents text clipping on mobile and tablet viewports.",
+    ],
+    fixed: [
+      "Judge-busy errors and submission rate limits (429) no longer count as wrong answers, rendering a non-penalizing alert with a direct 'Try again' action.",
+      "Test failure details accurately identify the first failed test case while clearly labeling subsequent cases as skipped rather than failed.",
+    ],
+  },
+  {
     version: "v1.4.0",
     releaseDate: "September 27, 2026",
     title: "Duel Expansion, Cookie Consent & Legal Infrastructure",
     summary:
       "Very Easy Duel mode for beginners, Per-Problem Duels from any problem page, Duel Ratio replacing K/D, cookie consent banner with granular preferences, centralized legal versioning, and a refreshed Privacy Policy and Terms of Service.",
-    tag: "Latest",
+    tag: "Feature",
     added: [
       "Very Easy Duel mode: a beginner-friendly difficulty tier covering variables, arithmetic, basic I/O, simple conditionals, and counting. Fully integrated with the existing Elo & Duel Points engine.",
       "Per-Problem Duel: a DUEL action button on individual problem pages that creates a locked 1-round Duel match using that specific problem. Problem identity and difficulty are derived server-side; clients cannot forge the difficulty.",
