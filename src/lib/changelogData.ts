@@ -14,12 +14,43 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: "v1.4.2",
+    releaseDate: "October 26, 2026",
+    title: "Platform Polish Milestone: Leaderboard Overhaul, Game Submissions & Resilience",
+    summary:
+      "A major milestone showcasing our progress from v1.3.0 to now: pixel-perfect Leaderboard ranking medals (Gold, Silver, Bronze) and flame streak indicators, complete eradication of Unicode corruption, high-octane 4-phase game submission animations, non-penalizing judge recovery, 1v1 Duel expansion with beginner tiers, and rock-solid platform security.",
+    tag: "Latest",
+    fixed: [
+      "Leaderboard Glyphs Overhaul: Replaced raw '?' rank placeholders with radiant Gold (#F59E0B), Silver (#94A3B8), and Bronze (#D97706) SVG Medal icons paired with explicit rank numbers and full screen-reader aria-labels.",
+      "Streak Glyph Eradication: Purged the corrupted Unicode replacement character (U+FFFD) for 0-streak accounts, replacing it with a clean en-dash entity and vibrant amber Flame icons for active practice streaks.",
+      "Codebase UTF-8 Encoding Enforcement: Audited the entire repository, stripped stray Byte Order Marks (BOM), and established a root .editorconfig with charset = utf-8 to permanently lock encoding standards.",
+      "Judge-Busy & Rate-Limit Defense: Submissions against busy queues or rate limits (429) no longer count against users as Wrong Answers, now offering instant non-penalizing retry alerts.",
+      "Submission Double-Submit Prevention: Hardened client-side submit actions with instant optimistic locking to prevent double-clicks and duplicate queue jobs.",
+    ],
+    added: [
+      "Next-Gen Submission Gamification: Full 4-phase interactive evaluation suite featuring real-time judging progress, self-drawing victory checkmarks, celebration glow overlays, and staggered test case reveal grids.",
+      "Live Navbar XP Ticker: Smooth animated number counter in the top bar that increments dynamically as problem XP is awarded.",
+      "Reusable Alert & Feedback System: Semantic alert tokens with dismiss animations and automated layout adjustments across account settings and problem interfaces.",
+      "1v1 Duel Expansion & Per-Problem Duels: Direct 'DUEL' challenges on individual problem pages with server-verified problem identity and the dedicated 'Very Easy' difficulty tier.",
+    ],
+    changed: [
+      "Competitive Metric Refinement: Replaced legacy 'K/D' with standardized 'Duel Ratio' across all public profiles, statistics pages, and API payloads.",
+      "Crystal-Clear Error Diagnostics: Revamped compilation, runtime, and timeout error banners with plain-language diagnostic explanations in the output terminal.",
+      "Keyboard & Accessibility Enhancements: Esc-to-dismiss celebration overlays, full ARIA labelling across ranking and streak components, and smooth reduced-motion compliance.",
+    ],
+    security: [
+      "Authoritative Server-Side Validation: Derived Duel difficulty exclusively from server-side database records to prevent client-side forged difficulty payloads.",
+      "Suspension Appeal Portal & Central Interception: Dedicated /feedback/appeal workflow, atomic account restorations, and proactive 403 suspension interception.",
+      "Centralized Legal & Consent Tracking: Multi-version legal consent architecture with granular cookie preference toggles and server synchronization.",
+    ],
+  },
+  {
     version: "v1.4.1",
     releaseDate: "October 26, 2026",
     title: "Game-Style Submission Animations & UI Alert Feedback",
     summary:
       "Interactive 4-phase submission feedback with celebration overlays and test case reveal, a responsive Alert component with smooth entrance and exit animations, server-confirmed Profile Updated notifications, and live animated XP counters.",
-    tag: "Latest",
+    tag: "Feature",
     added: [
       "Game-style submission lifecycle animation on problem pages with instant submit button feedback and 'Judging…' state.",
       "Indeterminate cyan progress scan and neutral test slot indicators while the evaluation suite is running.",
