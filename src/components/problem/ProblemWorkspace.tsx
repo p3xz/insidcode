@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { IQuestion, SubmissionStatus } from "@/types";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { IQuestion } from "@/types";
 import { SUPPORTED_LANGUAGES, SupportedLanguageId } from "@/lib/constants";
 import { CodeEditor } from "@/components/editor/CodeEditor";
-import { TerminalOutput, ExecutionResultData } from "@/components/editor/TerminalOutput";
+import {
+  TerminalOutput,
+  ExecutionResultData,
+} from "@/components/editor/TerminalOutput";
 import { useRouter } from "next/navigation";
 import {
   Play,
@@ -15,9 +18,17 @@ import {
   Terminal,
   RotateCcw,
   Swords,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import InlineNotice from "@/components/ui/InlineNotice";
+import {
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+} from "@/components/ui/alert";
+import { useSubmissionLifecycle } from "@/hooks/useSubmissionLifecycle";
 
 interface ProblemWorkspaceProps {
   problem: IQuestion;
@@ -33,12 +44,17 @@ function getValidLanguage(lang?: string | null): SupportedLanguageId | null {
   return null;
 }
 
-export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWorkspaceProps) {
+export function ProblemWorkspace({
+  problem,
+  initialSolved = false,
+}: ProblemWorkspaceProps) {
   const router = useRouter();
   const { data: session } = useSession();
 
   const userManuallySwitchedRef = useRef(false);
   const prevUserLanguageRef = useRef<string | undefined>(undefined);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const resultsPanelRef = useRef<HTMLDivElement>(null);
 
   const userProfileLang =
     getValidLanguage(session?.user?.preferences?.defaultLanguage) ||
@@ -49,18 +65,51 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
   );
   const [code, setCode] = useState<string>("");
   const [customInput, setCustomInput] = useState<string>("");
-  const [activeMobileTab, setActiveMobileTab] = useState<"problem" | "code" | "terminal">("problem");
+  const [activeMobileTab, setActiveMobileTab] = useState<
+    "problem" | "code" | "terminal"
+  >("problem");
 
   const [isRunning, setIsRunning] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingDuel, setIsCreatingDuel] = useState(false);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
-  const [execResult, setExecResult] = useState<ExecutionResultData | null>(null);
+  const [execResult, setExecResult] = useState<ExecutionResultData | null>(
+    null
+  );
   const [isSolved, setIsSolved] = useState(initialSolved);
 
-  const [pendingLanguage, setPendingLanguage] = useState<SupportedLanguageId | null>(null);
+  const [pendingLanguage, setPendingLanguage] =
+    useState<SupportedLanguageId | null>(null);
   const [showLanguageWarning, setShowLanguageWarning] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const handleOverlayDismissed = useCallback(() => {
+    if (typeof document === "undefined") return;
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      (activeEl.tagName === "TEXTAREA" || activeEl.closest(".monaco-editor"))
+    ) {
+      return;
+    }
+    resultsPanelRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const {
+    phase,
+    isSubmittingOrJudging,
+    isSlowJudge,
+    result: submissionResult,
+    infraError,
+    showAcceptedOverlay,
+    announcement,
+    submit,
+    skipOverlay,
+    resetLifecycle,
+  } = useSubmissionLifecycle({
+    currentUserStreak: session?.user?.currentStreak || 0,
+    onAccepted: () => setIsSolved(true),
+    onOverlayDismissed: handleOverlayDismissed,
+  });
 
   // Synchronize language with authenticated user's profile preference
   useEffect(() => {
@@ -70,15 +119,24 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
     if (!currentProfileLang) return;
 
-    if (prevUserLanguageRef.current !== currentProfileLang || !userManuallySwitchedRef.current) {
+    if (
+      prevUserLanguageRef.current !== currentProfileLang ||
+      !userManuallySwitchedRef.current
+    ) {
       prevUserLanguageRef.current = currentProfileLang;
       setSelectedLanguage(currentProfileLang);
     }
-  }, [session?.user?.preferences?.defaultLanguage, session?.user?.defaultLanguage]);
+  }, [
+    session?.user?.preferences?.defaultLanguage,
+    session?.user?.defaultLanguage,
+  ]);
 
   useEffect(() => {
     const savedCodeKey = `code_${problem.problemId}_${selectedLanguage}`;
-    const saved = typeof window !== "undefined" ? localStorage.getItem(savedCodeKey) : null;
+    const saved =
+      typeof window !== "undefined"
+        ? localStorage.getItem(savedCodeKey)
+        : null;
 
     if (saved) {
       setCode(saved);
@@ -92,7 +150,10 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
-    localStorage.setItem(`code_${problem.problemId}_${selectedLanguage}`, newCode);
+    localStorage.setItem(
+      `code_${problem.problemId}_${selectedLanguage}`,
+      newCode
+    );
   };
 
   const handleLanguageSelect = (lang: SupportedLanguageId) => {
@@ -129,13 +190,14 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   const handleRunCode = async () => {
     // Prevent duplicate requests while execution is in-flight
-    if (isRunning || isSubmitting) return;
+    if (isRunning || isSubmittingOrJudging) return;
 
     if (!session?.user) {
       setNotice("Please sign in to run code.");
       return;
     }
 
+    resetLifecycle();
     setIsRunning(true);
     setActiveMobileTab("terminal");
     setExecResult(null);
@@ -156,10 +218,14 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
       if (!res.ok) {
         if (res.status === 429) {
           setExecResult({
-            systemError: data.error || "Rate limit exceeded. Maximum 10 runs per 10 minutes (50/hr). Please wait.",
+            systemError:
+              data.error ||
+              "Rate limit exceeded. Maximum 10 runs per 10 minutes (50/hr). Please wait.",
           });
         } else {
-          setExecResult({ systemError: data.error || "Failed to execute code" });
+          setExecResult({
+            systemError: data.error || "Failed to execute code",
+          });
         }
         return;
       }
@@ -172,7 +238,8 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
             stdout: data.stdout,
             stderr: data.stderr,
             output: data.output,
-            errorDetails: data.compilationError || data.runtimeError || data.systemError,
+            errorDetails:
+              data.compilationError || data.runtimeError || data.systemError,
             status: data.compilationError
               ? "Compilation Error"
               : data.runtimeError
@@ -183,7 +250,9 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
           });
           return;
         }
-        setExecResult({ systemError: "Failed to queue execution. Missing execution ID." });
+        setExecResult({
+          systemError: "Failed to queue execution. Missing execution ID.",
+        });
         return;
       }
 
@@ -192,7 +261,14 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
       }
 
       // Poll status endpoint until execution reaches a terminal state
-      const terminalStates = ["success", "error", "timeout", "failed", "cancelled", "expired"];
+      const terminalStates = [
+        "success",
+        "error",
+        "timeout",
+        "failed",
+        "cancelled",
+        "expired",
+      ];
       let completed = false;
       const startTime = Date.now();
       const MAX_POLL_TIME = 45000; // 45s safety limit
@@ -200,11 +276,14 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
       while (!completed && Date.now() - startTime < MAX_POLL_TIME) {
         await new Promise((resolve) => setTimeout(resolve, 800));
 
-        const statusRes = await fetch(`/api/execute/status?id=${encodeURIComponent(executionId)}`);
+        const statusRes = await fetch(
+          `/api/execute/status?id=${encodeURIComponent(executionId)}`
+        );
         if (!statusRes.ok) {
           const errData = await statusRes.json().catch(() => ({}));
           setExecResult({
-            systemError: errData.error || "Failed to retrieve execution status.",
+            systemError:
+              errData.error || "Failed to retrieve execution status.",
           });
           completed = true;
           break;
@@ -225,14 +304,19 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
             stdout: statusData.stdout,
             stderr: statusData.stderr,
             output: statusData.output,
-            errorDetails: statusData.compilationError || statusData.runtimeError || statusData.systemError,
+            errorDetails:
+              statusData.compilationError ||
+              statusData.runtimeError ||
+              statusData.systemError,
             status: statusData.compilationError
               ? "Compilation Error"
               : statusData.runtimeError
               ? "Runtime Error"
               : statusData.isTimeout || statusData.status === "timeout"
               ? "Time Limit Exceeded"
-              : statusData.status === "failed" || statusData.status === "cancelled" || statusData.status === "expired"
+              : statusData.status === "failed" ||
+                statusData.status === "cancelled" ||
+                statusData.status === "expired"
               ? "System Error"
               : "Accepted",
           });
@@ -242,12 +326,14 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
       if (!completed) {
         setExecResult({
-          systemError: "Execution timed out waiting for results. Please try again.",
+          systemError:
+            "Execution timed out waiting for results. Please try again.",
         });
       }
     } catch {
       setExecResult({
-        systemError: "Code execution is temporarily unavailable. Please try again later.",
+        systemError:
+          "Code execution is temporarily unavailable. Please try again later.",
       });
     } finally {
       setIsRunning(false);
@@ -256,17 +342,22 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
   };
 
   const handleSubmitCode = async () => {
-    if (!session?.user) {
-      setNotice("Please sign in to submit your solution and record your progress.");
+    if (isRunning || isSubmittingOrJudging || isCreatingDuel) {
       return;
     }
 
-    setIsSubmitting(true);
+    if (!session?.user) {
+      setNotice(
+        "Please sign in to submit your solution and record your progress."
+      );
+      return;
+    }
+
     setActiveMobileTab("terminal");
     setExecResult(null);
 
-    try {
-      const res = await fetch("/api/submit", {
+    const lifecycleResult = await submit(() =>
+      fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -274,39 +365,30 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
           language: selectedLanguage,
           code,
         }),
-      });
+      })
+    );
 
-      const data = await res.json();
-      if (!res.ok) {
-        setExecResult({ systemError: data.error || "Failed to process submission" });
-      } else {
-        setExecResult({
-          status: data.status as SubmissionStatus,
-          runtime: data.runtime,
-          testsPassed: data.testsPassed,
-          totalTests: data.totalTests,
-          awardedXp: data.awardedXp,
-          isFirstSolve: data.isFirstSolve,
-          errorDetails: data.errorDetails,
-          failedTestCase: data.failedTestCase,
-        });
-
-        if (data.status === "Accepted") {
-          setIsSolved(true);
-        }
-      }
-    } catch {
+    if (lifecycleResult) {
       setExecResult({
-        systemError: "Submission processing failed. Please try again later.",
+        status: lifecycleResult.status,
+        runtime: lifecycleResult.runtime,
+        testsPassed: lifecycleResult.testsPassed,
+        totalTests: lifecycleResult.totalTests,
+        awardedXp: lifecycleResult.awardedXp,
+        isFirstSolve: lifecycleResult.isFirstSolve,
+        errorDetails: lifecycleResult.errorDetails,
+        failedTestCase: lifecycleResult.failedTestCase,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleStartProblemDuel = async () => {
     if (!session?.user) {
-      router.push(`/login?callbackUrl=${encodeURIComponent(`/problems/${problem.slug || problem.problemId}`)}`);
+      router.push(
+        `/login?callbackUrl=${encodeURIComponent(
+          `/problems/${problem.slug || problem.problemId}`
+        )}`
+      );
       return;
     }
 
@@ -333,15 +415,41 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] w-full bg-[#090A0F] text-[#F5F7FA]">
+      {/* Screen reader polite announcement region for verdict updates */}
+      <div
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {announcement}
+      </div>
+
       {notice && (
         <div className="px-3 pt-3 lg:px-4">
-          <InlineNotice message={notice} onDismiss={() => setNotice(null)} />
+          <Alert
+            key={notice}
+            variant="warning"
+            role="alert"
+            dismissible
+            onOpenChange={(open) => {
+              if (!open) setNotice(null);
+            }}
+          >
+            <AlertIcon>
+              <AlertTriangle className="size-full" />
+            </AlertIcon>
+            <AlertTitle>Action required</AlertTitle>
+            <AlertDescription>{notice}</AlertDescription>
+          </Alert>
         </div>
       )}
+
       {/* Mobile Tab Switcher (Visible on < 1024px) */}
       <div className="flex lg:hidden items-center justify-between border-b border-[#252936] bg-[#11131A] px-3 py-2">
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => setActiveMobileTab("problem")}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
               activeMobileTab === "problem"
@@ -353,6 +461,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
             Description
           </button>
           <button
+            type="button"
             onClick={() => setActiveMobileTab("code")}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
               activeMobileTab === "code"
@@ -364,6 +473,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
             Code Editor
           </button>
           <button
+            type="button"
             onClick={() => setActiveMobileTab("terminal")}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
               activeMobileTab === "terminal"
@@ -424,7 +534,9 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
               {problem.title}
             </h1>
             <div className="mt-1 flex items-center gap-3 text-xs text-[#8B93A7]">
-              <span>Reward: <strong className="text-[#00F0FF]">+{problem.xp} XP</strong></span>
+              <span>
+                Reward: <strong className="text-[#00F0FF]">+{problem.xp} XP</strong>
+              </span>
             </div>
           </div>
 
@@ -444,7 +556,9 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
                   key={idx}
                   className="rounded-lg border border-[#252936] bg-[#11131A] p-3 text-xs font-mono"
                 >
-                  <p className="font-semibold text-[#F5F7FA] mb-2 font-sans">Example {idx + 1}:</p>
+                  <p className="font-semibold text-[#F5F7FA] mb-2 font-sans">
+                    Example {idx + 1}:
+                  </p>
                   <div className="space-y-2">
                     <div>
                       <span className="text-[#8B93A7]">Input:</span>
@@ -468,7 +582,6 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
               ))}
             </div>
           )}
-
         </div>
 
         {/* Right Pane: Code Editor & Output Console (col-span-7) */}
@@ -478,14 +591,21 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
           }`}
         >
           {/* Editor Top Action Bar */}
-          <div className="flex items-center justify-between border-b border-[#252936] bg-[#11131A] px-3 py-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#252936] bg-[#11131A] px-3 py-1.5">
             {/* Language Selector */}
             <div className="flex items-center gap-2">
-              <label htmlFor="language-select" className="text-xs text-[#8B93A7]">Language:</label>
+              <label
+                htmlFor="language-select"
+                className="hidden sm:inline text-xs text-[#8B93A7]"
+              >
+                Language:
+              </label>
               <select
                 id="language-select"
                 value={selectedLanguage}
-                onChange={(e) => handleLanguageSelect(e.target.value as SupportedLanguageId)}
+                onChange={(e) =>
+                  handleLanguageSelect(e.target.value as SupportedLanguageId)
+                }
                 className="rounded-md border border-[#252936] bg-[#181B24] px-2.5 py-1 text-xs font-medium text-[#F5F7FA] focus:border-[#00F0FF] focus:outline-none cursor-pointer"
               >
                 {SUPPORTED_LANGUAGES.map((lang) => (
@@ -499,6 +619,7 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
             {/* Desktop Action Buttons */}
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handleResetCode}
                 title="Reset code to starter template"
                 className="flex items-center gap-1 rounded-md border border-[#252936] bg-[#181B24] px-2.5 py-1 text-xs text-[#8B93A7] hover:text-[#F5F7FA] transition"
@@ -508,9 +629,10 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
               </button>
 
               <button
+                type="button"
                 onClick={handleRunCode}
-                disabled={isRunning || isSubmitting}
-                className="flex items-center gap-1.5 rounded-md border border-[#252936] bg-[#181B24] px-3 py-1 text-xs font-semibold text-[#F5F7FA] hover:bg-[#252936] disabled:opacity-50 transition"
+                disabled={isRunning || isSubmittingOrJudging}
+                className="flex items-center gap-1.5 rounded-md border border-[#252936] bg-[#181B24] px-3 py-1 text-xs font-semibold text-[#F5F7FA] hover:bg-[#252936] active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition"
               >
                 <Play className="h-3.5 w-3.5 text-[#00F0FF]" />
                 <span>
@@ -523,22 +645,38 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
               </button>
 
               <button
+                ref={submitButtonRef}
+                type="button"
                 onClick={handleSubmitCode}
-                disabled={isRunning || isSubmitting || isCreatingDuel}
-                className="flex items-center gap-1.5 rounded-md bg-[#00F0FF] px-3.5 py-1 text-xs font-bold text-[#090A0F] hover:bg-[#00F0FF]/90 disabled:opacity-50 transition shadow-lg shadow-[#00F0FF]/10"
+                disabled={
+                  isRunning || isSubmittingOrJudging || isCreatingDuel
+                }
+                aria-busy={isSubmittingOrJudging}
+                className={`flex items-center gap-1.5 rounded-md bg-[#00F0FF] px-3.5 py-1 text-xs font-bold text-[#090A0F] hover:bg-[#00F0FF]/90 active:scale-95 disabled:opacity-60 disabled:active:scale-100 transition-all duration-120 shadow-lg shadow-[#00F0FF]/10 ${
+                  phase === "submitting" ? "scale-95" : "scale-100"
+                }`}
               >
-                <Send className="h-3.5 w-3.5" />
-                <span>{isSubmitting ? "Submitting..." : "Submit"}</span>
+                {isSubmittingOrJudging ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                <span>{isSubmittingOrJudging ? "Judging…" : "Submit"}</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleStartProblemDuel}
-                disabled={isRunning || isSubmitting || isCreatingDuel}
+                disabled={
+                  isRunning || isSubmittingOrJudging || isCreatingDuel
+                }
                 title="Challenge another developer on this exact problem in a 1v1 Duel"
-                className="flex items-center gap-1.5 rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-3 py-1 text-xs font-bold text-[var(--warning)] hover:bg-[var(--warning)]/20 disabled:opacity-50 transition"
+                className="flex items-center gap-1.5 rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-2.5 sm:px-3 py-1 text-xs font-bold text-[var(--warning)] hover:bg-[var(--warning)]/20 disabled:opacity-50 transition"
               >
                 <Swords className="h-3.5 w-3.5" />
-                <span>{isCreatingDuel ? "Creating..." : "DUEL"}</span>
+                <span className="hidden sm:inline">
+                  {isCreatingDuel ? "Creating..." : "DUEL"}
+                </span>
               </button>
             </div>
           </div>
@@ -558,17 +696,30 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
 
           {/* Terminal / Output Split Pane */}
           <div
-            className={`h-64 border-t border-[#252936] overflow-hidden ${
+            ref={resultsPanelRef}
+            tabIndex={-1}
+            className={`h-64 border-t border-[#252936] overflow-hidden focus:outline-none ${
               activeMobileTab === "code" ? "hidden lg:block" : "block"
             }`}
           >
             <TerminalOutput
               result={execResult}
               isRunning={isRunning}
-              isSubmitting={isSubmitting}
+              isSubmitting={isSubmittingOrJudging}
               queuePosition={queuePosition}
               customInput={customInput}
               onCustomInputChange={setCustomInput}
+              submissionPhase={phase}
+              isSlowJudge={isSlowJudge}
+              submissionResult={submissionResult}
+              infraError={infraError}
+              showAcceptedOverlay={showAcceptedOverlay}
+              onSkipOverlay={skipOverlay}
+              onRetrySubmit={handleSubmitCode}
+              placeholderSlotCount={Math.max(
+                problem.examples?.length || 3,
+                4
+              )}
             />
           </div>
         </div>
@@ -582,16 +733,20 @@ export function ProblemWorkspace({ problem, initialSolved = false }: ProblemWork
               Switch Language?
             </h3>
             <p className="text-xs text-[#8B93A7] leading-relaxed mb-4">
-              Switching languages will load the starter template for the selected language. Your current code will be saved in your browser history.
+              Switching languages will load the starter template for the
+              selected language. Your current code will be saved in your
+              browser history.
             </p>
             <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setShowLanguageWarning(false)}
                 className="rounded-md border border-[#252936] bg-[#181B24] px-3 py-1.5 text-xs text-[#8B93A7] hover:text-[#F5F7FA]"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={confirmLanguageSwitch}
                 className="rounded-md bg-[#00F0FF] px-3.5 py-1.5 text-xs font-bold text-[#090A0F]"
               >

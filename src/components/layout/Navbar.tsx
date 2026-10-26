@@ -20,6 +20,11 @@ import {
 } from "lucide-react";
 import { GlobalSearchModal } from "./GlobalSearchModal";
 import { NotificationDropdown } from "./NotificationDropdown";
+import {
+  USER_PROGRESS_UPDATED_EVENT,
+  ProgressUpdateEventDetail,
+} from "@/hooks/useSubmissionLifecycle";
+import { AnimatedNumber } from "@/components/problem/submission/AnimatedNumber";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -29,6 +34,56 @@ export function Navbar() {
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const avatarRef = useRef<HTMLDivElement>(null);
+
+  const sessionXp = session?.user?.xp || 0;
+  const sessionStreak = session?.user?.currentStreak || 0;
+  const [liveXp, setLiveXp] = useState<{ from: number; value: number }>({
+    from: sessionXp,
+    value: sessionXp,
+  });
+  const [liveStreak, setLiveStreak] = useState<number>(sessionStreak);
+  const [streakPulsing, setStreakPulsing] = useState(false);
+
+  useEffect(() => {
+    setLiveXp((prev) => {
+      if (sessionXp > prev.value) {
+        return { from: sessionXp, value: sessionXp };
+      }
+      return prev;
+    });
+  }, [sessionXp]);
+
+  useEffect(() => {
+    setLiveStreak((prev) => Math.max(prev, sessionStreak));
+  }, [sessionStreak]);
+
+  useEffect(() => {
+    const handleProgressUpdate = (e: Event) => {
+      const detail = (e as CustomEvent<ProgressUpdateEventDetail>).detail;
+      if (!detail) return;
+
+      if (typeof detail.totalXp === "number" && detail.totalXp > 0) {
+        setLiveXp((prev) => ({
+          from: prev.value,
+          value: detail.totalXp,
+        }));
+      }
+      if (typeof detail.currentStreak === "number") {
+        setLiveStreak(detail.currentStreak);
+      }
+      if (detail.streakIncreased) {
+        setStreakPulsing(true);
+        setTimeout(() => setStreakPulsing(false), 1200);
+      }
+    };
+
+    window.addEventListener(USER_PROGRESS_UPDATED_EVENT, handleProgressUpdate);
+    return () =>
+      window.removeEventListener(
+        USER_PROGRESS_UPDATED_EVENT,
+        handleProgressUpdate
+      );
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -74,19 +129,27 @@ export function Navbar() {
     return (
       <header
         className="sticky top-0 z-40 w-full"
-        style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg)" }}
+        style={{
+          borderBottom: "1px solid var(--border)",
+          backgroundColor: "var(--bg)",
+        }}
       >
         <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
+            <Link
+              href="/"
+              className="flex items-center transition-opacity hover:opacity-80"
+            >
               <Logo size="md" />
             </Link>
             <span
               className="mono text-[11px] px-2 py-0.5 rounded font-medium"
               style={{
-                backgroundColor: "color-mix(in srgb, var(--danger) 12%, transparent)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--danger) 12%, transparent)",
                 color: "var(--danger)",
-                border: "1px solid color-mix(in srgb, var(--danger) 28%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, var(--danger) 28%, transparent)",
               }}
             >
               RESTRICTED
@@ -126,12 +189,18 @@ export function Navbar() {
     <>
       <header
         className="sticky top-0 z-40 w-full"
-        style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg)" }}
+        style={{
+          borderBottom: "1px solid var(--border)",
+          backgroundColor: "var(--bg)",
+        }}
       >
-        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
           {/* Brand + Nav */}
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
+          <div className="flex items-center gap-4 lg:gap-8 min-w-0">
+            <Link
+              href="/"
+              className="flex items-center transition-opacity hover:opacity-80"
+            >
               <Logo size="md" />
             </Link>
 
@@ -176,7 +245,9 @@ export function Navbar() {
                 color: "var(--fg-muted)",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--fg-muted)")
+              }
             >
               <Search className="h-3.5 w-3.5" />
               <span>Search</span>
@@ -210,29 +281,38 @@ export function Navbar() {
                 {/* Streak */}
                 <div
                   title="Current practice streak"
-                  className="mono hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium"
+                  className={`mono hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium whitespace-nowrap transition-transform duration-300 ${
+                    streakPulsing ? "scale-110" : "scale-100"
+                  }`}
                   style={{
                     border: "1px solid var(--border)",
                     borderRadius: "3px",
                     color: "var(--warning)",
                   }}
                 >
-                  <Flame className="h-3.5 w-3.5" />
-                  <span>{session.user.currentStreak || 0}</span>
+                  <Flame className="h-3.5 w-3.5 shrink-0" />
+                  <span>{liveStreak}</span>
                 </div>
 
                 {/* XP */}
                 <div
                   title="Total earned XP"
-                  className="mono hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium"
+                  className="mono hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium whitespace-nowrap"
                   style={{
                     border: "1px solid var(--border)",
                     borderRadius: "3px",
                     color: "var(--fg-muted)",
                   }}
                 >
-                  <Zap className="h-3.5 w-3.5" />
-                  <span>{session.user.xp || 0} XP</span>
+                  <Zap className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    <AnimatedNumber
+                      from={liveXp.from}
+                      value={liveXp.value}
+                      duration={0.65}
+                    />{" "}
+                    XP
+                  </span>
                 </div>
 
                 {/* Notification bell */}
@@ -245,8 +325,12 @@ export function Navbar() {
                     aria-label="View notifications"
                     className="relative flex h-8 w-8 items-center justify-center transition-colors"
                     style={{ color: "var(--fg-muted)", borderRadius: "3px" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = "var(--fg)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color = "var(--fg-muted)")
+                    }
                   >
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
@@ -288,8 +372,13 @@ export function Navbar() {
                       backgroundColor: "var(--bg-elevated)",
                       color: "var(--fg-muted)",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--fg-muted)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border-strong)")}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.borderColor = "var(--fg-muted)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.borderColor =
+                        "var(--border-strong)")
+                    }
                   >
                     {session.user.image ? (
                       <Image
@@ -300,7 +389,10 @@ export function Navbar() {
                         className="object-cover"
                       />
                     ) : (
-                      <span>{session.user.username?.slice(0, 2).toUpperCase() || "U"}</span>
+                      <span>
+                        {session.user.username?.slice(0, 2).toUpperCase() ||
+                          "U"}
+                      </span>
                     )}
                   </button>
 
@@ -319,18 +411,32 @@ export function Navbar() {
                         className="px-3.5 py-2.5"
                         style={{ borderBottom: "1px solid var(--border)" }}
                       >
-                        <p className="text-[12px] font-semibold truncate" style={{ color: "var(--fg)" }}>
+                        <p
+                          className="text-[12px] font-semibold truncate"
+                          style={{ color: "var(--fg)" }}
+                        >
                           {session.user.displayName || session.user.username}
                         </p>
-                        <p className="mono text-[11px] truncate" style={{ color: "var(--fg-dimmed)" }}>
+                        <p
+                          className="mono text-[11px] truncate"
+                          style={{ color: "var(--fg-dimmed)" }}
+                        >
                           @{session.user.username}
                         </p>
                       </div>
 
                       <div className="py-1">
                         {[
-                          { href: `/profile/${session.user.username}`, icon: UserIcon, label: "Profile" },
-                          { href: "/settings", icon: SettingsIcon, label: "Settings" },
+                          {
+                            href: `/profile/${session.user.username}`,
+                            icon: UserIcon,
+                            label: "Profile",
+                          },
+                          {
+                            href: "/settings",
+                            icon: SettingsIcon,
+                            label: "Settings",
+                          },
                           { href: "/credits", icon: BookOpen, label: "Credits" },
                         ].map(({ href, icon: Icon, label }) => (
                           <Link
@@ -340,11 +446,13 @@ export function Navbar() {
                             className="flex items-center gap-2.5 px-3.5 py-2 text-[12px] transition-colors"
                             style={{ color: "var(--fg-muted)" }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = "var(--bg-subtle)";
+                              e.currentTarget.style.backgroundColor =
+                                "var(--bg-subtle)";
                               e.currentTarget.style.color = "var(--fg)";
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = "transparent";
+                              e.currentTarget.style.backgroundColor =
+                                "transparent";
                               e.currentTarget.style.color = "var(--fg-muted)";
                             }}
                           >
@@ -359,8 +467,14 @@ export function Navbar() {
                             onClick={() => setIsAvatarMenuOpen(false)}
                             className="flex items-center gap-2.5 px-3.5 py-2 text-[12px] font-semibold transition-colors"
                             style={{ color: "var(--success)" }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "var(--bg-subtle)")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor =
+                                "transparent")
+                            }
                           >
                             <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
                             Admin Console
@@ -368,7 +482,10 @@ export function Navbar() {
                         )}
                       </div>
 
-                      <div className="pt-1" style={{ borderTop: "1px solid var(--border)" }}>
+                      <div
+                        className="pt-1"
+                        style={{ borderTop: "1px solid var(--border)" }}
+                      >
                         <button
                           onClick={() => {
                             setIsAvatarMenuOpen(false);
@@ -376,8 +493,14 @@ export function Navbar() {
                           }}
                           className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[12px] transition-colors"
                           style={{ color: "var(--danger)" }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "var(--bg-subtle)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
                         >
                           <LogOut className="h-3.5 w-3.5 shrink-0" />
                           Sign Out
@@ -390,7 +513,10 @@ export function Navbar() {
             ) : (
               <div className="flex items-center gap-2">
                 <ThemeToggle />
-                <Link href="/login" className="btn btn-primary text-[12px] px-3 py-1.5">
+                <Link
+                  href="/login"
+                  className="btn btn-primary text-[12px] px-3 py-1.5"
+                >
                   Sign In
                 </Link>
               </div>
