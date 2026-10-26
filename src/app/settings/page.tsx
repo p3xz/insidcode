@@ -6,6 +6,8 @@ import {
   Sliders,
   Shield,
   AlertTriangle,
+  AlertCircle,
+  CheckCircle2,
   Loader2,
   Save,
   Trash2,
@@ -16,6 +18,12 @@ import {
   Award,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import {
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+} from "@/components/ui/alert";
 
 interface TitleOption {
   id: string;
@@ -43,27 +51,37 @@ interface UserSettingsState {
   createdAt: string;
 }
 
+interface ProfileFeedbackState {
+  open: boolean;
+  variant: "success" | "error";
+  title: string;
+  description: string;
+}
+
 export default function SettingsPage() {
   const { update: updateSession } = useSession();
 
   const [settings, setSettings] = useState<UserSettingsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+
+  // Unified server-confirmed Alert state near top of profile form
+  const [profileAlert, setProfileAlert] = useState<ProfileFeedbackState>({
+    open: false,
+    variant: "success",
+    title: "Profile updated",
+    description: "Your changes have been saved.",
+  });
 
   // Titles state
   const [titles, setTitles] = useState<TitleOption[]>([]);
   const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
   const [titleLoading, setTitleLoading] = useState(false);
-  const [titleSuccess, setTitleSuccess] = useState("");
-  const [titleError, setTitleError] = useState("");
 
   // Username edit state
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [editUsernameInput, setEditUsernameInput] = useState("");
   const [usernameLoading, setUsernameLoading] = useState(false);
-  const [usernameError, setUsernameError] = useState("");
-  const [usernameSuccess, setUsernameSuccess] = useState("");
 
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -99,10 +117,27 @@ export default function SettingsPage() {
     fetchSettings();
   }, []);
 
+  const showSuccessAlert = () => {
+    setProfileAlert({
+      open: true,
+      variant: "success",
+      title: "Profile updated",
+      description: "Your changes have been saved.",
+    });
+  };
+
+  const showErrorAlert = (message: string) => {
+    setProfileAlert({
+      open: true,
+      variant: "error",
+      title: "Could not update profile",
+      description: message,
+    });
+  };
+
   const handleSelectTitle = async (newTitle: string | null) => {
     setTitleLoading(true);
-    setTitleError("");
-    setTitleSuccess("");
+    setProfileAlert((prev) => ({ ...prev, open: false }));
 
     try {
       const res = await fetch("/api/user/titles", {
@@ -114,14 +149,13 @@ export default function SettingsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setTitleError(data.error || "Failed to update title.");
+        showErrorAlert(data.error || data.message || "Failed to update title.");
       } else {
         setSelectedTitle(data.selectedTitle || null);
-        setTitleSuccess(data.message || "Title updated successfully.");
-        setTimeout(() => setTitleSuccess(""), 4000);
+        showSuccessAlert();
       }
     } catch {
-      setTitleError("Network error while updating title.");
+      showErrorAlert("Network error while updating title. Please try again.");
     } finally {
       setTitleLoading(false);
     }
@@ -150,15 +184,12 @@ export default function SettingsPage() {
   const handleStartEditUsername = () => {
     if (!settings) return;
     setEditUsernameInput(settings.username);
-    setUsernameError("");
-    setUsernameSuccess("");
     setIsEditingUsername(true);
   };
 
   const handleCancelEditUsername = () => {
     if (!settings) return;
     setEditUsernameInput(settings.username);
-    setUsernameError("");
     setIsEditingUsername(false);
   };
 
@@ -167,7 +198,7 @@ export default function SettingsPage() {
 
     const validationErr = validateUsernameInput(editUsernameInput);
     if (validationErr) {
-      setUsernameError(validationErr);
+      showErrorAlert(validationErr);
       return;
     }
 
@@ -180,8 +211,7 @@ export default function SettingsPage() {
     }
 
     setUsernameLoading(true);
-    setUsernameError("");
-    setUsernameSuccess("");
+    setProfileAlert((prev) => ({ ...prev, open: false }));
 
     try {
       const res = await fetch("/api/user/profile", {
@@ -193,24 +223,22 @@ export default function SettingsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setUsernameError(data.error || "Failed to update username.");
+        showErrorAlert(data.message || data.error || "Failed to update username.");
         return;
       }
 
-      // Success
+      // Server confirmed success
       setSettings((prev) => (prev ? { ...prev, username: data.username } : null));
       setEditUsernameInput(data.username);
       setIsEditingUsername(false);
-      setUsernameSuccess("Username updated successfully.");
+      showSuccessAlert();
 
       // Synchronize NextAuth session in real time
       if (updateSession) {
         await updateSession({ username: data.username });
       }
-
-      setTimeout(() => setUsernameSuccess(""), 4000);
     } catch {
-      setUsernameError("Network error while updating username.");
+      showErrorAlert("Network error while updating username. Please try again.");
     } finally {
       setUsernameLoading(false);
     }
@@ -221,7 +249,7 @@ export default function SettingsPage() {
     if (!settings) return;
 
     setSaveLoading(true);
-    setStatusMessage("");
+    setProfileAlert((prev) => ({ ...prev, open: false }));
 
     try {
       const res = await fetch("/api/user/settings", {
@@ -234,18 +262,18 @@ export default function SettingsPage() {
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
         if (updateSession) {
           await updateSession({ preferences: settings.preferences });
         }
-        setStatusMessage("Settings updated successfully.");
-        setTimeout(() => setStatusMessage(""), 3000);
+        showSuccessAlert();
       } else {
-        const data = await res.json();
-        setStatusMessage(data.error || "Failed to update settings.");
+        showErrorAlert(data.message || data.error || "Failed to update settings.");
       }
     } catch {
-      setStatusMessage("Error updating settings.");
+      showErrorAlert("Could not save your settings due to a network error. Please try again.");
     } finally {
       setSaveLoading(false);
     }
@@ -308,13 +336,26 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Username Feedback Banners */}
-      {usernameSuccess && (
-        <div className="flex items-center gap-2 rounded-lg border border-[#39FF14]/30 bg-[#39FF14]/10 p-3 text-xs text-[#39FF14]">
-          <Check className="h-4 w-4 shrink-0" />
-          <span>{usernameSuccess}</span>
-        </div>
-      )}
+      {/* Unified Server-Confirmed Profile Alert */}
+      <Alert
+        variant={profileAlert.variant}
+        role={profileAlert.variant === "error" ? "alert" : "status"}
+        dismissible
+        open={profileAlert.open}
+        onOpenChange={(nextOpen) =>
+          setProfileAlert((prev) => ({ ...prev, open: nextOpen }))
+        }
+      >
+        <AlertIcon>
+          {profileAlert.variant === "error" ? (
+            <AlertCircle className="size-5" />
+          ) : (
+            <CheckCircle2 className="size-5" />
+          )}
+        </AlertIcon>
+        <AlertTitle>{profileAlert.title}</AlertTitle>
+        <AlertDescription>{profileAlert.description}</AlertDescription>
+      </Alert>
 
       {/* Profile Details Card */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 space-y-5">
@@ -365,7 +406,6 @@ export default function SettingsPage() {
                     value={editUsernameInput}
                     onChange={(e) => {
                       setEditUsernameInput(e.target.value);
-                      setUsernameError("");
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -422,13 +462,8 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Inline Validation / Server Error */}
-              {usernameError ? (
-                <p className="text-xs text-[#FF4D6D] font-medium flex items-center gap-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                  {usernameError}
-                </p>
-              ) : usernameValidationError && editUsernameInput.length > 0 ? (
+              {/* Client-side format hint while typing */}
+              {usernameValidationError && editUsernameInput.length > 0 ? (
                 <p className="text-xs text-[#F59E0B] flex items-center gap-1.5">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                   {usernameValidationError}
@@ -480,20 +515,6 @@ export default function SettingsPage() {
               </span>
             )}
           </div>
-
-          {titleSuccess && (
-            <div className="flex items-center gap-1.5 text-xs text-[#39FF14]">
-              <Check className="h-3.5 w-3.5" />
-              <span>{titleSuccess}</span>
-            </div>
-          )}
-
-          {titleError && (
-            <div className="flex items-center gap-1.5 text-xs text-[#FF4D6D]">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <span>{titleError}</span>
-            </div>
-          )}
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
             <select
@@ -616,11 +637,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Submit Bar */}
-        <div className="flex items-center justify-between border-t border-[var(--border)] pt-6">
-          {statusMessage && (
-            <p className="text-xs font-medium text-[#39FF14]">{statusMessage}</p>
-          )}
-          <div className="flex-1" />
+        <div className="flex items-center justify-end border-t border-[var(--border)] pt-6">
           <button
             type="submit"
             disabled={saveLoading}

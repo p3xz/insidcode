@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/* ─── Tailwind v4 Theme Token Mapping ──────────────────────────────── */
+@theme inline {
+  --color-background: var(--bg-surface);
+  --color-border: var(--border-strong);
+  --color-foreground: var(--fg);
+  --color-foreground-intense: var(--fg-intense);
+  --color-foreground-muted: var(--fg-muted);
+  --color-ring: var(--accent);
+
+  --color-primary: var(--primary-emphasis);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-soft: var(--primary-soft);
+
+  --color-secondary-subtle: var(--secondary-subtle);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary-emphasis: var(--secondary-emphasis);
+
+  --color-error-subtle: var(--error-subtle);
+  --color-error-soft: var(--error-soft);
+  --color-error-emphasis: var(--error-emphasis);
+
+  --color-success-subtle: var(--success-subtle);
+  --color-success-soft: var(--success-soft);
+  --color-success-emphasis: var(--success-emphasis);
+
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-emphasis: var(--warning-emphasis);
+
+  --color-info-subtle: var(--info-subtle);
+  --color-info-soft: var(--info-soft);
+  --color-info-emphasis: var(--info-emphasis);
+}
+
 /* ─── Semantic Design Tokens ───────────────────────────────────────── */
 @layer base {
   :root,
@@ -9,6 +43,7 @@
     --bg-surface:    #101218;
     --bg-elevated:   #161820;
     --fg:            #ECEEF3;
+    --fg-intense:    #FFFFFF;
     --fg-muted:      #838BA0;
     --fg-dimmed:     #525A70;
     --border:        #1A1D28;
@@ -22,6 +57,31 @@
     --easy:          #22C55E;
     --medium:        #F59E0B;
     --hard:          #EF4444;
+
+    /* Alert semantic tokens (dark theme — WCAG AA contrast) */
+    --primary-subtle:     rgba(34, 211, 238, 0.12);
+    --primary-soft:       rgba(34, 211, 238, 0.28);
+    --primary-emphasis:   #22D3EE;
+
+    --secondary-subtle:   rgba(148, 163, 184, 0.12);
+    --secondary-soft:     rgba(148, 163, 184, 0.28);
+    --secondary-emphasis: #CBD5E1;
+
+    --error-subtle:       rgba(239, 68, 68, 0.12);
+    --error-soft:         rgba(239, 68, 68, 0.30);
+    --error-emphasis:     #F87171;
+
+    --success-subtle:     rgba(34, 197, 94, 0.12);
+    --success-soft:       rgba(34, 197, 94, 0.30);
+    --success-emphasis:   #4ADE80;
+
+    --warning-subtle:     rgba(245, 158, 11, 0.12);
+    --warning-soft:       rgba(245, 158, 11, 0.30);
+    --warning-emphasis:   #FBBF24;
+
+    --info-subtle:        rgba(59, 130, 246, 0.12);
+    --info-soft:          rgba(59, 130, 246, 0.30);
+    --info-emphasis:      #60A5FA;
   }
 
   [data-theme="light"] {
@@ -30,6 +90,7 @@
     --bg-surface:    #FFFFFF;
     --bg-elevated:   #FFFFFF;
     --fg:            #0E1117;
+    --fg-intense:    #050608;
     --fg-muted:      #4D5768;
     --fg-dimmed:     #8A94A6;
     --border:        #DDE1EB;
@@ -43,6 +104,31 @@
     --easy:          #16A34A;
     --medium:        #D97706;
     --hard:          #DC2626;
+
+    /* Alert semantic tokens (light theme — WCAG AA contrast) */
+    --primary-subtle:     rgba(0, 111, 168, 0.10);
+    --primary-soft:       rgba(0, 111, 168, 0.28);
+    --primary-emphasis:   #006FA8;
+
+    --secondary-subtle:   rgba(100, 116, 139, 0.10);
+    --secondary-soft:     rgba(100, 116, 139, 0.28);
+    --secondary-emphasis: #334155;
+
+    --error-subtle:       rgba(220, 38, 38, 0.10);
+    --error-soft:         rgba(220, 38, 38, 0.28);
+    --error-emphasis:     #B91C1C;
+
+    --success-subtle:     rgba(22, 163, 74, 0.10);
+    --success-soft:       rgba(22, 163, 74, 0.28);
+    --success-emphasis:   #15803D;
+
+    --warning-subtle:     rgba(217, 119, 6, 0.10);
+    --warning-soft:       rgba(217, 119, 6, 0.28);
+    --warning-emphasis:   #B45309;
+
+    --info-subtle:        rgba(37, 99, 235, 0.10);
+    --info-soft:          rgba(37, 99, 235, 0.28);
+    --info-emphasis:      #1D4ED8;
   }
 }
 
