@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Flame, Lock, Loader2, Swords, Trophy, Award } from "lucide-react";
+import { Flame, Lock, Loader2, Swords, Trophy, Award, Medal } from "lucide-react";
 
 interface LeaderboardUser {
   rank: number;
@@ -229,7 +229,19 @@ export default function LeaderboardPage() {
                 }}
               >
                 {/* Rank */}
-                <div className="col-span-1 text-center mono text-[13px]">
+                <div
+                  className="col-span-1 flex items-center justify-center gap-1 mono text-[13px]"
+                  aria-label={`Rank ${u.rank}`}
+                >
+                  {u.rank === 1 && (
+                    <Medal className="h-3.5 w-3.5 shrink-0" style={{ color: "#F59E0B" }} aria-hidden="true" />
+                  )}
+                  {u.rank === 2 && (
+                    <Medal className="h-3.5 w-3.5 shrink-0" style={{ color: "#94A3B8" }} aria-hidden="true" />
+                  )}
+                  {u.rank === 3 && (
+                    <Medal className="h-3.5 w-3.5 shrink-0" style={{ color: "#D97706" }} aria-hidden="true" />
+                  )}
                   <span
                     style={{
                       fontWeight: isTop ? 700 : 400,
@@ -237,7 +249,7 @@ export default function LeaderboardPage() {
                       fontSize: u.rank === 1 ? "15px" : undefined,
                     }}
                   >
-                    {u.rank === 1 ? "?" : u.rank === 2 ? "?" : u.rank === 3 ? "?" : u.rank}
+                    {u.rank}
                   </span>
                 </div>
 
@@ -316,12 +328,17 @@ export default function LeaderboardPage() {
                     {/* Streak */}
                     <div className="col-span-2 sm:col-span-1 text-center mono text-[12px]" style={{ color: "var(--warning)" }}>
                       {u.currentStreak && u.currentStreak > 0 ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Flame className="h-3 w-3" />
-                          {u.currentStreak}
+                        <span
+                          className="inline-flex items-center justify-center gap-1"
+                          aria-label={`Streak: ${u.currentStreak} ${u.currentStreak === 1 ? "day" : "days"}`}
+                        >
+                          <Flame className="h-3 w-3 shrink-0" aria-hidden="true" />
+                          <span>{u.currentStreak}</span>
                         </span>
                       ) : (
-                        <span style={{ color: "var(--fg-dimmed)" }}>�</span>
+                        <span style={{ color: "var(--fg-dimmed)" }} aria-label="Streak: 0 days">
+                          &ndash;
+                        </span>
                       )}
                     </div>
 
