@@ -25,10 +25,14 @@ export function checkUnsupportedHeaders(code: string): TurboCHeaderCheckResult {
     const escaped = header.replace(".", "\\.");
     const regex = new RegExp(`^\\s*#\\s*include\\s*[<"]\\s*${escaped}\\s*[>"]`, "im");
     if (regex.test(code)) {
+      const message =
+        header === "graphics.h"
+          ? "Turbo C had graphics.h. The internet does not. InsidCode runs on modern Linux servers without a virtual graphics card. Try a plain C solution with printf."
+          : "This uses DOS-specific hardware APIs from the 1980s that only run inside 16-bit MS-DOS. Use standard C library functions instead.";
       return {
         unsupported: true,
         header,
-        message: "Turbo C had graphics.h. The internet does not. Try a plain C solution.",
+        message,
       };
     }
   }
