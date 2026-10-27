@@ -4,16 +4,16 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Users,
-  Code2,
   Send,
   Trophy,
-  ShieldAlert,
   Zap,
   Lock,
   Unlock,
   Radio,
   Loader2,
-  FileText,
+  Swords,
+  MessageSquare,
+  AlertCircle,
 } from "lucide-react";
 import InlineNotice from "@/components/ui/InlineNotice";
 
@@ -21,10 +21,18 @@ interface AdminStats {
   totalUsers: number;
   activeUsers: number;
   bannedUsers: number;
+  activeLast7Days: number;
   totalProblems: number;
   publishedProblems: number;
   totalSubmissions: number;
   acceptedSubmissions: number;
+  submissionsToday: number;
+  acceptedToday: number;
+  acceptanceRateToday: number;
+  overallAcceptanceRate: number;
+  openAppeals: number;
+  unreadFeedback: number;
+  duelsToday: number;
   totalXpAwarded: number;
 }
 
@@ -117,7 +125,7 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00F0FF]" />
+        <Loader2 className="h-7 w-7 animate-spin" style={{ color: "var(--accent)" }} />
       </div>
     );
   }
@@ -127,131 +135,204 @@ export default function AdminDashboardPage() {
       {freezeError && (
         <InlineNotice message={freezeError} onDismiss={() => setFreezeError(null)} />
       )}
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#252936] pb-6">
+
+      {/* Overview Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6" style={{ borderBottom: "1px solid var(--border)" }}>
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldAlert className="h-5 w-5 text-[#39FF14]" />
-            <h1 className="text-2xl font-bold tracking-tight text-[#F5F7FA]">Admin Console</h1>
-          </div>
-          <p className="text-xs text-[#8B93A7]">
-            Server authoritative control, curriculum management, moderation, and system telemetry.
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--fg)" }}>
+            Platform Overview
+          </h1>
+          <p className="text-[12px] mt-1" style={{ color: "var(--fg-muted)" }}>
+            Real-time server telemetry, live operational counts, and platform control toggles.
           </p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin/problems"
-            className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#00F0FF] transition"
-          >
-            <Code2 className="h-3.5 w-3.5 text-[#00F0FF]" />
-            Manage Questions
-          </Link>
-          <Link
-            href="/admin/users"
-            className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#00F0FF] transition"
-          >
-            <Users className="h-3.5 w-3.5 text-[#F59E0B]" />
-            Users & Moderation
-          </Link>
-          <Link
-            href="/admin/appeals"
-            className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#FF4D6D] transition"
-          >
-            <ShieldAlert className="h-3.5 w-3.5 text-[#FF4D6D]" />
-            Suspension Appeals
-          </Link>
-          <Link
-            href="/admin/audit"
-            className="flex items-center gap-1.5 rounded-lg border border-[#252936] bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#F5F7FA] hover:border-[#00F0FF] transition"
-          >
-            <FileText className="h-3.5 w-3.5 text-[#39FF14]" />
-            Audit Logs
-          </Link>
+        {/* Quick action shortcuts */}
+        <div className="flex items-center gap-2">
+          {stats?.openAppeals ? (
+            <Link
+              href="/admin/appeals"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-semibold transition"
+              style={{
+                backgroundColor: "color-mix(in srgb, var(--danger) 15%, transparent)",
+                color: "var(--danger)",
+                border: "1px solid color-mix(in srgb, var(--danger) 30%, transparent)",
+              }}
+            >
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{stats.openAppeals} Open {stats.openAppeals === 1 ? "Appeal" : "Appeals"}</span>
+            </Link>
+          ) : null}
+
+          {stats?.unreadFeedback ? (
+            <Link
+              href="/admin/feedback"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-semibold transition"
+              style={{
+                backgroundColor: "color-mix(in srgb, var(--accent) 15%, transparent)",
+                color: "var(--accent)",
+                border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+              }}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>{stats.unreadFeedback} New Feedback</span>
+            </Link>
+          ) : null}
         </div>
       </div>
 
-      {/* Real Statistics Overview Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Total Users</span>
-            <Users className="h-4 w-4 text-[#00F0FF]" />
+      {/* Primary Telemetry Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Users */}
+        <div
+          className="p-5 rounded-lg space-y-2 transition"
+          style={{
+            backgroundColor: "var(--bg-subtle)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ color: "var(--fg-muted)" }}>
+            <span className="text-[11px] font-medium uppercase tracking-wider">Total Users</span>
+            <Users className="h-4 w-4" style={{ color: "var(--accent)" }} />
           </div>
-          <p className="text-2xl font-bold text-[#F5F7FA] font-mono">{stats?.totalUsers || 0}</p>
-          <p className="text-[11px] text-[#5E667B] mt-1">{stats?.bannedUsers || 0} suspended</p>
+          <p className="text-2xl font-bold mono" style={{ color: "var(--fg)" }}>
+            {stats?.totalUsers?.toLocaleString() || 0}
+          </p>
+          <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            <span>{stats?.activeLast7Days || 0} active in 7d</span>
+            <span>{stats?.bannedUsers || 0} suspended</span>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Published Problems</span>
-            <Code2 className="h-4 w-4 text-[#39FF14]" />
+        {/* Submissions Today */}
+        <div
+          className="p-5 rounded-lg space-y-2 transition"
+          style={{
+            backgroundColor: "var(--bg-subtle)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ color: "var(--fg-muted)" }}>
+            <span className="text-[11px] font-medium uppercase tracking-wider">Submissions Today</span>
+            <Send className="h-4 w-4" style={{ color: "var(--warning)" }} />
           </div>
-          <p className="text-2xl font-bold text-[#F5F7FA] font-mono">{stats?.publishedProblems || 0}</p>
-          <p className="text-[11px] text-[#5E667B] mt-1">{stats?.totalProblems || 0} total in DB</p>
+          <p className="text-2xl font-bold mono" style={{ color: "var(--fg)" }}>
+            {stats?.submissionsToday?.toLocaleString() || 0}
+          </p>
+          <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            <span>{stats?.acceptedToday || 0} accepted</span>
+            <span>{stats?.acceptanceRateToday || 0}% pass rate</span>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Submissions</span>
-            <Send className="h-4 w-4 text-[#F59E0B]" />
+        {/* Duels Today */}
+        <div
+          className="p-5 rounded-lg space-y-2 transition"
+          style={{
+            backgroundColor: "var(--bg-subtle)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ color: "var(--fg-muted)" }}>
+            <span className="text-[11px] font-medium uppercase tracking-wider">Duels Today</span>
+            <Swords className="h-4 w-4" style={{ color: "var(--accent)" }} />
           </div>
-          <p className="text-2xl font-bold text-[#F5F7FA] font-mono">{stats?.totalSubmissions || 0}</p>
-          <p className="text-[11px] text-[#5E667B] mt-1">{stats?.acceptedSubmissions || 0} accepted</p>
+          <p className="text-2xl font-bold mono" style={{ color: "var(--fg)" }}>
+            {stats?.duelsToday?.toLocaleString() || 0}
+          </p>
+          <div className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            <span>1v1 arena matches created</span>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-4">
-          <div className="flex items-center justify-between text-[#8B93A7] mb-2">
-            <span className="text-xs font-medium">Total XP Awarded</span>
-            <Zap className="h-4 w-4 text-[#00F0FF]" />
+        {/* Total XP Awarded */}
+        <div
+          className="p-5 rounded-lg space-y-2 transition"
+          style={{
+            backgroundColor: "var(--bg-subtle)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ color: "var(--fg-muted)" }}>
+            <span className="text-[11px] font-medium uppercase tracking-wider">Total XP Distributed</span>
+            <Zap className="h-4 w-4" style={{ color: "var(--accent)" }} />
           </div>
-          <p className="text-2xl font-bold text-[#00F0FF] font-mono">{stats?.totalXpAwarded || 0}</p>
-          <p className="text-[11px] text-[#5E667B] mt-1">Platform aggregate</p>
+          <p className="text-2xl font-bold mono" style={{ color: "var(--accent)" }}>
+            {stats?.totalXpAwarded?.toLocaleString() || 0}
+          </p>
+          <div className="text-[11px]" style={{ color: "var(--fg-dimmed)" }}>
+            <span>{stats?.publishedProblems || 0} live problems ({stats?.totalProblems || 0} total)</span>
+          </div>
         </div>
       </div>
 
       {/* Control Actions Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Leaderboard Controls */}
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-5 space-y-4">
+        <div
+          className="p-6 rounded-lg space-y-4"
+          style={{
+            backgroundColor: "var(--bg-subtle)",
+            border: "1px solid var(--border)",
+          }}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-[#F59E0B]" />
-              <h3 className="text-sm font-bold text-[#F5F7FA]">Leaderboard Controls</h3>
+              <Trophy className="h-4 w-4" style={{ color: "var(--warning)" }} />
+              <h3 className="text-sm font-bold" style={{ color: "var(--fg)" }}>Leaderboard Controls</h3>
             </div>
             <span
-              className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                isLeaderboardFrozen ? "bg-[#FF4D6D]/10 text-[#FF4D6D]" : "bg-[#39FF14]/10 text-[#39FF14]"
-              }`}
+              className="rounded px-2 py-0.5 text-[10px] font-semibold mono"
+              style={{
+                backgroundColor: isLeaderboardFrozen
+                  ? "color-mix(in srgb, var(--danger) 15%, transparent)"
+                  : "color-mix(in srgb, var(--success) 15%, transparent)",
+                color: isLeaderboardFrozen ? "var(--danger)" : "var(--success)",
+                border: isLeaderboardFrozen
+                  ? "1px solid color-mix(in srgb, var(--danger) 30%, transparent)"
+                  : "1px solid color-mix(in srgb, var(--success) 30%, transparent)",
+              }}
             >
               {isLeaderboardFrozen ? "Frozen" : "Live"}
             </span>
           </div>
 
-          <p className="text-xs text-[#8B93A7] leading-relaxed">
-            Freezing the leaderboard prevents public rank fluctuations during contests or maintenance while user submissions continue executing normally.
+          <p className="text-[12px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+            Freezing the leaderboard prevents public rank updates during contests or database maintenance while user code submissions continue executing normally.
           </p>
 
           <button
+            type="button"
             onClick={handleToggleFreeze}
             disabled={freezeLoading}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
-              isLeaderboardFrozen
-                ? "bg-[#39FF14] text-[#090A0F] hover:bg-[#39FF14]/90"
-                : "bg-[#FF4D6D] text-[#F5F7FA] hover:bg-[#FF4D6D]/90"
-            }`}
+            className="flex items-center gap-2 rounded px-4 py-2 text-[12px] font-bold transition cursor-pointer"
+            style={{
+              backgroundColor: isLeaderboardFrozen ? "var(--success)" : "var(--danger)",
+              color: "#000",
+            }}
           >
             {isLeaderboardFrozen ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-            {freezeLoading ? "Processing..." : isLeaderboardFrozen ? "Unfreeze Leaderboard" : "Freeze Leaderboard"}
+            <span>
+              {freezeLoading
+                ? "Processing..."
+                : isLeaderboardFrozen
+                ? "Unfreeze Leaderboard"
+                : "Freeze Leaderboard"}
+            </span>
           </button>
         </div>
 
         {/* Global Announcement Broadcaster */}
-        <div className="rounded-xl border border-[#252936] bg-[#11131A] p-5 space-y-4">
+        <div
+          className="p-6 rounded-lg space-y-4"
+          style={{
+            backgroundColor: "var(--bg-subtle)",
+            border: "1px solid var(--border)",
+          }}
+        >
           <div className="flex items-center gap-2">
-            <Radio className="h-4 w-4 text-[#00F0FF]" />
-            <h3 className="text-sm font-bold text-[#F5F7FA]">Broadcast Announcement</h3>
+            <Radio className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <h3 className="text-sm font-bold" style={{ color: "var(--fg)" }}>Broadcast Announcement</h3>
           </div>
 
           <form onSubmit={handleSendAnnouncement} className="space-y-3">
@@ -260,8 +341,13 @@ export default function AdminDashboardPage() {
                 type="text"
                 value={announcementTitle}
                 onChange={(e) => setAnnouncementTitle(e.target.value)}
-                placeholder="Announcement Title (e.g. Weekend Logic Challenge)"
-                className="w-full rounded-md border border-[#252936] bg-[#181B24] p-2 text-xs text-[#F5F7FA] placeholder-[#5E667B] focus:border-[#00F0FF] focus:outline-none"
+                placeholder="Announcement Title (e.g. Weekend Duel Match)"
+                className="w-full rounded px-3 py-2 text-[12px] focus:outline-none"
+                style={{
+                  backgroundColor: "var(--bg)",
+                  color: "var(--fg)",
+                  border: "1px solid var(--border)",
+                }}
               />
             </div>
             <div>
@@ -270,29 +356,40 @@ export default function AdminDashboardPage() {
                 value={announcementMessage}
                 onChange={(e) => setAnnouncementMessage(e.target.value)}
                 placeholder="Broadcast message to all developers..."
-                className="w-full rounded-md border border-[#252936] bg-[#181B24] p-2 text-xs text-[#F5F7FA] placeholder-[#5E667B] focus:border-[#00F0FF] focus:outline-none resize-none"
+                className="w-full rounded px-3 py-2 text-[12px] focus:outline-none resize-none"
+                style={{
+                  backgroundColor: "var(--bg)",
+                  color: "var(--fg)",
+                  border: "1px solid var(--border)",
+                }}
               />
             </div>
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs text-[#8B93A7] cursor-pointer">
+              <label className="flex items-center gap-2 text-[12px] cursor-pointer" style={{ color: "var(--fg-muted)" }}>
                 <input
                   type="checkbox"
                   checked={broadcastInApp}
                   onChange={(e) => setBroadcastInApp(e.target.checked)}
-                  className="rounded border-[#252936] bg-[#181B24] text-[#00F0FF] focus:ring-0"
+                  className="rounded"
                 />
                 Send in-app notification to all users
               </label>
 
               <button
                 type="submit"
-                className="rounded-lg bg-[#00F0FF] px-4 py-1.5 text-xs font-bold text-[#090A0F] hover:bg-[#00F0FF]/90 transition"
+                className="rounded px-4 py-1.5 text-[12px] font-bold transition cursor-pointer"
+                style={{
+                  backgroundColor: "var(--accent)",
+                  color: "var(--accent-fg)",
+                }}
               >
                 Send Broadcast
               </button>
             </div>
             {announcementStatus && (
-              <p className="text-[11px] text-[#39FF14] font-mono">{announcementStatus}</p>
+              <p className="text-[11px] font-mono" style={{ color: "var(--success)" }}>
+                {announcementStatus}
+              </p>
             )}
           </form>
         </div>

@@ -94,17 +94,34 @@ export async function GET(req: NextRequest) {
     const totalCount = await Question.countDocuments(query);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const questions = await Question.find(query)
-      .sort({ problemId: 1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
+    const questions = await Question.aggregate([
+      { $match: query },
+      { $sort: { problemId: 1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+      {
+        $project: {
+          problemId: 1,
+          title: 1,
+          slug: 1,
+          phase: 1,
+          difficulty: 1,
+          description: 1,
+          constraints: 1,
+          examples: 1,
+          starterTemplates: 1,
+          tags: 1,
+          xp: 1,
+          isPublished: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          hiddenTestCount: { $size: { $ifNull: ["$hiddenTestCases", []] } },
+        },
+      },
+    ]);
 
     return NextResponse.json({
-      questions: questions.map((q) => ({
-        ...q,
-        hiddenTestCount: q.hiddenTestCases?.length || 0,
-      })),
+      questions,
       pagination: {
         page,
         limit,

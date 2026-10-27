@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { requireAdminUser } from "@/lib/auth";
+import { requireAdminMutationUser } from "@/lib/security";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { AdminAction } from "@/models/AdminAction";
 import { User } from "@/models/User";
 import { Question } from "@/models/Question";
 import {
@@ -77,7 +79,7 @@ function makeUsername(first: string, last: string, used: Set<string>): string {
  * Admin only. Idempotent: skips when seed users already exist unless ?force=1.
  */
 export async function POST(req: NextRequest) {
-  const adminResult = await requireAdminUser();
+  const adminResult = await requireAdminMutationUser(req, "SEED_USERS");
   if (!adminResult.admin) {
     return NextResponse.json(
       { error: adminResult.error || "Forbidden" },
@@ -85,8 +87,45 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const force = req.nextUrl.searchParams.get("force") === "1";
-  const countParam = parseInt(req.nextUrl.searchParams.get("count") || "100", 10);
+  const admin = adminResult.admin;
+
+  const rateLimit = checkRateLimit(`admin_seed_${admin._id.toString()}`, { limit: 5, windowMs: 60000 });
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait before running seeder again." },
+      { status: 429 }
+    );
+  }
+
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_ADMIN_SEEDING !== "true") {
+    return NextResponse.json(
+      { error: "Demo user seeding is blocked in production environments." },
+      { status: 403 }
+    );
+  }
+
+  interface SeedRequestBody {
+    force?: boolean;
+    confirmPhrase?: string;
+    count?: number | string;
+  }
+  let body: SeedRequestBody = {};
+  try {
+    body = await req.json();
+  } catch {
+    // body optional
+  }
+
+  const force = req.nextUrl.searchParams.get("force") === "1" || body.force === true;
+  if (force && body.confirmPhrase !== "CONFIRM_SEED_FORCE_RESET") {
+    return NextResponse.json(
+      { error: "Bulk deletion of seed users requires typed confirmation phrase: 'CONFIRM_SEED_FORCE_RESET'." },
+      { status: 400 }
+    );
+  }
+
+  const rawCount = req.nextUrl.searchParams.get("count") ?? (body.count !== undefined ? String(body.count) : "100");
+  const countParam = parseInt(rawCount, 10);
   const count = Math.min(Math.max(countParam || 100, 1), 500);
 
   await connectToDatabase();
@@ -96,7 +135,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       seeded: 0,
       existing,
-      message: "Seed users already exist. Pass ?force=1 to delete and reseed.",
+      message: "Seed users already exist. Provide force: true with confirmPhrase: 'CONFIRM_SEED_FORCE_RESET' to reseed.",
     });
   }
   if (force && existing > 0) {
@@ -217,6 +256,14 @@ export async function POST(req: NextRequest) {
   }
 
   const inserted = await User.insertMany(docs);
+
+  await AdminAction.create({
+    adminId: admin._id.toString(),
+    adminUsername: admin.username,
+    action: "SEED_USERS_RUN",
+    newValue: JSON.stringify({ seededCount: inserted.length, force }),
+    reason: `Admin seeded ${inserted.length} demo users${force ? " (force reset)" : ""}`,
+  });
 
   return NextResponse.json({
     seeded: inserted.length,

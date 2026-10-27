@@ -1,6 +1,7 @@
 import { requireAdminUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { AdminNavHeader } from "@/components/admin/AdminNavHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -34,5 +35,10 @@ export default async function AdminLayout({
     redirect("/");
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}>
+      <AdminNavHeader adminUsername={authResult.admin.username} />
+      <main className="flex-1 w-full pb-16">{children}</main>
+    </div>
+  );
 }
