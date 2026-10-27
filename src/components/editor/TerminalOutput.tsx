@@ -45,6 +45,8 @@ export interface ExecutionResultData {
   errorDetails?: string;
   systemError?: string;
   failedTestCase?: IFailedTestCaseInfo;
+  isTurboCMode?: boolean;
+  turboCHint?: string;
 }
 
 interface TerminalOutputProps {
@@ -353,6 +355,11 @@ export function TerminalOutput({
                                 tests passed)
                               </span>
                             ) : null}
+                            {result.isTurboCMode && (
+                              <span className="inline-flex items-center gap-1 rounded border border-[#00F0FF]/30 bg-[#00F0FF]/10 px-2 py-0.5 text-[10px] font-semibold text-[#00F0FF]">
+                                Judged in Turbo C mode
+                              </span>
+                            )}
                           </div>
                           {badge.explanation && (
                             <p className="font-sans text-[11px] text-[#8B93A7]">
@@ -426,6 +433,12 @@ export function TerminalOutput({
                             backgroundColor: "var(--bg-secondary, var(--bg))",
                           }}
                         >
+                          {result.failedTestCase.hint && (
+                            <div className="flex items-start gap-2 rounded-md border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-2.5 text-xs text-[#FBBF24]">
+                              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                              <span>{result.failedTestCase.hint}</span>
+                            </div>
+                          )}
                           <div
                             className="flex items-center justify-between border-b pb-2"
                             style={{ borderColor: "var(--border)" }}
@@ -539,14 +552,21 @@ export function TerminalOutput({
                             backgroundColor: "var(--bg-secondary, var(--bg))",
                           }}
                         >
-                          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider">
-                            {result.status === "Compilation Error"
-                              ? "Compiler Output"
-                              : result.status === "Runtime Error"
-                              ? "Runtime Diagnostic"
-                              : result.status === "Time Limit Exceeded"
-                              ? "Execution Timeout"
-                              : "Diagnostic Details"}
+                          <div className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider">
+                            <span>
+                              {result.status === "Compilation Error"
+                                ? "Compiler Output"
+                                : result.status === "Runtime Error"
+                                ? "Runtime Diagnostic"
+                                : result.status === "Time Limit Exceeded"
+                                ? "Execution Timeout"
+                                : "Diagnostic Details"}
+                            </span>
+                            {result.errorDetails?.includes("graphics.h") && (
+                              <span className="text-[10px] font-medium text-[#FBBF24] bg-[#F59E0B]/10 px-2 py-0.5 rounded border border-[#F59E0B]/30 lowercase">
+                                Environment limitation (not a logic error)
+                              </span>
+                            )}
                           </div>
                           <pre className="whitespace-pre-wrap font-mono text-xs">
                             {result.errorDetails ||

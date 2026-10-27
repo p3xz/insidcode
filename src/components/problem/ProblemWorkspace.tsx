@@ -75,6 +75,27 @@ export function ProblemWorkspace({
   const [execResult, setExecResult] = useState<ExecutionResultData | null>(
     null
   );
+  const [isTurboCMode, setIsTurboCMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("insidcode:turboc-mode") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleTurboC = () => {
+    setIsTurboCMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("insidcode:turboc-mode", String(next));
+      } catch {}
+      if (next) {
+        setNotice("Turbo C mode is on. We'll let void main() slide this time.");
+      }
+      return next;
+    });
+  };
   const [isSolved, setIsSolved] = useState(initialSolved);
 
   const [pendingLanguage, setPendingLanguage] =
@@ -211,6 +232,7 @@ export function ProblemWorkspace({
           language: selectedLanguage,
           code,
           customInput: stdin,
+          ...(selectedLanguage === "c" && isTurboCMode ? { compat: "turboc" } : {}),
         }),
       });
 
@@ -364,6 +386,7 @@ export function ProblemWorkspace({
           problemId: problem.problemId,
           language: selectedLanguage,
           code,
+          ...(selectedLanguage === "c" && isTurboCMode ? { compat: "turboc" } : {}),
         }),
       })
     );
@@ -378,6 +401,8 @@ export function ProblemWorkspace({
         isFirstSolve: lifecycleResult.isFirstSolve,
         errorDetails: lifecycleResult.errorDetails,
         failedTestCase: lifecycleResult.failedTestCase,
+        isTurboCMode: lifecycleResult.isTurboCMode,
+        turboCHint: lifecycleResult.turboCHint,
       });
     }
   };
@@ -614,6 +639,31 @@ export function ProblemWorkspace({
                   </option>
                 ))}
               </select>
+
+              {/* Turbo C Mode Toggle (Only visible when language = C) */}
+              {selectedLanguage === "c" && (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isTurboCMode}
+                  aria-label="Toggle Turbo C compatibility mode"
+                  onClick={handleToggleTurboC}
+                  title="Your college still uses Turbo C. We get it. Turn this on and we'll quietly fix the old-style stuff."
+                  className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-semibold transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00F0FF]/50 ${
+                    isTurboCMode
+                      ? "border-[#00F0FF]/50 bg-[#00F0FF]/15 text-[#00F0FF]"
+                      : "border-[#252936] bg-[#181B24] text-[#8B93A7] hover:border-[#363C4E] hover:text-[#F5F7FA]"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full transition-colors ${
+                      isTurboCMode ? "bg-[#00F0FF] shadow-[0_0_6px_#00F0FF]" : "bg-[#5E667B]"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span>Turbo C mode</span>
+                </button>
+              )}
             </div>
 
             {/* Desktop Action Buttons */}
