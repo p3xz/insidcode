@@ -7,6 +7,12 @@ import { generateUniqueUsername } from "./username";
 import { IUser } from "@/types";
 import { checkUserConsentStatus, UserConsentStatus } from "@/config/legal";
 
+if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET && !process.env.AUTH_SECRET) {
+  throw new Error(
+    "[Auth Security] Critical: NEXTAUTH_SECRET or AUTH_SECRET environment variable is missing in production."
+  );
+}
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -50,6 +56,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID || "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+      userinfo: {
+        url: "https://api.github.com/user",
+        async request({
+          tokens,
+          provider,
+        }: {
+          tokens: { access_token?: string };
+          provider: { userinfo?: { url?: string } };
+        }) {
+          const headers = {
+            Authorization: `Bearer ${tokens.access_token}`,
+            "User-Agent": "insidcode-auth",
+          };
+          const profile = await fetch(provider.userinfo?.url || "https://api.github.com/user", {
+            headers,
+          }).then((res) => res.json());
+
+          try {
+            const emailsRes = await fetch("https://api.github.com/user/emails", { headers });
+            if (emailsRes.ok) {
+              const emails: Array<{ email: string; primary: boolean; verified: boolean }> =
+                await emailsRes.json();
+              const primaryVerified = emails.find((e) => e.primary && e.verified);
+              if (primaryVerified) {
+                profile.email = primaryVerified.email;
+                profile.email_verified = true;
+              } else {
+                profile.email_verified = false;
+              }
+            } else {
+              profile.email_verified = false;
+            }
+          } catch {
+            profile.email_verified = false;
+          }
+          return profile;
+        },
+      },
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name ?? profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+          email_verified: profile.email_verified ?? false,
+        };
+      },
     }),
   ],
   session: {
@@ -57,27 +110,95 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async signIn({ user, account }) {
+    async redirect({ url, baseUrl }) {
+      // Allow relative callback URLs starting with a single '/'
+      if (url.startsWith("/")) {
+        // Prevent protocol-relative redirects (e.g., //attacker.com)
+        if (url.startsWith("//")) {
+          return baseUrl;
+        }
+        return `${baseUrl}${url}`;
+      }
+
+      // Allow same-origin absolute URLs
+      try {
+        const parsedUrl = new URL(url);
+        const parsedBase = new URL(baseUrl);
+        if (parsedUrl.origin === parsedBase.origin) {
+          return url;
+        }
+      } catch {
+        return baseUrl;
+      }
+
+      return baseUrl;
+    },
+    async signIn({ user, account, profile }) {
       if (!account || !account.provider || !account.providerAccountId) {
         console.warn("[Auth] Sign-in rejected: Missing account provider metadata.");
         return false;
       }
 
+      const userEmail = user.email ? user.email.toLowerCase().trim() : undefined;
+
+      // Verify email from provider
+      let isEmailVerified = false;
+      if (account.provider === "google") {
+        isEmailVerified = Boolean((profile as { email_verified?: boolean })?.email_verified);
+      } else if (account.provider === "github") {
+        if ((profile as { email_verified?: boolean })?.email_verified) {
+          isEmailVerified = true;
+        } else if (account.access_token) {
+          try {
+            const emailsRes = await fetch("https://api.github.com/user/emails", {
+              headers: {
+                Authorization: `Bearer ${account.access_token}`,
+                "User-Agent": "insidcode-auth",
+              },
+            });
+            if (emailsRes.ok) {
+              const emails: Array<{ email: string; primary: boolean; verified: boolean }> =
+                await emailsRes.json();
+              const primaryVerified = emails.find((e) => e.primary && e.verified);
+              if (primaryVerified && primaryVerified.email.toLowerCase().trim() === userEmail) {
+                isEmailVerified = true;
+              }
+            }
+          } catch (err) {
+            console.error("[Auth] Error verifying GitHub email:", err);
+          }
+        }
+      }
+
+      if (!userEmail || !isEmailVerified) {
+        console.warn(
+          `[Auth] Sign-in rejected: Unverified or missing email for provider '${account.provider}'.`
+        );
+        return "/login?error=UnverifiedEmail";
+      }
+
       try {
         await connectToDatabase();
 
-        const userEmail = user.email ? user.email.toLowerCase().trim() : undefined;
         const isAdmin = checkIsAdminEmail(userEmail);
 
-        // Find existing user by provider account ID or email
+        // Strict lookup by provider and providerAccountId
         let dbUser = await User.findOne({
-          $or: [
-            { provider: account.provider, providerAccountId: account.providerAccountId },
-            ...(userEmail ? [{ email: userEmail }] : []),
-          ],
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
         });
 
         if (!dbUser) {
+          // Check if an account already exists with the same email under another provider
+          const existingUserWithEmail = await User.findOne({ email: userEmail });
+          if (existingUserWithEmail) {
+            console.warn(
+              `[Auth] Cross-provider account takeover prevented for ${userEmail}: existing provider '${existingUserWithEmail.provider}', attempted '${account.provider}'`
+            );
+            const originalProvider = existingUserWithEmail.provider || "another";
+            return `/login?error=OAuthAccountNotLinked&provider=${encodeURIComponent(originalProvider)}`;
+          }
+
           const rawName = user.name || (userEmail ? userEmail.split("@")[0] : "coder");
           const username = await generateUniqueUsername(rawName);
 
@@ -114,14 +235,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } else {
           let hasUpdates = false;
 
-          // Link provider info if matched via email
-          if (dbUser.provider !== account.provider || dbUser.providerAccountId !== account.providerAccountId) {
-            dbUser.provider = account.provider;
-            dbUser.providerAccountId = account.providerAccountId;
-            hasUpdates = true;
-          }
+          // Never overwrite provider or providerAccountId!
 
-          // Ensure admin status is assigned
+          // Ensure admin status is assigned if email matches ADMIN_EMAIL
           if (isAdmin && dbUser.role !== "admin") {
             dbUser.role = "admin";
             hasUpdates = true;
@@ -148,13 +264,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account && user) {
         try {
           await connectToDatabase();
-          const userEmail = user.email ? user.email.toLowerCase().trim() : undefined;
-
           const dbUser = await User.findOne({
-            $or: [
-              { provider: account.provider, providerAccountId: account.providerAccountId },
-              ...(userEmail ? [{ email: userEmail }] : []),
-            ],
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
           });
 
           if (dbUser) {

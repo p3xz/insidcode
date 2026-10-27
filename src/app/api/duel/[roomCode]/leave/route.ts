@@ -29,6 +29,9 @@ export async function POST(
     }
 
     const normalizedCode = roomCode.trim().toUpperCase();
+    if (!/^DUEL-[A-Z0-9]{3,8}$/.test(normalizedCode)) {
+      return NextResponse.json({ error: "Invalid duel room code format." }, { status: 400 });
+    }
 
     await connectToDatabase();
 
