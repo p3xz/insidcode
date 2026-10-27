@@ -10,6 +10,9 @@ import {
   Clock,
   Loader2,
   X,
+  ExternalLink,
+  Scale,
+  RefreshCw,
 } from "lucide-react";
 import { formatIST, formatISTDateOnly } from "@/lib/dateUtils";
 
@@ -53,8 +56,8 @@ export default function AdminAppealsPage() {
         setAppeals(data.appeals || []);
         setPendingCount(data.pendingCount || 0);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      console.error("Failed to fetch appeals:", err);
     } finally {
       setLoading(false);
     }
@@ -82,7 +85,7 @@ export default function AdminAppealsPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setModalFeedback(`Appeal successfully ${action === "APPROVE" ? "approved" : "rejected"}.`);
+        setModalFeedback(`Appeal successfully ${action === "APPROVE" ? "approved & account restored" : "rejected"}.`);
         setTimeout(() => {
           setSelectedAppeal(null);
           setDecisionNotes("");
@@ -101,6 +104,7 @@ export default function AdminAppealsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-8">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#252936] pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -120,7 +124,7 @@ export default function AdminAppealsPage() {
             Suspension Appeals
           </h1>
           <p className="text-xs text-[#8B93A7] mt-1">
-            Review formal suspension appeal requests, inspect statements, and decide account restorations.
+            Review formal suspension appeal requests, inspect statements side-by-side, and decide account restorations.
           </p>
         </div>
 
@@ -130,9 +134,18 @@ export default function AdminAppealsPage() {
             <span className="text-xs text-[#8B93A7]">Pending Review:</span>
             <span className="mono text-sm font-bold text-[#F59E0B]">{pendingCount}</span>
           </div>
+          <button
+            onClick={() => fetchAppeals()}
+            className="p-2 rounded-lg bg-[#11131A] border border-[#252936] text-[#8B93A7] hover:text-[#00F0FF] hover:border-[#00F0FF]/40 transition"
+            title="Refresh"
+            aria-label="Refresh appeals"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
+      {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="flex items-center gap-1 p-1 bg-[#11131A] border border-[#252936] rounded-lg">
           {(["ALL", "PENDING", "APPROVED", "REJECTED"] as const).map((tab) => {
@@ -153,7 +166,7 @@ export default function AdminAppealsPage() {
           })}
         </div>
 
-        <div className="relative min-w-[240px]">
+        <div className="relative min-w-[260px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#5E667B]" />
           <input
             type="text"
@@ -165,6 +178,7 @@ export default function AdminAppealsPage() {
         </div>
       </div>
 
+      {/* Appeals Table */}
       <div className="rounded-xl border border-[#252936] bg-[#11131A] overflow-hidden">
         {loading ? (
           <div className="p-12 flex justify-center items-center">
@@ -198,8 +212,8 @@ export default function AdminAppealsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 max-w-xs">
-                      <p className="font-medium truncate">{appeal.reason}</p>
-                      <p className="text-[11px] text-[#8B93A7] truncate">{appeal.statement}</p>
+                      <p className="font-medium truncate text-[#F5F7FA]">{appeal.reason}</p>
+                      <p className="text-[11px] text-[#8B93A7] truncate font-mono">{appeal.statement}</p>
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={appeal.status} />
@@ -213,9 +227,10 @@ export default function AdminAppealsPage() {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => setSelectedAppeal(appeal)}
-                        className="px-3 py-1 rounded bg-[#181B24] hover:bg-[#252936] text-[#00F0FF] border border-[#252936] text-[11px] font-semibold transition"
+                        className="px-3 py-1 rounded bg-[#181B24] hover:bg-[#252936] text-[#00F0FF] border border-[#252936] text-[11px] font-semibold transition inline-flex items-center gap-1.5"
                       >
-                        {appeal.status === "PENDING" ? "Review Appeal" : "Inspect"}
+                        <Scale className="h-3 w-3" />
+                        <span>{appeal.status === "PENDING" ? "Review Appeal" : "Inspect"}</span>
                       </button>
                     </td>
                   </tr>
@@ -226,9 +241,10 @@ export default function AdminAppealsPage() {
         )}
       </div>
 
+      {/* Appeal Detail & Decision Modal (Side-by-side statement comparison) */}
       {selectedAppeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-[#11131A] border border-[#252936] rounded-xl p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-3xl bg-[#11131A] border border-[#252936] rounded-xl p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-4 border-b border-[#252936] pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -238,106 +254,126 @@ export default function AdminAppealsPage() {
                 <h2 className="text-lg font-bold text-[#F5F7FA] mt-1">
                   Appeal Review: @{selectedAppeal.username}
                 </h2>
-                <p className="text-xs text-[#8B93A7]">{selectedAppeal.email}</p>
+                <div className="flex items-center gap-3 text-xs text-[#8B93A7] mt-0.5">
+                  <span>{selectedAppeal.email}</span>
+                  <Link
+                    href={`/admin/users?search=${encodeURIComponent(selectedAppeal.username)}`}
+                    className="inline-flex items-center gap-1 text-[#00F0FF] hover:underline"
+                    target="_blank"
+                  >
+                    <span>View User Profile</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedAppeal(null)}
                 aria-label="Close appeal details"
-                className="text-[#8B93A7] hover:text-[#F5F7FA] text-sm p-1"
+                className="text-[#8B93A7] hover:text-[#F5F7FA] text-sm p-1 rounded hover:bg-[#181B24] transition"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
-              <div className="p-3 bg-[#181B24] border border-[#252936] rounded-lg space-y-1">
-                <span className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold">
-                  Recorded Ban Reason
+            {/* Side-by-side context */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left: Original Suspension */}
+              <div className="p-4 bg-[#181B24] border border-[#252936] rounded-lg space-y-3">
+                <span className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold block">
+                  Original Suspension Record
                 </span>
-                <p className="text-red-400 font-mono">{selectedAppeal.banReason || "Administrative suspension"}</p>
+                <div>
+                  <p className="text-[11px] text-[#8B93A7] mb-1">Recorded Ban Reason:</p>
+                  <p className="text-red-400 font-mono text-xs bg-red-950/30 p-2.5 rounded border border-red-900/40">
+                    {selectedAppeal.banReason || "Administrative suspension"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-[#8B93A7] mb-1">Appeal Category:</p>
+                  <p className="text-[#F5F7FA] font-medium text-xs">
+                    {selectedAppeal.reason}
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold">
-                  Appeal Reason Category
+              {/* Right: User Statement */}
+              <div className="p-4 bg-[#181B24] border border-[#252936] rounded-lg space-y-3">
+                <span className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold block">
+                  User Appeal Statement
                 </span>
-                <p className="text-[#F5F7FA] font-medium">{selectedAppeal.reason}</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold">
-                  Full Appeal Statement
-                </span>
-                <div className="p-3.5 bg-[#09090b] border border-[#252936] rounded-lg font-mono text-[11px] leading-relaxed text-[#F5F7FA] whitespace-pre-wrap">
+                <div className="p-3 bg-[#09090b] border border-[#252936] rounded-lg font-mono text-[11px] leading-relaxed text-[#F5F7FA] whitespace-pre-wrap max-h-48 overflow-y-auto">
                   {selectedAppeal.statement}
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-3 text-[11px] text-[#8B93A7] mono">
+            {/* Timestamps */}
+            <div className="grid grid-cols-2 gap-3 text-[11px] text-[#8B93A7] mono bg-[#181B24]/40 p-3 rounded-lg border border-[#252936]">
+              <div>
+                <span>Submitted (IST): </span>
+                <span className="text-[#F5F7FA]">{formatIST(selectedAppeal.createdAt)}</span>
+              </div>
+              <div>
+                <span>Reviewed (IST): </span>
+                <span className="text-[#F5F7FA]">
+                  {selectedAppeal.reviewedAt ? formatIST(selectedAppeal.reviewedAt) : "Pending Review"}
+                </span>
+              </div>
+            </div>
+
+            {/* Decision already recorded */}
+            {selectedAppeal.decision && (
+              <div className="p-3 bg-[#181B24] border border-[#252936] rounded-lg space-y-1">
+                <span className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold">
+                  Decision Notes (by @{selectedAppeal.reviewedBy || "Admin"})
+                </span>
+                <p className="text-[#F5F7FA] text-xs">{selectedAppeal.decision}</p>
+              </div>
+            )}
+
+            {/* Action Bar for Pending */}
+            {selectedAppeal.status === "PENDING" && (
+              <div className="pt-2 space-y-3 border-t border-[#252936]">
                 <div>
-                  <span>Submitted (IST): </span>
-                  <span className="text-[#F5F7FA]">{formatIST(selectedAppeal.createdAt)}</span>
+                  <label className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold block mb-1">
+                    Decision Notes / Rationale
+                  </label>
+                  <input
+                    type="text"
+                    value={decisionNotes}
+                    onChange={(e) => setDecisionNotes(e.target.value)}
+                    placeholder="Provide rationale for approval or rejection..."
+                    className="w-full bg-[#181B24] border border-[#252936] rounded-lg px-3 py-2 text-xs text-[#F5F7FA] focus:outline-none focus:border-[#00F0FF]"
+                  />
                 </div>
-                <div>
-                  <span>Reviewed (IST): </span>
-                  <span className="text-[#F5F7FA]">
-                    {selectedAppeal.reviewedAt ? formatIST(selectedAppeal.reviewedAt) : "Not yet"}
-                  </span>
+
+                {modalFeedback && (
+                  <div className="p-2.5 rounded bg-[#181B24] text-xs font-medium text-center text-[#00F0FF]">
+                    {modalFeedback}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => handleProcessAppeal("REJECT")}
+                    disabled={actionLoading}
+                    className="px-4 py-2 rounded-lg bg-red-950/40 border border-red-800 text-red-400 hover:bg-red-900/50 text-xs font-semibold transition disabled:opacity-50 inline-flex items-center gap-1.5"
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    <span>Reject Appeal</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleProcessAppeal("APPROVE")}
+                    disabled={actionLoading}
+                    className="px-4 py-2 rounded-lg bg-emerald-950/40 border border-emerald-800 text-emerald-400 hover:bg-emerald-900/50 text-xs font-semibold transition disabled:opacity-50 inline-flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Approve Appeal & Restore Account</span>
+                  </button>
                 </div>
               </div>
-
-              {selectedAppeal.decision && (
-                <div className="p-3 bg-[#181B24] border border-[#252936] rounded-lg space-y-1">
-                  <span className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold">
-                    Recorded Decision Notes (by @{selectedAppeal.reviewedBy})
-                  </span>
-                  <p className="text-[#F5F7FA]">{selectedAppeal.decision}</p>
-                </div>
-              )}
-
-              {selectedAppeal.status === "PENDING" && (
-                <div className="pt-2 space-y-3 border-t border-[#252936]">
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider mono text-[#8B93A7] font-semibold block mb-1">
-                      Administrator Decision Notes (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={decisionNotes}
-                      onChange={(e) => setDecisionNotes(e.target.value)}
-                      placeholder="Optional rationale for approval or rejection..."
-                      className="w-full bg-[#181B24] border border-[#252936] rounded-lg px-3 py-2 text-xs text-[#F5F7FA] focus:outline-none focus:border-[#00F0FF]"
-                    />
-                  </div>
-
-                  {modalFeedback && (
-                    <div className="p-2.5 rounded bg-[#181B24] text-xs font-medium text-center text-[#00F0FF]">
-                      {modalFeedback}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-end gap-3 pt-2">
-                    <button
-                      onClick={() => handleProcessAppeal("REJECT")}
-                      disabled={actionLoading}
-                      className="px-4 py-2 rounded-lg bg-red-950/40 border border-red-800 text-red-400 hover:bg-red-900/50 text-xs font-semibold transition disabled:opacity-50 inline-flex items-center gap-1.5"
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      <span>Reject Appeal</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleProcessAppeal("APPROVE")}
-                      disabled={actionLoading}
-                      className="px-4 py-2 rounded-lg bg-emerald-950/40 border border-emerald-800 text-emerald-400 hover:bg-emerald-900/50 text-xs font-semibold transition disabled:opacity-50 inline-flex items-center gap-1.5"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Approve Appeal & Restore Account</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}
