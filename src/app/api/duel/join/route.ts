@@ -24,6 +24,9 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedCode = roomCode.trim().toUpperCase();
+    if (!/^DUEL-[A-Z0-9]{3,8}$/.test(normalizedCode)) {
+      return NextResponse.json({ error: "Invalid duel room code format." }, { status: 400 });
+    }
 
     await connectToDatabase();
 
@@ -81,6 +84,8 @@ export async function POST(req: NextRequest) {
       {
         roomCode: normalizedCode,
         status: "WAITING",
+        "player1.userId": { $ne: user._id.toString() },
+        expiresAt: { $gt: now },
         $or: [{ player2: { $exists: false } }, { player2: null }],
       },
       {

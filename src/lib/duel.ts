@@ -7,18 +7,18 @@ import { applyDuelPointDelta, WIN_DUEL_POINTS, LOSS_DUEL_POINTS } from "@/lib/du
 const CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 /**
- * Generates a human-friendly, collision-safe room code.
- * Example: DUEL-782, DUEL-K49
+ * Generates a human-friendly, collision-safe room code using cryptographic randomness.
+ * Uses 6 characters from a 32-character unambiguous charset (over 1 billion combinations).
+ * Example: DUEL-K49M2X
  */
 export async function generateUniqueRoomCode(): Promise<string> {
   await connectToDatabase();
   const MAX_ATTEMPTS = 10;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const bytes = crypto.randomBytes(3);
     let code = "";
-    for (let i = 0; i < 3; i++) {
-      code += CHARS[bytes[i] % CHARS.length];
+    for (let i = 0; i < 6; i++) {
+      code += CHARS[crypto.randomInt(0, CHARS.length)];
     }
     const roomCode = `DUEL-${code}`;
 
@@ -28,11 +28,10 @@ export async function generateUniqueRoomCode(): Promise<string> {
     }
   }
 
-  // Fallback with 4 chars if collisions occur
-  const bytes = crypto.randomBytes(4);
+  // Fallback with 8 chars if collisions occur
   let code = "";
-  for (let i = 0; i < 4; i++) {
-    code += CHARS[bytes[i] % CHARS.length];
+  for (let i = 0; i < 8; i++) {
+    code += CHARS[crypto.randomInt(0, CHARS.length)];
   }
   return `DUEL-${code}`;
 }
