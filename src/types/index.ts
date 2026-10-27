@@ -36,6 +36,7 @@ export interface IFailedTestCaseInfo {
   expectedOutput?: string;
   actualOutput?: string;
   remainingFailedCount?: number;
+  hint?: string;
 }
 
 export interface IUser {
