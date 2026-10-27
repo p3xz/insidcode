@@ -23,16 +23,6 @@ if (!global.mongooseCache) {
 }
 
 /**
- * Masks the password in a MongoDB URI for safe logging.
- */
-function sanitizeUri(uri: string): string {
-  return uri.replace(
-    /mongodb(\+srv)?:\/\/([^:]+):([^@]+)@/,
-    (_, srv, user) => `mongodb${srv || ""}://${user}:***@`
-  );
-}
-
-/**
  * Resolves a mongodb+srv:// URI into a standard mongodb:// URI by manually
  * performing SRV and TXT DNS lookups using Google Public DNS (8.8.8.8).
  *
@@ -95,7 +85,7 @@ async function resolveSrvToStandardUri(srvUri: string): Promise<string> {
   const resolvedUri = `mongodb://${credentials}@${hostList}/${dbName}?${params.toString()}`;
 
   console.log(
-    `[MongoDB] Resolved SRV: ${srvRecords.length} hosts (${srvRecords.map((r) => r.name.split(".")[0]).join(", ")})`
+    `[MongoDB] Resolved SRV: ${srvRecords.length} replica hosts.`
   );
 
   return resolvedUri;
@@ -160,7 +150,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
         return instance;
       } catch (connErr) {
         console.error(
-          `[MongoDB] Connection failed (${sanitizeUri(connectUri)}):`,
+          `[MongoDB] Connection failed:`,
           (connErr as Error).message
         );
         throw connErr;

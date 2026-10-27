@@ -58,7 +58,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
       userinfo: {
         url: "https://api.github.com/user",
-        async request({ tokens, provider }: any) {
+        async request({
+          tokens,
+          provider,
+        }: {
+          tokens: { access_token?: string };
+          provider: { userinfo?: { url?: string } };
+        }) {
           const headers = {
             Authorization: `Bearer ${tokens.access_token}`,
             "User-Agent": "insidcode-auth",
@@ -88,7 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return profile;
         },
       },
-      profile(profile: any) {
+      profile(profile) {
         return {
           id: profile.id.toString(),
           name: profile.name ?? profile.login,

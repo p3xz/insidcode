@@ -20,6 +20,7 @@ const FeedbackSchema = z.object({
     .min(10, "Message must be at least 10 characters")
     .max(2000, "Message cannot exceed 2000 characters"),
   contactEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
+  website: z.string().optional(),
 });
 
 
@@ -53,7 +54,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
 
-    const { feedbackType, subject, message, contactEmail } = parseResult.data;
+    const { feedbackType, subject, message, contactEmail, website } = parseResult.data;
+
+    // Honeypot check: silently accept without sending email if bot populated hidden website field
+    if (website && website.trim().length > 0) {
+      console.warn("[Feedback] Honeypot triggered by bot submission. Silently discarding.");
+      return NextResponse.json({ success: true, message: "Feedback sent successfully." }, { status: 200 });
+    }
     const emailSubject = `[InsidCode Feedback] ${feedbackType}: ${subject}`;
     const username = user?.username || "Anonymous Visitor";
     const displayEmail = contactEmail || "Not supplied";
