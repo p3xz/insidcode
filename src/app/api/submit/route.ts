@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
 
-    const { problemId, language, code } = parseResult.data;
+    const { problemId, language, code, compat } = parseResult.data;
 
     // Acquire in-flight lock to prevent duplicate concurrent submissions
     const lockAcquired = acquireSubmissionLock(user._id.toString());
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const result = await evaluateAndRecordSubmission(user, problemId, language, code);
+      const result = await evaluateAndRecordSubmission(user, problemId, language, code, compat);
 
       return NextResponse.json({
         ...result,

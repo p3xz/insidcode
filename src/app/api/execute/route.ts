@@ -6,6 +6,7 @@ import {
   releaseExecutionLock,
 } from "@/lib/rateLimit";
 import { CodeExecutionSchema } from "@/lib/validations";
+import { checkUnsupportedHeaders, wrapTurboCCode } from "@/lib/turboc";
 import { createQueuedExecution, tryClaimAndExecute, cleanupStaleExecutions } from "@/lib/executionQueue";
 
 export async function POST(req: NextRequest) {
@@ -51,7 +52,27 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: errorMsg }, { status: 400 });
       }
 
-      const { language, code, customInput } = parseResult.data;
+      const { language, code, customInput, compat } = parseResult.data;
+
+      // In Turbo C mode, reject unsupported vintage headers before queueing
+      if (compat === "turboc" && language === "c") {
+        const headerCheck = checkUnsupportedHeaders(code);
+        if (headerCheck.unsupported) {
+          const errMsg = headerCheck.message || "Turbo C had graphics.h. The internet does not. Try a plain C solution.";
+          return NextResponse.json({
+            executionId: "exec_header_error_" + Date.now(),
+            status: "error",
+            stdout: "",
+            stderr: errMsg,
+            output: errMsg,
+            compilationError: errMsg,
+            isTurboCMode: true,
+          });
+        }
+      }
+
+      // Wrap code with Turbo C shims if compat is requested for C
+      const executionCode = (compat === "turboc" && language === "c") ? wrapTurboCCode(code) : code;
 
       // Clean up any stale executions in background
       cleanupStaleExecutions().catch(() => {});
@@ -60,7 +81,7 @@ export async function POST(req: NextRequest) {
       const queuedJob = await createQueuedExecution({
         userId,
         language,
-        code,
+        code: executionCode,
         input: customInput || "",
       });
 

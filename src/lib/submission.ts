@@ -5,6 +5,7 @@ import { LanguageSolve } from "@/models/LanguageSolve";
 import { executeCodeOnlineCompilerSync } from "@/lib/onlinecompiler";
 import { calculateStreak } from "@/lib/streak";
 import { checkAndAwardAchievements } from "@/lib/achievements";
+import { checkUnsupportedHeaders, wrapTurboCCode, compareTurboCOutput } from "@/lib/turboc";
 
 export interface SubmissionEvaluationResult {
   submissionId: string;
@@ -19,6 +20,8 @@ export interface SubmissionEvaluationResult {
   totalXp: number;
   errorDetails?: string;
   failedTestCase?: IFailedTestCaseInfo;
+  isTurboCMode?: boolean;
+  turboCHint?: string;
 }
 
 /**
@@ -28,7 +31,8 @@ export async function evaluateAndRecordSubmission(
   user: IUser,
   problemId: string,
   language: "python" | "javascript" | "c" | "cpp" | "java",
-  code: string
+  code: string,
+  compat?: "turboc"
 ): Promise<SubmissionEvaluationResult> {
   const question = await Question.findOne({ problemId, isPublished: true });
   if (!question) {
@@ -45,97 +49,128 @@ export async function evaluateAndRecordSubmission(
     throw new Error("No test cases configured for this problem.");
   }
 
+  const isTurboC = compat === "turboc" && language === "c";
+
   let status: SubmissionStatus = "Accepted";
   let testsPassed = 0;
   let totalRuntime = 0;
   let errorDetails: string | undefined = undefined;
   let failedTestCase: IFailedTestCaseInfo | undefined = undefined;
 
-  // Execute test cases sequentially
-  for (let i = 0; i < testSuite.length; i++) {
-    const testCase = testSuite[i];
-    const startTime = performance.now();
-
-    const execResult = await executeCodeOnlineCompilerSync(language, code, testCase.input);
-
-    const endTime = performance.now();
-    const elapsedSec = (endTime - startTime) / 1000;
-    totalRuntime += elapsedSec;
-
-    if (execResult.systemError) {
-      status = "System Error";
-      errorDetails = execResult.systemError || "Execution infrastructure service error occurred.";
-      break;
-    }
-
-    if (execResult.compilationError) {
+  // Intercept unsupported Turbo C headers (graphics.h, dos.h, bios.h) before compiling
+  if (isTurboC) {
+    const headerCheck = checkUnsupportedHeaders(code);
+    if (headerCheck.unsupported) {
       status = "Compilation Error";
-      errorDetails = execResult.compilationError;
-      break;
+      errorDetails = headerCheck.message || "Turbo C had graphics.h. The internet does not. Try a plain C solution.";
     }
+  }
 
-    if (execResult.isTimeout) {
-      status = "Time Limit Exceeded";
-      errorDetails = "Time Limit Exceeded (30s execution limit reached).";
-      break;
-    }
+  // Wrap student C source code with Turbo C compatibility shims if active
+  const codeToExecute = isTurboC && status !== "Compilation Error" ? wrapTurboCCode(code) : code;
 
-    if (!execResult.success || execResult.runtimeError) {
-      status = "Runtime Error";
-      errorDetails = execResult.runtimeError || execResult.stderr || "Runtime execution failed.";
-      break;
-    }
+  // Execute test cases sequentially (only if no initial compilation error)
+  if (status !== "Compilation Error") {
+    for (let i = 0; i < testSuite.length; i++) {
+      const testCase = testSuite[i];
+      const startTime = performance.now();
 
-    // Output comparison with whitespace, newline, and case normalization
-    const normalize = (str: unknown) =>
-      String(str ?? "")
-        .replace(/\r\n/g, "\n")
-        .replace(/\r/g, "\n")
-        .trim()
-        .split("\n")
-        .map((line) => line.trimEnd())
-        .join("\n")
-        .toLowerCase();
+      const execResult = await executeCodeOnlineCompilerSync(language, codeToExecute, testCase.input);
 
-    const actual = normalize(execResult.stdout || "");
-    const expected = normalize(testCase.expectedOutput || "");
+      const endTime = performance.now();
+      const elapsedSec = (endTime - startTime) / 1000;
+      totalRuntime += elapsedSec;
 
-    if (actual === expected) {
-      testsPassed++;
-    } else {
-      status = "Wrong Answer";
+      if (execResult.systemError) {
+        status = "System Error";
+        errorDetails = execResult.systemError || "Execution infrastructure service error occurred.";
+        break;
+      }
 
-      // A test case is public if it matches an example in question.examples
-      // or if no hiddenTestCases existed and testSuite was built from examples.
-      const isPublic =
-        Boolean(
-          question.examples &&
-          question.examples.some(
-            (ex) =>
-              normalize(ex.input) === normalize(testCase.input) &&
-              normalize(ex.output) === normalize(testCase.expectedOutput)
-          )
-        ) || (question.hiddenTestCases.length === 0 && i < question.examples.length);
+      if (execResult.compilationError) {
+        status = "Compilation Error";
+        errorDetails = execResult.compilationError;
+        break;
+      }
 
-      const remainingFailed = Math.max(0, testSuite.length - (i + 1));
+      if (execResult.isTimeout) {
+        status = "Time Limit Exceeded";
+        errorDetails = "Time Limit Exceeded (30s execution limit reached).";
+        break;
+      }
 
-      failedTestCase = {
-        testCaseIndex: i + 1,
-        isPublic,
-        ...(isPublic
-          ? {
-              input: testCase.input,
-              expectedOutput: testCase.expectedOutput,
-              actualOutput: (execResult.stdout ? execResult.stdout.trim() : "(empty output)").slice(0, 1000),
-            }
-          : {}),
-        remainingFailedCount: remainingFailed,
-      };
+      if (!execResult.success || execResult.runtimeError) {
+        status = "Runtime Error";
+        errorDetails = execResult.runtimeError || execResult.stderr || "Runtime execution failed.";
+        break;
+      }
 
-      errorDetails = isPublic
-        ? `Test Case ${i + 1} Failed: Output mismatch`
-        : `A hidden test case failed.`;
-      break;
+      // Output comparison
+      let isMatch = false;
+      let spacingHint: string | undefined = undefined;
+
+      if (isTurboC) {
+        const comp = compareTurboCOutput(execResult.stdout || "", testCase.expectedOutput || "");
+        isMatch = comp.passed;
+        spacingHint = comp.hint;
+      } else {
+        const normalize = (str: unknown) =>
+          String(str ?? "")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .trim()
+            .split("\n")
+            .map((line) => line.trimEnd())
+            .join("\n")
+            .toLowerCase();
+
+        const actual = normalize(execResult.stdout || "");
+        const expected = normalize(testCase.expectedOutput || "");
+        isMatch = actual === expected;
+      }
+
+      if (isMatch) {
+        testsPassed++;
+      } else {
+        status = "Wrong Answer";
+
+        const normalizeBasic = (str: unknown) =>
+          String(str ?? "")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .trim();
+
+        const isPublic =
+          Boolean(
+            question.examples &&
+            question.examples.some(
+              (ex) =>
+                normalizeBasic(ex.input) === normalizeBasic(testCase.input) &&
+                normalizeBasic(ex.output) === normalizeBasic(testCase.expectedOutput)
+            )
+          ) || (question.hiddenTestCases.length === 0 && i < question.examples.length);
+
+        const remainingFailed = Math.max(0, testSuite.length - (i + 1));
+
+        failedTestCase = {
+          testCaseIndex: i + 1,
+          isPublic,
+          ...(isPublic
+            ? {
+                input: testCase.input,
+                expectedOutput: testCase.expectedOutput,
+                actualOutput: (execResult.stdout ? execResult.stdout.trim() : "(empty output)").slice(0, 1000),
+              }
+            : {}),
+          remainingFailedCount: remainingFailed,
+          hint: spacingHint,
+        };
+
+        errorDetails = spacingHint
+          ? (isPublic ? `Test Case ${i + 1} Failed: ${spacingHint}` : `A hidden test case failed: ${spacingHint}`)
+          : (isPublic ? `Test Case ${i + 1} Failed: Output mismatch` : `A hidden test case failed.`);
+        break;
+      }
     }
   }
 
@@ -235,5 +270,7 @@ export async function evaluateAndRecordSubmission(
     totalXp: user.xp,
     errorDetails: status !== "Accepted" ? errorDetails : undefined,
     failedTestCase: status === "Wrong Answer" ? failedTestCase : undefined,
+    isTurboCMode: isTurboC,
+    turboCHint: failedTestCase?.hint,
   };
 }

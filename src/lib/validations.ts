@@ -41,6 +41,7 @@ export const CodeExecutionSchema = z.object({
     .string()
     .max(LIMITS.CUSTOM_INPUT_MAX_BYTES, "Custom input exceeds maximum size of 32 KB")
     .default(""),
+  compat: z.enum(["turboc"]).optional(),
 });
 
 export const CodeSubmissionSchema = z.object({
@@ -50,6 +51,7 @@ export const CodeSubmissionSchema = z.object({
     .string()
     .min(1, "Code cannot be empty")
     .max(LIMITS.CODE_MAX_BYTES, "Code exceeds maximum size of 100 KB"),
+  compat: z.enum(["turboc"]).optional(),
 });
 
 export const ProfileUpdateSchema = z.object({

@@ -23,6 +23,8 @@ export interface SubmissionApiResponse {
   totalXp: number;
   errorDetails?: string;
   failedTestCase?: IFailedTestCaseInfo;
+  isTurboCMode?: boolean;
+  turboCHint?: string;
 }
 
 export interface SubmissionLifecycleResult extends SubmissionApiResponse {
