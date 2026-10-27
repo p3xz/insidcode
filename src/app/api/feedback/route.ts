@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Feedback } from "@/models/Feedback";
 import { z } from "zod";
 
 const FeedbackSchema = z.object({
@@ -58,6 +60,22 @@ export async function POST(req: NextRequest) {
     const username = user?.username || "Anonymous Visitor";
     const displayEmail = contactEmail || "Not supplied";
     const timestamp = new Date().toUTCString();
+
+    // Persist to MongoDB feedback collection
+    try {
+      await connectToDatabase();
+      await Feedback.create({
+        userId: user?._id?.toString(),
+        username,
+        email: displayEmail,
+        feedbackType,
+        subject,
+        message,
+        status: "NEW",
+      });
+    } catch (dbErr) {
+      console.error("[Feedback] Error persisting to database:", dbErr);
+    }
 
     // RESEND_API_KEY is server-side only (never exposed to client, never logged)
     const resendApiKey = process.env.RESEND_API_KEY;

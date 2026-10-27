@@ -344,3 +344,18 @@ export interface ISuspensionDetails {
   appeal: string;
   appealStatus: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
 }
+
+export interface IFeedbackItem {
+  id: string;
+  userId?: string;
+  username: string;
+  email: string;
+  feedbackType: "Bug Report" | "Feature Request" | "UI / Design" | "Compiler / Execution" | "Other";
+  subject: string;
+  message: string;
+  status: "NEW" | "IN_REVIEW" | "RESOLVED";
+  adminNotes?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
