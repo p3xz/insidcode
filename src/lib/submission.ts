@@ -1,9 +1,10 @@
 import { IUser, SubmissionStatus, IFailedTestCaseInfo } from "@/types";
+import { User } from "@/models/User";
 import { Question } from "@/models/Question";
 import { Submission } from "@/models/Submission";
 import { LanguageSolve } from "@/models/LanguageSolve";
 import { executeCodeOnlineCompilerSync } from "@/lib/onlinecompiler";
-import { calculateStreak } from "@/lib/streak";
+import { calculateStreak, getTodayDateString } from "@/lib/streak";
 import { checkAndAwardAchievements } from "@/lib/achievements";
 
 export interface SubmissionEvaluationResult {
@@ -145,19 +146,11 @@ export async function evaluateAndRecordSubmission(
 
   let awardedXp = 0;
   let awardedLanguagePoints = 0;
-  const isFirstAcceptedSolve = status === "Accepted" && !user.solvedProblems.includes(problemId);
-
-  // Update user statistics and progress
-  user.totalSubmissions += 1;
-
-  if (!user.attemptedProblems.includes(problemId)) {
-    user.attemptedProblems.push(problemId);
-  }
+  let isFirstAcceptedSolve = false;
+  let activeUser = user;
 
   if (status === "Accepted") {
-    user.acceptedSubmissions += 1;
-
-    // Handle per-language points (+10 per unique problem + language solve)
+    // 1. Handle per-language points (+10 per unique problem + language solve)
     try {
       await LanguageSolve.create({
         userId: user._id.toString(),
@@ -166,49 +159,111 @@ export async function evaluateAndRecordSubmission(
         points: 10,
       });
       awardedLanguagePoints = 10;
-      if (!user.languagePoints) {
-        user.languagePoints = { python: 0, javascript: 0, c: 0, cpp: 0, java: 0 };
-      }
-      const langKey = language as keyof typeof user.languagePoints;
-      if (langKey in user.languagePoints) {
-        user.languagePoints[langKey] = (user.languagePoints[langKey] || 0) + 10;
-      }
     } catch (err: unknown) {
       // E11000 duplicate key error indicates (userId, problemId, language) already awarded points
       const mongoErr = err as { code?: number };
-      if (mongoErr?.code === 11000) {
-        awardedLanguagePoints = 0;
-      } else {
+      if (mongoErr?.code !== 11000) {
         console.error("LanguageSolve insertion error:", err);
       }
     }
 
-    if (isFirstAcceptedSolve) {
+    // 2. Atomic first-solve XP award and concurrency control
+    // Atomically claim first solve only if problemId is not already in solvedProblems
+    const firstSolveUpdate = await User.findOneAndUpdate(
+      {
+        _id: user._id,
+        solvedProblems: { $ne: problemId },
+      },
+      {
+        $inc: {
+          xp: question.xp,
+          totalSubmissions: 1,
+          acceptedSubmissions: 1,
+          ...(awardedLanguagePoints > 0 ? { [`languagePoints.${language}`]: awardedLanguagePoints } : {}),
+        },
+        $addToSet: {
+          solvedProblems: problemId,
+          attemptedProblems: problemId,
+        },
+      },
+      { new: true }
+    );
+
+    if (firstSolveUpdate) {
+      isFirstAcceptedSolve = true;
       awardedXp = question.xp;
-      user.xp += awardedXp;
-      user.solvedProblems.push(problemId);
+      activeUser = firstSolveUpdate;
 
-      // Calculate streak
-      const streakResult = calculateStreak(
-        user.currentStreak,
-        user.longestStreak,
-        user.lastActiveDate
+      // Check achievements for first solve
+      await checkAndAwardAchievements(activeUser, question.difficulty, question.phase);
+    } else {
+      isFirstAcceptedSolve = false;
+      awardedXp = 0;
+      const subsequentUpdate = await User.findByIdAndUpdate(
+        user._id,
+        {
+          $inc: {
+            totalSubmissions: 1,
+            acceptedSubmissions: 1,
+            ...(awardedLanguagePoints > 0 ? { [`languagePoints.${language}`]: awardedLanguagePoints } : {}),
+          },
+          $addToSet: { attemptedProblems: problemId },
+        },
+        { new: true }
       );
-      user.currentStreak = streakResult.currentStreak;
-      user.longestStreak = streakResult.longestStreak;
-      user.lastActiveDate = streakResult.lastActiveDate;
+      if (subsequentUpdate) {
+        activeUser = subsequentUpdate;
+      }
+    }
 
-      // Check achievements
-      await checkAndAwardAchievements(user, question.difficulty, question.phase);
+    // 3. Concurrency-safe streak update
+    const today = getTodayDateString();
+    if (activeUser.lastActiveDate !== today) {
+      const streakResult = calculateStreak(
+        activeUser.currentStreak,
+        activeUser.longestStreak,
+        activeUser.lastActiveDate
+      );
+
+      // Atomically update streak only if lastActiveDate is not already updated to today
+      const streakUpdate = await User.findOneAndUpdate(
+        {
+          _id: activeUser._id,
+          lastActiveDate: { $ne: today },
+        },
+        {
+          $set: {
+            currentStreak: streakResult.currentStreak,
+            longestStreak: streakResult.longestStreak,
+            lastActiveDate: streakResult.lastActiveDate,
+          },
+        },
+        { new: true }
+      );
+
+      if (streakUpdate) {
+        activeUser = streakUpdate;
+      }
+    }
+  } else {
+    // Non-accepted submission: atomically increment totalSubmissions and record attemptedProblems
+    const nonAcceptedUpdate = await User.findByIdAndUpdate(
+      user._id,
+      {
+        $inc: { totalSubmissions: 1 },
+        $addToSet: { attemptedProblems: problemId },
+      },
+      { new: true }
+    );
+    if (nonAcceptedUpdate) {
+      activeUser = nonAcceptedUpdate;
     }
   }
 
-  await user.save();
-
   // Create submission record
   const submission = await Submission.create({
-    userId: user._id.toString(),
-    username: user.username,
+    userId: activeUser._id.toString(),
+    username: activeUser.username,
     problemId: question.problemId,
     problemTitle: question.title,
     language,
@@ -231,8 +286,8 @@ export async function evaluateAndRecordSubmission(
     awardedXp,
     awardedLanguagePoints,
     isFirstSolve: isFirstAcceptedSolve,
-    currentStreak: user.currentStreak,
-    totalXp: user.xp,
+    currentStreak: activeUser.currentStreak,
+    totalXp: activeUser.xp,
     errorDetails: status !== "Accepted" ? errorDetails : undefined,
     failedTestCase: status === "Wrong Answer" ? failedTestCase : undefined,
   };
