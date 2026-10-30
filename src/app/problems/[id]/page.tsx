@@ -2,11 +2,28 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPublicProblem } from "@/lib/problems";
+import { getPublicProblem, getAllPublishedProblemSlugs } from "@/lib/problems";
 import { ProblemPageClient } from "@/components/problem/ProblemPageClient";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export const revalidate = 600; // 10 minutes ISR revalidation
+
+/**
+ * Prebuilds problem pages for published problems at build time.
+ * Falls back to dynamic ISR for newly created or edited problems.
+ */
+export async function generateStaticParams() {
+  try {
+    const problems = await getAllPublishedProblemSlugs();
+    return problems.map((p) => ({
+      id: p.slug,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 const BASE_URL = "https://insidcode.vercel.app";
@@ -200,8 +217,12 @@ export default async function SingleProblemPage({ params }: Props) {
         </article>
       </div>
 
-      {/* Full interactive problem workspace — client component, unchanged */}
-      <ProblemPageClient problemId={problem.problemId} problemSlug={problem.slug} />
+      {/* Full interactive problem workspace with server-hydrated initial public problem */}
+      <ProblemPageClient
+        problemId={problem.problemId}
+        problemSlug={problem.slug}
+        initialProblem={problem}
+      />
     </>
   );
 }

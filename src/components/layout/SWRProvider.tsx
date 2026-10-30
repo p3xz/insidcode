@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { SWRConfig, useSWRConfig } from "swr";
 import { useSession } from "next-auth/react";
+import { clearAllUserStateCache } from "@/lib/problemClientCache";
 
 const defaultFetcher = async (url: string) => {
   const res = await fetch(url);
@@ -27,8 +28,10 @@ function UserCacheClearer() {
     const currentUserId = session?.user?.id;
     // If user changed or logged out, clear all SWR cache entries to prevent stale data leaks
     if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== currentUserId) {
-      // Clear cache entries without revalidating
+      // Clear SWR cache entries without revalidating
       mutate(() => true, undefined, { revalidate: false });
+      // Clear in-memory user state cache
+      clearAllUserStateCache();
       // Also clear any catalog session storage if present
       try {
         if (typeof window !== "undefined") {
