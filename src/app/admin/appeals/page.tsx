@@ -2,16 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Search,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Loader2,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Search, CheckCircle2, XCircle, Clock, X } from "lucide-react";
 import { formatIST, formatISTDateOnly } from "@/lib/dateUtils";
+import { AdminTableSkeleton } from "@/components/ui/PageSkeletons";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface AppealItem {
   id: string;
@@ -31,6 +26,8 @@ interface AppealItem {
 export default function AdminAppealsPage() {
   const [appeals, setAppeals] = useState<AppealItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const showSkeleton = useDelayedFlag(loading);
   const [pendingCount, setPendingCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -42,6 +39,7 @@ export default function AdminAppealsPage() {
 
   const fetchAppeals = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "ALL") params.set("status", statusFilter);
@@ -52,9 +50,11 @@ export default function AdminAppealsPage() {
         const data = await res.json();
         setAppeals(data.appeals || []);
         setPendingCount(data.pendingCount || 0);
+      } else {
+        setLoadError(true);
       }
     } catch {
-      // silent
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -167,9 +167,13 @@ export default function AdminAppealsPage() {
 
       <div className="rounded-xl border border-[#252936] bg-[#11131A] overflow-hidden">
         {loading ? (
-          <div className="p-12 flex justify-center items-center">
-            <Loader2 className="h-6 w-6 animate-spin text-[#00F0FF]" />
-          </div>
+          showSkeleton ? (
+            <AdminTableSkeleton label="Loading appeals" />
+          ) : (
+            <div aria-busy="true" style={{ minHeight: 8 * 56 }} />
+          )
+        ) : loadError ? (
+          <LoadError message="We couldn't load appeals. Check your connection and try again." onRetry={fetchAppeals} />
         ) : appeals.length === 0 ? (
           <div className="p-12 text-center text-xs text-[#8B93A7] space-y-1">
             <p className="font-semibold text-sm text-[#F5F7FA]">No appeals found</p>

@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, Ban, Zap, Loader2, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Search, Ban, Zap, ShieldAlert } from "lucide-react";
 import InlineNotice from "@/components/ui/InlineNotice";
+import { AdminTableSkeleton } from "@/components/ui/PageSkeletons";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface AdminUserItem {
   id: string;
@@ -25,6 +28,8 @@ interface AdminUserItem {
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const showSkeleton = useDelayedFlag(loading);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
@@ -37,6 +42,7 @@ export default function AdminUsersPage() {
 
   const fetchUsers = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
@@ -46,9 +52,11 @@ export default function AdminUsersPage() {
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
+      } else {
+        setLoadError(true);
       }
     } catch {
-      // silent
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -177,9 +185,13 @@ export default function AdminUsersPage() {
       {/* Users Table */}
       <div className="rounded-xl border border-[#252936] bg-[#11131A] overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-[#00F0FF]" />
-          </div>
+          showSkeleton ? (
+            <AdminTableSkeleton label="Loading users" />
+          ) : (
+            <div aria-busy="true" style={{ minHeight: 8 * 56 }} />
+          )
+        ) : loadError ? (
+          <LoadError message="We couldn't load users. Check your connection and try again." onRetry={fetchUsers} />
         ) : users.length === 0 ? (
           <div className="py-16 text-center text-xs text-[#8B93A7]">No users found.</div>
         ) : (

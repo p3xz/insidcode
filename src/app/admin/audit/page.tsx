@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, ShieldAlert, UserX, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ShieldAlert, UserX, AlertTriangle } from "lucide-react";
+import { AdminTableSkeleton } from "@/components/ui/PageSkeletons";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface AuditLogItem {
   id: string;
@@ -29,24 +32,31 @@ interface AuditLogItem {
 export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const showSkeleton = useDelayedFlag(loading);
   const [filter, setFilter] = useState<string>("ALL");
 
   useEffect(() => {
     const fetchLogs = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch("/api/admin/audit?limit=50");
         if (res.ok) {
           const data = await res.json();
           setLogs(data.logs || []);
+        } else {
+          setLoadError(true);
         }
       } catch {
-        // silent
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchLogs();
-  }, []);
+  }, [reloadKey]);
 
   const filteredLogs = logs.filter((log) => {
     if (filter === "ALL") return true;
@@ -99,9 +109,13 @@ export default function AdminAuditLogsPage() {
 
       <div className="rounded-xl border border-[#252936] bg-[#11131A] overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-[#00F0FF]" />
-          </div>
+          showSkeleton ? (
+            <AdminTableSkeleton label="Loading audit logs" />
+          ) : (
+            <div aria-busy="true" style={{ minHeight: 8 * 56 }} />
+          )
+        ) : loadError ? (
+          <LoadError message="We couldn't load audit logs. Check your connection and try again." onRetry={() => setReloadKey((k) => k + 1)} />
         ) : filteredLogs.length === 0 ? (
           <div className="py-16 text-center text-xs text-[#8B93A7]">No audit logs match the selected filter.</div>
         ) : (

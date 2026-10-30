@@ -2,20 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  Users,
-  Code2,
-  Send,
-  Trophy,
-  ShieldAlert,
-  Zap,
-  Lock,
-  Unlock,
-  Radio,
-  Loader2,
-  FileText,
-} from "lucide-react";
+import { Users, Code2, Send, Trophy, ShieldAlert, Zap, Lock, Unlock, Radio, FileText } from "lucide-react";
 import InlineNotice from "@/components/ui/InlineNotice";
+import { AdminTableSkeleton } from "@/components/ui/PageSkeletons";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface AdminStats {
   totalUsers: number;
@@ -31,6 +22,9 @@ interface AdminStats {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const showSkeleton = useDelayedFlag(loading);
   const [isLeaderboardFrozen, setIsLeaderboardFrozen] = useState(false);
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [freezeError, setFreezeError] = useState<string | null>(null);
@@ -44,6 +38,8 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const [statsRes, lbRes] = await Promise.all([
           fetch("/api/admin/stats"),
@@ -53,6 +49,8 @@ export default function AdminDashboardPage() {
         if (statsRes.ok) {
           const sData = await statsRes.json();
           setStats(sData.stats);
+        } else {
+          setLoadError(true);
         }
 
         if (lbRes.ok) {
@@ -60,13 +58,13 @@ export default function AdminDashboardPage() {
           setIsLeaderboardFrozen(lbData.isFrozen || false);
         }
       } catch {
-        // silent
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
-  }, []);
+  }, [reloadKey]);
 
   const handleToggleFreeze = async () => {
     setFreezeLoading(true);
@@ -115,9 +113,23 @@ export default function AdminDashboardPage() {
   };
 
   if (loading) {
+    return showSkeleton ? (
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <AdminTableSkeleton rows={8} label="Loading admin dashboard" />
+      </div>
+    ) : (
+      <div aria-busy="true" className="min-h-[60vh]" />
+    );
+  }
+
+  if (loadError) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00F0FF]" />
+      <div className="mx-auto max-w-2xl">
+        <LoadError
+          message="We couldn't load the admin dashboard. Check your connection and try again."
+          onRetry={() => setReloadKey((k) => k + 1)}
+          minHeight={320}
+        />
       </div>
     );
   }
