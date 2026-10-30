@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { ShieldAlert, Mail, LogOut, FileText, Scale, Loader2, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { ShieldAlert, Mail, LogOut, FileText, Scale, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { SkeletonRegion, SkeletonText } from "@/components/ui/Skeleton";
 import { ISuspensionDetails } from "@/types";
 
 export default function SuspendedPage() {
@@ -104,18 +105,21 @@ export default function SuspendedPage() {
 
         {/* Loading State for Details */}
         {loading && (
-          <div
-            className="p-8 flex items-center justify-center gap-2 text-xs"
-            style={{
-              border: "1px solid var(--border)",
-              backgroundColor: "var(--bg)",
-              borderRadius: "4px",
-              color: "var(--fg-muted)",
-            }}
+          <SkeletonRegion
+            label="Loading suspension event details"
+            className="p-5"
           >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading suspension event details...</span>
-          </div>
+            <div
+              style={{
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--bg)",
+                borderRadius: "4px",
+                padding: 20,
+              }}
+            >
+              <SkeletonText lines={4} />
+            </div>
+          </SkeletonRegion>
         )}
 
         {/* SUSPENSION DETAILS SECTION */}

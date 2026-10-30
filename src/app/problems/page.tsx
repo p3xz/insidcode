@@ -9,11 +9,13 @@ import {
   Circle,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   Play,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { CURRICULUM_PHASES } from "@/lib/constants";
+import { Skeleton, SkeletonRegion, SkeletonTableRows } from "@/components/ui/Skeleton";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface ProblemRow {
   _id: string;
@@ -42,6 +44,8 @@ export default function ProblemsDirectoryPage() {
   const { data: session } = useSession();
   const [problems, setProblems] = useState<ProblemRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const showSkeleton = useDelayedFlag(loading);
 
   const [search, setSearch] = useState("");
   const [selectedPhase, setSelectedPhase] = useState<string>("");
@@ -57,6 +61,7 @@ export default function ProblemsDirectoryPage() {
 
   const fetchProblems = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const params = new URLSearchParams();
       if (search.trim()) params.set("search", search.trim());
@@ -77,9 +82,11 @@ export default function ProblemsDirectoryPage() {
           setTotalPublished(data.stats.totalPublished || 0);
           setOverallPercentage(data.stats.overallPercentage || 0);
         }
+      } else {
+        setLoadError(true);
       }
     } catch {
-      // silent
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -148,6 +155,18 @@ export default function ProblemsDirectoryPage() {
         style={{ backgroundColor: "var(--border)", border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}
       >
         {CURRICULUM_PHASES.map((phase) => {
+          if (loading && phaseStats.length === 0) {
+            return (
+              <div key={phase.id} className="p-3" style={{ backgroundColor: "var(--bg)" }} aria-hidden="true">
+                <div className="flex items-center justify-between mb-2" style={{ height: 15 }}>
+                  <Skeleton style={{ height: 10, width: 18 }} />
+                  <Skeleton style={{ height: 10, width: 26 }} />
+                </div>
+                <Skeleton style={{ height: 12, width: "75%", marginTop: 2, marginBottom: 2 }} />
+                <div className="mt-2 h-0.5 w-full" style={{ backgroundColor: "var(--bg-elevated)" }} />
+              </div>
+            );
+          }
           const stat = phaseStats.find((s) => s.phaseId === phase.id) || {
             solved: 0, total: 0, percentage: 0,
           };
@@ -280,9 +299,15 @@ export default function ProblemsDirectoryPage() {
         style={{ border: "1px solid var(--border)", borderRadius: "3px", overflow: "hidden" }}
       >
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
-          </div>
+          <SkeletonRegion label="Loading problems" style={{ minHeight: 10 * 49 }}>
+            {showSkeleton && <SkeletonTableRows rows={10} rowHeight={49} />}
+          </SkeletonRegion>
+        ) : loadError ? (
+          <LoadError
+            message="We couldn't load the problems. Check your connection and try again."
+            onRetry={fetchProblems}
+            minHeight={10 * 49}
+          />
         ) : problems.length === 0 ? (
           <div className="py-16 text-center text-[12px]" style={{ color: "var(--fg-muted)" }}>
             No problems found matching your filters.

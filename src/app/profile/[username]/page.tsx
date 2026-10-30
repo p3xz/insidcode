@@ -3,14 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import {
-  Calendar,
-  Layers,
-  Loader2,
-  Edit3,
-  Code2,
-  Swords,
-} from "lucide-react";
+import { Calendar, Layers, Edit3, Code2, Swords } from "lucide-react";
+import { ProfilePageSkeleton } from "@/components/ui/PageSkeletons";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import Link from "next/link";
 
 interface ProfileData {
@@ -77,31 +73,46 @@ export default function UserProfilePage() {
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const showSkeleton = useDelayedFlag(loading);
 
   useEffect(() => {
     if (!username) return;
 
     const fetchProfile = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch(`/api/profile/${username}`);
         if (res.ok) {
           const data = await res.json();
           setProfile(data.profile);
+        } else if (res.status !== 404) {
+          setLoadError(true);
         }
       } catch {
-        // silent
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, [username]);
+  }, [username, reloadKey]);
 
   if (loading) {
+    return showSkeleton ? <ProfilePageSkeleton /> : <div aria-busy="true" className="min-h-[60vh]" />;
+  }
+
+  if (loadError) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
+      <div className="mx-auto max-w-4xl">
+        <LoadError
+          message="We couldn't load this profile. Check your connection and try again."
+          onRetry={() => setReloadKey((k) => k + 1)}
+          minHeight={320}
+        />
       </div>
     );
   }

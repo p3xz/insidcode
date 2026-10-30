@@ -20,6 +20,9 @@ import {
   Trophy,
   Eye,
 } from "lucide-react";
+import { ProblemPageSkeleton } from "@/components/ui/PageSkeletons";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { TerminalOutput, ExecutionResultData } from "@/components/editor/TerminalOutput";
@@ -40,6 +43,7 @@ export default function DuelArenaPage() {
   const [room, setRoom] = useState<IDuelRoom | null>(null);
   const [problem, setProblem] = useState<IQuestion | null>(null);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDelayedFlag(loading);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -400,10 +404,10 @@ export default function DuelArenaPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
-      </div>
+    return showSkeleton ? (
+      <ProblemPageSkeleton />
+    ) : (
+      <div aria-busy="true" className="h-[calc(100vh-3.5rem)]" />
     );
   }
 
@@ -525,7 +529,7 @@ export default function DuelArenaPage() {
           </div>
 
           <div className="flex items-center justify-center gap-2 text-[12px] mb-8" style={{ color: "var(--fg-muted)" }}>
-            <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
+            <Skeleton style={{ height: 8, width: 8, borderRadius: 999, backgroundColor: "var(--accent)" }} />
             <span>Waiting for opponent to enter the room code...</span>
           </div>
 
@@ -825,8 +829,10 @@ export default function DuelArenaPage() {
               )}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
+            <div className="flex flex-col gap-4 h-full" role="status" aria-busy="true">
+              <span className="sr-only">Loading problem</span>
+              <Skeleton style={{ height: 28, width: "70%" }} />
+              <SkeletonText lines={5} />
             </div>
           )}
         </div>

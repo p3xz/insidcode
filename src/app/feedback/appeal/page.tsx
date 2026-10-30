@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   ArrowRight,
 } from "lucide-react";
+import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
 import { formatIST } from "@/lib/dateUtils";
 
 const APPEAL_REASONS = [
@@ -152,12 +153,14 @@ export default function AppealPage() {
 
   if (status === "loading" || pageLoading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center">
-        <div className="flex items-center gap-2.5 text-xs text-[var(--fg-muted)]">
-          <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)]" />
-          <span>Verifying account appeal status...</span>
+<SkeletonRegion label="Verifying account appeal status" className="flex min-h-[70vh] items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-3" aria-hidden="true">
+          <Skeleton style={{ height: 24, width: "60%" }} />
+          <Skeleton style={{ height: 12, width: "100%" }} />
+          <Skeleton style={{ height: 12, width: "85%" }} />
+          <Skeleton style={{ height: 36, width: "100%", marginTop: 8 }} />
         </div>
-      </div>
+      </SkeletonRegion>
     );
   }
 

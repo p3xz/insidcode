@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Flame, Zap, Send, Loader2, CheckCircle2, Code2, Swords } from "lucide-react";
+import { Flame, Zap, Send, CheckCircle2, Code2, Swords } from "lucide-react";
+import { StatsPageSkeleton } from "@/components/ui/PageSkeletons";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface UserStatsData {
   totalSolved: number;
@@ -81,28 +84,43 @@ function ProgressBar({ value, max, color = "var(--success)" }: { value: number; 
 export default function UserStatsPage() {
   const [stats, setStats] = useState<UserStatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const showSkeleton = useDelayedFlag(loading);
 
   useEffect(() => {
     const fetchStats = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch("/api/stats");
         if (res.ok) {
           const data = await res.json();
           setStats(data.stats);
+        } else if (res.status !== 401) {
+          setLoadError(true);
         }
       } catch {
-        // silent
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
-  }, []);
+  }, [reloadKey]);
 
   if (loading) {
+    return showSkeleton ? <StatsPageSkeleton /> : <div aria-busy="true" className="min-h-[60vh]" />;
+  }
+
+  if (loadError) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
+      <div className="mx-auto max-w-4xl">
+        <LoadError
+          message="We couldn't load your statistics. Check your connection and try again."
+          onRetry={() => setReloadKey((k) => k + 1)}
+          minHeight={320}
+        />
       </div>
     );
   }

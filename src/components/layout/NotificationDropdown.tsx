@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Bell, Check, Loader2 } from "lucide-react";
+import { Bell, Check } from "lucide-react";
+import { NotificationListSkeleton } from "@/components/ui/PageSkeletons";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface NotificationItem {
   id: string;
@@ -23,24 +25,31 @@ export function NotificationDropdown({
 }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const showSkeleton = useDelayedFlag(loading);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch("/api/notifications");
         if (res.ok) {
           const data = await res.json();
           setNotifications(data.notifications || []);
+        } else {
+          setLoadError(true);
         }
       } catch {
-        // silent
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchNotifications();
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -131,8 +140,22 @@ export function NotificationDropdown({
 
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
+            showSkeleton ? (
+              <NotificationListSkeleton />
+            ) : (
+              <div aria-busy="true" style={{ minHeight: 4 * 60 }} />
+            )
+          ) : loadError ? (
+            <div role="alert" className="flex flex-col items-center gap-2 py-8 text-center text-xs" style={{ color: "var(--fg-muted)" }}>
+              <span>Couldn&apos;t load notifications.</span>
+              <button
+                type="button"
+                onClick={() => setReloadKey((k) => k + 1)}
+                className="px-3 py-1 text-[11px] font-semibold cursor-pointer"
+                style={{ border: "1px solid var(--border-strong)", borderRadius: 3, color: "var(--fg)" }}
+              >
+                Retry
+              </button>
             </div>
           ) : notifications.length === 0 ? (
             <div className="py-8 text-center text-xs" style={{ color: "var(--fg-muted)" }}>
