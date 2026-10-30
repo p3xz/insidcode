@@ -3,6 +3,7 @@ import { checkRateLimit } from "@/lib/rateLimit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { requireAdminUser } from "@/lib/auth";
 import { requireAdminMutationUser } from "@/lib/security";
+import { revalidateTag } from "next/cache";
 import { Question } from "@/models/Question";
 import { AdminAction } from "@/models/AdminAction";
 
@@ -110,6 +111,8 @@ export async function PUT(
       isPublished: question.isPublished,
     });
 
+    try { revalidateTag("problems-catalog"); revalidateTag(`problem-${question.problemId}`); revalidateTag(`problem-${question.slug}`); } catch {}
+
     // Log admin action
     await AdminAction.create({
       adminId: admin._id.toString(),
@@ -164,6 +167,8 @@ export async function DELETE(
     if (!question) {
       return NextResponse.json({ error: "Problem not found." }, { status: 404 });
     }
+
+    try { revalidateTag("problems-catalog"); revalidateTag(`problem-${question.problemId}`); revalidateTag(`problem-${question.slug}`); } catch {}
 
     // Log admin action
     await AdminAction.create({
