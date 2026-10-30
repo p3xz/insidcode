@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
+import { SkeletonEditor } from "@/components/ui/Skeleton";
 import type { editor } from "monaco-editor";
 import { useTheme } from "@/components/layout/ThemeProvider";
 
@@ -113,6 +114,7 @@ export function CodeEditor({
         value={code}
         onChange={(val) => onChange(val || "")}
         onMount={handleEditorDidMount}
+        loading={<SkeletonEditor className="absolute inset-0" />}
         options={{
           fontSize,
           minimap: { enabled: minimap },
