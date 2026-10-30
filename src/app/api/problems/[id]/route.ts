@@ -31,16 +31,25 @@ export async function GET(
     }
 
     const session = await auth();
-    const problemRateLimit = checkRateLimit(`problem_${session?.user?.id || req.headers.get("x-forwarded-for") || "problem_anon"}`, { limit: 120, windowMs: 60000 });
+    const problemRateLimit = checkRateLimit(
+      `problem_${session?.user?.id || req.headers.get("x-forwarded-for") || "problem_anon"}`,
+      { limit: 120, windowMs: 60000 }
+    );
     if (!problemRateLimit.success) {
-      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again shortly." },
+        { status: 429 }
+      );
     }
+
     let isSolved = false;
     let isAttempted = false;
     let lastSubmission = null;
 
     if (session?.user?.id) {
-      const user = await User.findById(session.user.id).select("solvedProblems attemptedProblems");
+      const user = await User.findById(session.user.id).select(
+        "solvedProblems attemptedProblems"
+      );
       if (user) {
         isSolved = user.solvedProblems?.includes(question.problemId) || false;
         isAttempted = user.attemptedProblems?.includes(question.problemId) || false;
@@ -56,20 +65,28 @@ export async function GET(
         .lean();
     }
 
-    return NextResponse.json({
-      problem: question,
-      userState: {
-        isSolved,
-        isAttempted,
-        lastSubmission,
+    return NextResponse.json(
+      {
+        problem: question,
+        userState: {
+          isSolved,
+          isAttempted,
+          lastSubmission,
+        },
       },
-    }, {
-      headers: {
-        "Cache-Control": session?.user?.id ? "private, no-store" : "public, s-maxage=300, stale-while-revalidate=600",
-      },
-    });
+      {
+        headers: {
+          "Cache-Control": session?.user?.id
+            ? "private, no-store"
+            : "public, s-maxage=600, stale-while-revalidate=3600",
+        },
+      }
+    );
   } catch (error) {
     console.error("Single problem route error:", error);
-    return NextResponse.json({ error: "Failed to load problem details." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load problem details." },
+      { status: 500 }
+    );
   }
 }
