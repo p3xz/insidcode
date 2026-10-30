@@ -7,6 +7,8 @@ import { Flame, Lock, Swords, Trophy, Award, Medal } from "lucide-react";
 import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import useSWR from "swr";
+import { useSession } from "next-auth/react";
 
 interface LeaderboardUser {
   rank: number;
@@ -35,37 +37,30 @@ interface PersonalDuelStats {
 }
 
 export default function LeaderboardPage() {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<"xp" | "duel">("xp");
-  const [users, setUsers] = useState<LeaderboardUser[]>([]);
-  const [isFrozen, setIsFrozen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const showSkeleton = useDelayedFlag(loading);
-  const [personalDuelStats, setPersonalDuelStats] = useState<PersonalDuelStats | null>(null);
 
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
-      setLoadError(false);
-      try {
-        const res = await fetch(`/api/leaderboard?tab=${activeTab}`);
-        if (res.ok) {
-          const data = await res.json();
-          setUsers(data.leaderboard || []);
-          setIsFrozen(data.isFrozen || false);
-          setPersonalDuelStats(data.personalDuelStats || null);
-        } else {
-          setLoadError(true);
-        }
-      } catch {
-        setLoadError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLeaderboard();
-  }, [activeTab, reloadKey]);
+  const swrKey = [session?.user?.id || "anon", `/api/leaderboard?tab=${activeTab}`];
+  const { data, error, isLoading, mutate: revalidateLeaderboard } = useSWR(
+    swrKey,
+    () =>
+      fetch(`/api/leaderboard?tab=${activeTab}`).then(async (res) => {
+        if (!res.ok) throw new Error("Failed to load leaderboard.");
+        return res.json();
+      }),
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 5000,
+    }
+  );
+
+  const users: LeaderboardUser[] = data?.leaderboard || [];
+  const isFrozen = Boolean(data?.isFrozen);
+  const personalDuelStats: PersonalDuelStats | null = data?.personalDuelStats || null;
+
+  const loading = isLoading && !data;
+  const loadError = Boolean(error);
+  const showSkeleton = useDelayedFlag(loading);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-6">
@@ -245,7 +240,7 @@ export default function LeaderboardPage() {
         ) : loadError ? (
           <LoadError
             message="We couldn't load the leaderboard. Check your connection and try again."
-            onRetry={() => setReloadKey((k) => k + 1)}
+            onRetry={() => revalidateLeaderboard()}
             minHeight={10 * 56}
           />
         ) : users.length === 0 ? (

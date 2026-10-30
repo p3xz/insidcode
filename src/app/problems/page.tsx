@@ -12,6 +12,7 @@ import {
   Play,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import useSWR, { preload } from "swr";
 import { CURRICULUM_PHASES } from "@/lib/constants";
 import { Skeleton, SkeletonRegion, SkeletonTableRows } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
@@ -42,59 +43,58 @@ interface PhaseStat {
 export default function ProblemsDirectoryPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [problems, setProblems] = useState<ProblemRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const showSkeleton = useDelayedFlag(loading);
+
 
   const [search, setSearch] = useState("");
   const [selectedPhase, setSelectedPhase] = useState<string>("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  const [phaseStats, setPhaseStats] = useState<PhaseStat[]>([]);
-  const [totalSolved, setTotalSolved] = useState(0);
-  const [totalPublished, setTotalPublished] = useState(0);
-  const [overallPercentage, setOverallPercentage] = useState(0);
 
-  const fetchProblems = useCallback(async () => {
-    setLoading(true);
-    setLoadError(false);
-    try {
-      const params = new URLSearchParams();
-      if (search.trim()) params.set("search", search.trim());
-      if (selectedPhase) params.set("phase", selectedPhase);
-      if (selectedDifficulty) params.set("difficulty", selectedDifficulty);
-      if (selectedStatus !== "all") params.set("status", selectedStatus);
-      params.set("page", page.toString());
-      params.set("limit", "25");
 
-      const res = await fetch(`/api/problems?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setProblems(data.questions || []);
-        setTotalPages(data.pagination?.totalPages || 1);
-        if (data.stats) {
-          setPhaseStats(data.stats.phases || []);
-          setTotalSolved(data.stats.totalSolved || 0);
-          setTotalPublished(data.stats.totalPublished || 0);
-          setOverallPercentage(data.stats.overallPercentage || 0);
-        }
-      } else {
-        setLoadError(true);
+
+  const params = new URLSearchParams();
+  if (search.trim()) params.set("search", search.trim());
+  if (selectedPhase) params.set("phase", selectedPhase);
+  if (selectedDifficulty) params.set("difficulty", selectedDifficulty);
+  if (selectedStatus !== "all") params.set("status", selectedStatus);
+  params.set("page", page.toString());
+  params.set("limit", "25");
+
+  // User-scoped cache key so user A's solved state never leaks to user B or anonymous
+  const cacheKey = `/api/problems?${params.toString()}`;
+  const swrKey = [session?.user?.id || "anon", cacheKey];
+
+  const { data, error, isLoading, mutate: revalidateProblems } = useSWR(swrKey, () =>
+    fetch(cacheKey).then(async (res) => {
+      if (!res.ok) {
+        throw new Error("Failed to load problems directory.");
       }
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
+      return res.json();
+    }),
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 5000,
     }
-  }, [search, selectedPhase, selectedDifficulty, selectedStatus, page]);
+  );
 
-  useEffect(() => {
-    fetchProblems();
-  }, [fetchProblems]);
+  const problems: ProblemRow[] = data?.questions || [];
+  const totalPages = data?.pagination?.totalPages || 1;
+  const phaseStats: PhaseStat[] = data?.stats?.phases || [];
+  const totalSolved = data?.stats?.totalSolved || 0;
+  const totalPublished = data?.stats?.totalPublished || 0;
+  const overallPercentage = data?.stats?.overallPercentage || 0;
+
+  const loading = isLoading && !data;
+  const loadError = Boolean(error);
+  const showSkeleton = useDelayedFlag(loading);
+
+  const handlePrefetchProblem = (problemId: string) => {
+    preload([session?.user?.id || "anon", `/api/problems/${problemId}`], () =>
+      fetch(`/api/problems/${problemId}`).then((r) => r.json())
+    );
+  };
 
   const diffColor = (d: string) =>
     d === "Easy" ? "var(--easy)" : d === "Medium" ? "var(--medium)" : "var(--hard)";
@@ -305,7 +305,7 @@ export default function ProblemsDirectoryPage() {
         ) : loadError ? (
           <LoadError
             message="We couldn't load the problems. Check your connection and try again."
-            onRetry={fetchProblems}
+            onRetry={() => revalidateProblems()}
             minHeight={10 * 49}
           />
         ) : problems.length === 0 ? (
@@ -345,7 +345,11 @@ export default function ProblemsDirectoryPage() {
                     }}
                     className="cursor-pointer focus:outline-none focus:bg-[var(--bg-subtle)]"
                     style={{ borderBottom: i < problems.length - 1 ? "1px solid var(--border)" : "none" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-subtle)")}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--bg-subtle)";
+                      handlePrefetchProblem(prob.problemId);
+                    }}
+                    onFocus={() => handlePrefetchProblem(prob.problemId)}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
                     {/* Status icon */}
