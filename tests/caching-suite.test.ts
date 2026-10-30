@@ -60,7 +60,7 @@ console.log("\n--- Suite 2: Public vs Private HTTP Cache-Control Headers ---");
 // Test 3: Inspect route files for correct headers
 {
   const problemsRoute = fs.readFileSync(
-    path.join(__dirname, "../src/app/api/problems/route.ts"),
+    path.join(process.cwd(), "src/app/api/problems/route.ts"),
     "utf8"
   );
   assert(
@@ -71,7 +71,7 @@ console.log("\n--- Suite 2: Public vs Private HTTP Cache-Control Headers ---");
   );
 
   const statsRoute = fs.readFileSync(
-    path.join(__dirname, "../src/app/api/stats/route.ts"),
+    path.join(process.cwd(), "src/app/api/stats/route.ts"),
     "utf8"
   );
   assert(
@@ -80,7 +80,7 @@ console.log("\n--- Suite 2: Public vs Private HTTP Cache-Control Headers ---");
   );
 
   const notificationsRoute = fs.readFileSync(
-    path.join(__dirname, "../src/app/api/notifications/route.ts"),
+    path.join(process.cwd(), "src/app/api/notifications/route.ts"),
     "utf8"
   );
   assert(
@@ -89,7 +89,7 @@ console.log("\n--- Suite 2: Public vs Private HTTP Cache-Control Headers ---");
   );
 
   const leaderboardRoute = fs.readFileSync(
-    path.join(__dirname, "../src/app/api/leaderboard/route.ts"),
+    path.join(process.cwd(), "src/app/api/leaderboard/route.ts"),
     "utf8"
   );
   assert(
@@ -104,7 +104,7 @@ console.log("\n--- Suite 3: Data Protection & Privacy Verification ---");
 // Test 4: Verify public problem fetcher excludes hidden test cases and private fields
 {
   const problemsLib = fs.readFileSync(
-    path.join(__dirname, "../src/lib/problems.ts"),
+    path.join(process.cwd(), "src/lib/problems.ts"),
     "utf8"
   );
   assert(
@@ -115,7 +115,7 @@ console.log("\n--- Suite 3: Data Protection & Privacy Verification ---");
   );
 
   const adminRoute = fs.readFileSync(
-    path.join(__dirname, "../src/app/api/admin/problems/route.ts"),
+    path.join(process.cwd(), "src/app/api/admin/problems/route.ts"),
     "utf8"
   );
   assert(
@@ -129,7 +129,7 @@ console.log("\n--- Suite 4: Client Cache Clearing on Auth State Switch ---");
 // Test 5: Verify SWRProvider user cache clearer implementation
 {
   const swrProvider = fs.readFileSync(
-    path.join(__dirname, "../src/components/layout/SWRProvider.tsx"),
+    path.join(process.cwd(), "src/components/layout/SWRProvider.tsx"),
     "utf8"
   );
   assert(
