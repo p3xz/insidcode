@@ -29,6 +29,7 @@ import {
   AlertDescription,
 } from "@/components/ui/alert";
 import { useSubmissionLifecycle } from "@/hooks/useSubmissionLifecycle";
+import { getSavedDraft, setSavedDraft, removeSavedDraft, setCachedUserState } from "@/lib/problemClientCache";
 
 interface ProblemWorkspaceProps {
   problem: IQuestion;
@@ -128,7 +129,15 @@ export function ProblemWorkspace({
     resetLifecycle,
   } = useSubmissionLifecycle({
     currentUserStreak: session?.user?.currentStreak || 0,
-    onAccepted: () => setIsSolved(true),
+    onAccepted: () => {
+      setIsSolved(true);
+      if (session?.user?.id) {
+        setCachedUserState(session.user.id, problem.problemId, {
+          isSolved: true,
+          isAttempted: true,
+        });
+      }
+    },
     onOverlayDismissed: handleOverlayDismissed,
   });
 
@@ -153,11 +162,7 @@ export function ProblemWorkspace({
   ]);
 
   useEffect(() => {
-    const savedCodeKey = `code_${problem.problemId}_${selectedLanguage}`;
-    const saved =
-      typeof window !== "undefined"
-        ? localStorage.getItem(savedCodeKey)
-        : null;
+    const saved = getSavedDraft(session?.user?.id, problem.problemId, selectedLanguage);
 
     if (saved) {
       setCode(saved);
@@ -167,14 +172,11 @@ export function ProblemWorkspace({
         `# Write your solution for ${problem.title} here\n`;
       setCode(template);
     }
-  }, [problem, selectedLanguage]);
+  }, [problem, selectedLanguage, session?.user?.id]);
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
-    localStorage.setItem(
-      `code_${problem.problemId}_${selectedLanguage}`,
-      newCode
-    );
+    setSavedDraft(session?.user?.id, problem.problemId, selectedLanguage, newCode);
   };
 
   const handleLanguageSelect = (lang: SupportedLanguageId) => {
@@ -206,7 +208,7 @@ export function ProblemWorkspace({
       problem.starterTemplates?.[selectedLanguage] ||
       `# Write your solution for ${problem.title} here\n`;
     setCode(template);
-    localStorage.removeItem(`code_${problem.problemId}_${selectedLanguage}`);
+    removeSavedDraft(session?.user?.id, problem.problemId, selectedLanguage);
   };
 
   const handleRunCode = async () => {

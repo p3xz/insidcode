@@ -17,6 +17,7 @@ import { CURRICULUM_PHASES } from "@/lib/constants";
 import { Skeleton, SkeletonRegion, SkeletonTableRows } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import { setCachedPublicProblem } from "@/lib/problemClientCache";
 
 interface ProblemRow {
   _id: string;
@@ -90,9 +91,20 @@ export default function ProblemsDirectoryPage() {
   const loadError = Boolean(error);
   const showSkeleton = useDelayedFlag(loading);
 
-  const handlePrefetchProblem = (problemId: string) => {
+  const handlePrefetchProblem = (problemId: string, slug?: string) => {
+    try {
+      router.prefetch(slug ? `/problems/${slug}` : `/problems/${problemId}`);
+    } catch {}
+
     preload([session?.user?.id || "anon", `/api/problems/${problemId}`], () =>
-      fetch(`/api/problems/${problemId}`).then((r) => r.json())
+      fetch(`/api/problems/${problemId}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.problem) {
+            setCachedPublicProblem(problemId, data.problem);
+          }
+          return data;
+        })
     );
   };
 
@@ -347,9 +359,9 @@ export default function ProblemsDirectoryPage() {
                     style={{ borderBottom: i < problems.length - 1 ? "1px solid var(--border)" : "none" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = "var(--bg-subtle)";
-                      handlePrefetchProblem(prob.problemId);
+                      handlePrefetchProblem(prob.problemId, prob.slug);
                     }}
-                    onFocus={() => handlePrefetchProblem(prob.problemId)}
+                    onFocus={() => handlePrefetchProblem(prob.problemId, prob.slug)}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
                     {/* Status icon */}

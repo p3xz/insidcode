@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { ProblemWorkspace } from "@/components/problem/ProblemWorkspace";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import Link from "next/link";
@@ -8,50 +8,95 @@ import { ProblemPageSkeleton } from "@/components/ui/PageSkeletons";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
+import { PublicProblemData } from "@/lib/problems";
+import {
+  getCachedPublicProblem,
+  setCachedPublicProblem,
+  getCachedUserState,
+  setCachedUserState,
+} from "@/lib/problemClientCache";
 
 interface ProblemPageClientProps {
   /** The problemId (e.g. "001") — used to fetch full problem data including user state */
   problemId: string;
   /** The slug — used as fallback display identifier */
   problemSlug: string;
+  /** Server-hydrated initial public problem data */
+  initialProblem?: PublicProblemData | null;
 }
 
 /**
  * Client component that handles:
- * - Fetching the full problem data (including user auth state) from the API
+ * - Instant rendering from server props, in-memory cache, or sessionStorage
+ * - Background SWR revalidation throttled to 5 minutes
  * - Rendering the interactive ProblemWorkspace (Monaco, Run, Submit)
- *
- * SEO-visible content (title, description, examples) is server-rendered in the
- * parent server component (page.tsx) so crawlers see it in the initial HTML.
  */
-export function ProblemPageClient({ problemId }: ProblemPageClientProps) {
+export function ProblemPageClient({
+  problemId,
+  initialProblem,
+}: ProblemPageClientProps) {
   const { data: session } = useSession();
-  const swrKey = [session?.user?.id || "anon", `/api/problems/${problemId}`];
+  const userId = session?.user?.id;
+
+  // Immediately store initial server-hydrated problem into client cache if provided
+  if (initialProblem && typeof window !== "undefined") {
+    setCachedPublicProblem(problemId, initialProblem);
+  }
+
+  // Synchronous cache lookup (0 ms) — check memory and sessionStorage
+  const cachedProblem = useMemo(() => {
+    return initialProblem || getCachedPublicProblem(problemId);
+  }, [problemId, initialProblem]);
+
+  const cachedUserState = useMemo(() => {
+    return getCachedUserState(userId, problemId);
+  }, [userId, problemId]);
+
+  const swrKey = [userId || "anon", `/api/problems/${problemId}`];
 
   const { data, error: swrError, isLoading, mutate: revalidateProblem } = useSWR(
     problemId ? swrKey : null,
-    () =>
-      fetch(`/api/problems/${problemId}`).then(async (res) => {
-        if (!res.ok) {
-          const err = new Error(
-            res.status === 404 ? "Problem not found or unpublished." : "We couldn't load this problem. Please try again."
-          );
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (err as any).status = res.status;
-          throw err;
-        }
-        return res.json();
-      }),
+    async () => {
+      const res = await fetch(`/api/problems/${problemId}`);
+      if (!res.ok) {
+        const err = new Error(
+          res.status === 404
+            ? "Problem not found or unpublished."
+            : "We couldn't load this problem. Please try again."
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (err as any).status = res.status;
+        throw err;
+      }
+      const json = await res.json();
+      if (json?.problem) {
+        setCachedPublicProblem(problemId, json.problem);
+      }
+      if (json?.userState && userId) {
+        setCachedUserState(userId, problemId, json.userState);
+      }
+      return json;
+    },
     {
+      fallbackData: cachedProblem
+        ? {
+            problem: cachedProblem,
+            userState: cachedUserState || { isSolved: false, isAttempted: false },
+          }
+        : undefined,
       revalidateOnFocus: true,
-      dedupingInterval: 5000,
+      // Revalidate in background at most once every 5 minutes (300,000 ms)
+      dedupingInterval: 300000,
     }
   );
 
-  const problem = data?.problem || null;
-  const isSolved = Boolean(data?.userState?.isSolved);
-  const loading = isLoading && !data;
-  const error = swrError?.message || null;
+  const problem = data?.problem || cachedProblem;
+  const isSolved = Boolean(data?.userState?.isSolved ?? cachedUserState?.isSolved);
+
+  // If we already have problem content (from props, SWR, or cache), never show skeleton or spinner
+  const hasProblemContent = Boolean(problem);
+  const loading = isLoading && !hasProblemContent;
+  const error = !hasProblemContent && swrError?.message ? swrError.message : null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const canRetry = Boolean(swrError && (swrError as any).status !== 404);
   const showSkeleton = useDelayedFlag(loading);
