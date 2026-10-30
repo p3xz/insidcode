@@ -24,6 +24,9 @@ import {
   AlertTitle,
   AlertDescription,
 } from "@/components/ui/alert";
+import { SettingsPageSkeleton } from "@/components/ui/PageSkeletons";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface TitleOption {
   id: string;
@@ -63,6 +66,9 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState<UserSettingsState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const showSkeleton = useDelayedFlag(loading);
   const [saveLoading, setSaveLoading] = useState(false);
 
   // Unified server-confirmed Alert state near top of profile form
@@ -91,6 +97,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const fetchSettings = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const [settingsRes, titlesRes] = await Promise.all([
           fetch("/api/user/settings"),
@@ -101,6 +109,8 @@ export default function SettingsPage() {
           const data = await settingsRes.json();
           setSettings(data.user);
           setEditUsernameInput(data.user.username);
+        } else if (settingsRes.status !== 401) {
+          setLoadError(true);
         }
 
         if (titlesRes.ok) {
@@ -109,13 +119,13 @@ export default function SettingsPage() {
           setSelectedTitle(titlesData.selectedTitle || null);
         }
       } catch {
-        // silent
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchSettings();
-  }, []);
+  }, [reloadKey]);
 
   const showSuccessAlert = () => {
     setProfileAlert({
@@ -309,9 +319,17 @@ export default function SettingsPage() {
   };
 
   if (loading) {
+    return showSkeleton ? <SettingsPageSkeleton /> : <div aria-busy="true" className="min-h-[60vh]" />;
+  }
+
+  if (loadError) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00F0FF]" />
+      <div className="mx-auto max-w-2xl">
+        <LoadError
+          message="We couldn't load your settings. Check your connection and try again."
+          onRetry={() => setReloadKey((k) => k + 1)}
+          minHeight={320}
+        />
       </div>
     );
   }
