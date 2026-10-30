@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { OnboardingGuard } from "@/components/layout/OnboardingGuard";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { LegalReconsentModal } from "@/components/layout/LegalReconsentModal";
+import { SWRProvider } from "@/components/layout/SWRProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -152,6 +153,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <SessionProvider>
+            <SWRProvider>
             <OnboardingGuard>
               <div
                 className="flex min-h-screen flex-col"
@@ -167,6 +169,7 @@ export default function RootLayout({
                 <LegalReconsentModal />
               </div>
             </OnboardingGuard>
+            </SWRProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>
