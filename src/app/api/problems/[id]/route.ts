@@ -63,6 +63,10 @@ export async function GET(
         isAttempted,
         lastSubmission,
       },
+    }, {
+      headers: {
+        "Cache-Control": session?.user?.id ? "private, no-store" : "public, s-maxage=300, stale-while-revalidate=600",
+      },
     });
   } catch (error) {
     console.error("Single problem route error:", error);

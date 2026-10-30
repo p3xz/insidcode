@@ -35,6 +35,10 @@ export async function GET() {
         createdAt: n.createdAt,
       })),
       unreadCount,
+    }, {
+      headers: {
+        "Cache-Control": "private, no-store",
+      },
     });
   } catch (error) {
     console.error("Notifications get error:", error);

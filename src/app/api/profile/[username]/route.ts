@@ -155,6 +155,10 @@ export async function GET(
         duelRatio: duelKd,
         isOwnProfile,
       },
+    }, {
+      headers: {
+        "Cache-Control": currentUserId ? "private, no-store" : "public, s-maxage=60, stale-while-revalidate=120",
+      },
     });
   } catch (error) {
     console.error("Profile route error:", error);
