@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Flame, Zap, Send, CheckCircle2, Code2, Swords } from "lucide-react";
 import { StatsPageSkeleton } from "@/components/ui/PageSkeletons";
 import { LoadError } from "@/components/ui/LoadError";

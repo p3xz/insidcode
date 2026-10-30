@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import { ProblemWorkspace } from "@/components/problem/ProblemWorkspace";
-import { IQuestion } from "@/types";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { ProblemPageSkeleton } from "@/components/ui/PageSkeletons";

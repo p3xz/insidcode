@@ -34,7 +34,7 @@ console.log("\n--- Suite 1: Cache Key Scoping & User Isolation ---");
 
 // Test 2: In-memory store simulates SWR cache isolation
 {
-  const store = new Map<string, any>();
+  const store = new Map<string, Record<string, unknown>>();
   const userA = "user_123";
   const userB = "user_456";
 
