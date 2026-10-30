@@ -2,8 +2,8 @@
  * Turbo C Compatibility Mode for C language.
  *
  * Implements:
- * 1. Unsupported header detection (graphics.h, dos.h, bios.h)
- * 2. Conio stripping & standard compatibility prelude (clrscr, getch, gets, main wrapper)
+ * 1. Unsupported header detection (graphics.h, bios.h)
+ * 2. Conio & dos.h stripping & full compatibility prelude (clrscr, gotoxy, wherex, getch, cprintf, delay, etc.)
  * 3. Line number preservation via #line 1
  * 4. Relaxed verdict comparison (tail numeric / token extraction, spacing hint)
  */
@@ -14,7 +14,7 @@ export interface TurboCHeaderCheckResult {
   message?: string;
 }
 
-const UNSUPPORTED_HEADERS = ["graphics.h", "dos.h", "bios.h"] as const;
+const UNSUPPORTED_HEADERS = ["graphics.h", "bios.h"] as const;
 
 /**
  * Checks if code attempts to include unsupported vintage Turbo C DOS/BIOS/graphics headers.
@@ -28,7 +28,7 @@ export function checkUnsupportedHeaders(code: string): TurboCHeaderCheckResult {
       const message =
         header === "graphics.h"
           ? "Turbo C had graphics.h. The internet does not. InsidCode runs on modern Linux servers without a virtual graphics card. Try a plain C solution with printf."
-          : "This uses DOS-specific hardware APIs from the 1980s that only run inside 16-bit MS-DOS. Use standard C library functions instead.";
+          : "This uses BIOS hardware APIs from the 1980s that only run inside 16-bit MS-DOS. Use standard C library functions instead.";
       return {
         unsupported: true,
         header,
@@ -40,7 +40,7 @@ export function checkUnsupportedHeaders(code: string): TurboCHeaderCheckResult {
 }
 
 /**
- * Tolerantly replaces `#include <conio.h>` or `#include "conio.h"` with an empty line
+ * Tolerantly replaces `#include <conio.h>` or `#include <dos.h>` with an empty line
  * to keep line numbers identical to the student's original source file.
  * Line-anchored so it does not replace text inside string literals or comments.
  */
@@ -64,12 +64,37 @@ export function stripConioIncludes(code: string): string {
       continue;
     }
 
-    if (!inBlockComment && /^\s*#\s*include\s*[<"]\s*conio\.h\s*[>"]\s*(?:\/\/.*)?$/i.test(line)) {
+    if (!inBlockComment && /^\s*#\s*include\s*[<"]\s*(?:conio|dos)\.h\s*[>"]\s*(?:\/\/.*)?$/i.test(line)) {
       lines[i] = ""; // Keep blank line
     }
   }
 
   return lines.join("\n");
+}
+
+/**
+ * Detects if the return value of getch() or getche() is used in expressions,
+ * assignments, conditionals, or function arguments.
+ * If true, getch() reads from stdin via getchar(). If false, it acts as a non-blocking no-op.
+ */
+export function detectGetchReturnUsed(code: string): boolean {
+  // 1. Strip comments and string/char literals
+  const stripped = code
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/\/\/.*/g, " ")
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+    .replace(/'(?:[^'\\]|\\.)*'/g, "''");
+
+  // 2. Remove standalone getch()/getche() statement calls iteratively
+  let temp = stripped;
+  let prev = "";
+  while (temp !== prev) {
+    prev = temp;
+    temp = temp.replace(/(?:^|[;{}])\s*(?:\(void\)\s*)?getch(?:e)?\s*\(\)\s*;/gm, ";");
+  }
+
+  // 3. If getch or getche is still called as a function, its return value must be in use
+  return /\bgetch(?:e)?\s*\(/.test(temp);
 }
 
 /**
@@ -105,7 +130,7 @@ export function shouldWrapTurboC(code: string): boolean {
  * Wraps student Turbo C source with standard compatibility shims and `#line 1`.
  */
 export function wrapTurboCCode(code: string): string {
-  // 1. Strip conio.h includes
+  // 1. Strip conio.h and dos.h includes
   const stripped = stripConioIncludes(code);
 
   // 2. If wrapper criteria not met, return stripped code directly
@@ -113,17 +138,159 @@ export function wrapTurboCCode(code: string): string {
     return stripped;
   }
 
+  // 3. Check getch return value heuristic
+  const usesGetchReturn = detectGetchReturnUsed(stripped);
+
+  const getchShims = usesGetchReturn
+    ? [
+        "static inline TURBOC_UNUSED int insidcode_getch(void) {",
+        "  int ch = getchar();",
+        "  return ch == EOF ? 0 : ch;",
+        "}",
+        "static inline TURBOC_UNUSED int getch(void) { return insidcode_getch(); }",
+        "static inline TURBOC_UNUSED int getche(void) { return insidcode_getch(); }",
+      ]
+    : [
+        "static inline TURBOC_UNUSED int getch(void) { return 0; }",
+        "static inline TURBOC_UNUSED int getche(void) { return 0; }",
+      ];
+
   const prelude = [
     "#include <stdio.h>",
+    "#include <stdlib.h>",
     "#include <string.h>",
     "",
-    "/* Turbo C Compatibility Shims */",
-    "static void clrscr(void) {}",
-    "static int getch(void) { return 0; }",
-    "static int getche(void) { return 0; }",
+    "#ifdef __GNUC__",
+    "#define TURBOC_UNUSED __attribute__((unused))",
+    "#else",
+    "#define TURBOC_UNUSED",
+    "#endif",
+    "",
+    "/* Turbo C Color Constants */",
+    "#ifndef BLACK",
+    "#define BLACK 0",
+    "#endif",
+    "#ifndef BLUE",
+    "#define BLUE 1",
+    "#endif",
+    "#ifndef GREEN",
+    "#define GREEN 2",
+    "#endif",
+    "#ifndef CYAN",
+    "#define CYAN 3",
+    "#endif",
+    "#ifndef RED",
+    "#define RED 4",
+    "#endif",
+    "#ifndef MAGENTA",
+    "#define MAGENTA 5",
+    "#endif",
+    "#ifndef BROWN",
+    "#define BROWN 6",
+    "#endif",
+    "#ifndef LIGHTGRAY",
+    "#define LIGHTGRAY 7",
+    "#endif",
+    "#ifndef DARKGRAY",
+    "#define DARKGRAY 8",
+    "#endif",
+    "#ifndef LIGHTBLUE",
+    "#define LIGHTBLUE 9",
+    "#endif",
+    "#ifndef LIGHTGREEN",
+    "#define LIGHTGREEN 10",
+    "#endif",
+    "#ifndef LIGHTCYAN",
+    "#define LIGHTCYAN 11",
+    "#endif",
+    "#ifndef LIGHTRED",
+    "#define LIGHTRED 12",
+    "#endif",
+    "#ifndef LIGHTMAGENTA",
+    "#define LIGHTMAGENTA 13",
+    "#endif",
+    "#ifndef YELLOW",
+    "#define YELLOW 14",
+    "#endif",
+    "#ifndef WHITE",
+    "#define WHITE 15",
+    "#endif",
+    "#ifndef BLINK",
+    "#define BLINK 128",
+    "#endif",
+    "",
+    "/* Turbo C Cursor Type Constants */",
+    "#ifndef _NOCURSOR",
+    "#define _NOCURSOR 0",
+    "#endif",
+    "#ifndef _SOLIDCURSOR",
+    "#define _SOLIDCURSOR 1",
+    "#endif",
+    "#ifndef _NORMALCURSOR",
+    "#define _NORMALCURSOR 2",
+    "#endif",
+    "",
+    "/* Turbo C Conio No-op Stubs */",
+    "static inline TURBOC_UNUSED void clrscr(void) {}",
+    "static inline TURBOC_UNUSED void clreol(void) {}",
+    "static inline TURBOC_UNUSED void gotoxy(int x, int y) { (void)x; (void)y; }",
+    "static inline TURBOC_UNUSED void textcolor(int c) { (void)c; }",
+    "static inline TURBOC_UNUSED void textbackground(int c) { (void)c; }",
+    "static inline TURBOC_UNUSED void textattr(int a) { (void)a; }",
+    "static inline TURBOC_UNUSED void highvideo(void) {}",
+    "static inline TURBOC_UNUSED void lowvideo(void) {}",
+    "static inline TURBOC_UNUSED void normvideo(void) {}",
+    "static inline TURBOC_UNUSED void window(int l, int t, int r, int b) { (void)l; (void)t; (void)r; (void)b; }",
+    "static inline TURBOC_UNUSED void _setcursortype(int t) { (void)t; }",
+    "static inline TURBOC_UNUSED void delline(void) {}",
+    "static inline TURBOC_UNUSED void insline(void) {}",
+    "",
+    "/* Turbo C Query Functions */",
+    "static inline TURBOC_UNUSED int wherex(void) { return 1; }",
+    "static inline TURBOC_UNUSED int wherey(void) { return 1; }",
+    "static inline TURBOC_UNUSED int kbhit(void) { return 0; }",
+    "",
+    "/* Turbo C I/O Shims */",
+    "#define cprintf printf",
+    "#define cscanf scanf",
+    "static inline TURBOC_UNUSED int cputs(const char *s) {",
+    "  if (!s) return EOF;",
+    "  return fputs(s, stdout);",
+    "}",
+    "static inline TURBOC_UNUSED int putch(int c) {",
+    "  return putchar(c);",
+    "}",
+    "",
+    "/* dos.h Shims */",
+    "static inline TURBOC_UNUSED void delay(unsigned int ms) { (void)ms; }",
+    "static inline TURBOC_UNUSED unsigned int insidcode_sleep(unsigned int s) { (void)s; return 0; }",
+    "#define sleep insidcode_sleep",
+    "",
+    "/* Safe system() shim: no-ops cls/clear, blocks all other commands */",
+    "static inline TURBOC_UNUSED int insidcode_system(const char *cmd) {",
+    "  if (!cmd) return 0;",
+    "  const char *p = cmd;",
+    "  while (*p == ' ' || *p == '\\t') p++;",
+    "  if ((p[0] == 'c' || p[0] == 'C') &&",
+    "      (p[1] == 'l' || p[1] == 'L') &&",
+    "      (p[2] == 's' || p[2] == 'S') &&",
+    "      (p[3] == '\\0' || p[3] == ' ' || p[3] == '\\t' || p[3] == '\\r' || p[3] == '\\n')) {",
+    "    return 0;",
+    "  }",
+    "  if ((p[0] == 'c' || p[0] == 'C') &&",
+    "      (p[1] == 'l' || p[1] == 'L') &&",
+    "      (p[2] == 'e' || p[2] == 'E') &&",
+    "      (p[3] == 'a' || p[3] == 'A') &&",
+    "      (p[4] == 'r' || p[4] == 'R') &&",
+    "      (p[5] == '\\0' || p[5] == ' ' || p[5] == '\\t' || p[5] == '\\r' || p[5] == '\\n')) {",
+    "    return 0;",
+    "  }",
+    "  return 0;",
+    "}",
+    "#define system insidcode_system",
     "",
     "/* Safe gets shim using fgets without trailing newline */",
-    "static char* insidcode_gets(char *s) {",
+    "static inline TURBOC_UNUSED char* insidcode_gets(char *s) {",
     "  if (!s) return NULL;",
     "  if (!fgets(s, 1024, stdin)) return NULL;",
     "  size_t len = strlen(s);",
@@ -131,6 +298,8 @@ export function wrapTurboCCode(code: string): string {
     "  return s;",
     "}",
     "#define gets insidcode_gets",
+    "",
+    ...getchShims,
     "",
     "#define main user_main",
     "#line 1",

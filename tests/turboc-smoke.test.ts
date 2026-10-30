@@ -7,6 +7,7 @@ import {
   stripConioIncludes,
   shouldWrapTurboC,
   wrapTurboCCode,
+  detectGetchReturnUsed,
   compareTurboCOutput,
 } from "../src/lib/turboc";
 
@@ -154,14 +155,14 @@ console.log("=======================================================");
   );
 }
 
-// Wrapper boundary 2: #include < conio.h > with spaces
+// Wrapper boundary 2: #include < conio.h > and <dos.h> stripped
 {
-  const code = `#include < conio.h >\nvoid main() {}`;
+  const code = `#include < conio.h >\n#include <dos.h>\nvoid main() {}`;
   const stripped = stripConioIncludes(code);
   const lines = stripped.split("\n");
   assert(
-    lines[0] === "" && lines[1] === "void main() {}",
-    "Wrapper 2: '#include < conio.h >' stripped preserving line count"
+    lines[0] === "" && lines[1] === "" && lines[2] === "void main() {}",
+    "Wrapper 2: '#include < conio.h >' and '#include <dos.h>' stripped preserving line count"
   );
 }
 
@@ -170,7 +171,7 @@ console.log("=======================================================");
   const code = `#include <stdio.h>\nvoid main() { printf("Hi"); getch(); }`;
   const wrapped = wrapTurboCCode(code);
   assert(
-    shouldWrapTurboC(code) && wrapped.includes("int getch(void)"),
+    shouldWrapTurboC(code) && wrapped.includes("getch(void)"),
     "Wrapper 3: getch() shim present even when conio.h was never included"
   );
 }
@@ -215,7 +216,7 @@ console.log("=======================================================");
   );
 }
 
-// Wrapper boundary 8: Unsupported headers
+// Wrapper boundary 8: Unsupported headers detection vs supported dos.h
 {
   const graphicsCode = `#include <stdio.h>\n#include <graphics.h>\nvoid main() {}`;
   const dosCode = `#include <dos.h>\nvoid main() {}`;
@@ -226,16 +227,14 @@ console.log("=======================================================");
   const bCheck = checkUnsupportedHeaders(biosCode);
 
   assert(
-    gCheck !== null &&
+    gCheck.unsupported === true &&
       gCheck.header === "graphics.h" &&
       Boolean(gCheck.message?.includes("Turbo C had graphics.h")) &&
-      dCheck !== null &&
-      dCheck.header === "dos.h" &&
-      Boolean(dCheck.message?.includes("DOS-specific hardware APIs")) &&
-      bCheck !== null &&
+      dCheck.unsupported === false &&
+      bCheck.unsupported === true &&
       bCheck.header === "bios.h" &&
-      Boolean(bCheck.message?.includes("DOS-specific hardware APIs")),
-    "Wrapper 8: Unsupported DOS/Turbo C headers accurately detected with helpful error messages"
+      Boolean(bCheck.message?.includes("BIOS hardware APIs")),
+    "Wrapper 8: graphics.h and bios.h detected as unsupported, while dos.h is permitted"
   );
 }
 
@@ -261,8 +260,6 @@ void main() {
   } catch (err: unknown) {
     const errorObj = err as { stderr?: Buffer; message?: string };
     const errOutput = errorObj.stderr?.toString() || "";
-    // Line 5 in user code is syntax_error_here;
-    // With #line 1, GCC reports error on line 5 (e.g. "bad.c:5:5: error: 'syntax_error_here' undeclared")
     assert(
       /:5:\d+: error:/.test(errOutput),
       "Wrapper 9: Compile error reports user line 5, not prelude line number",
@@ -304,6 +301,30 @@ void main() {
       fs.rmSync(tempCrashDir, { recursive: true, force: true });
     } catch {}
   }
+}
+
+// Wrapper boundary 11: detectGetchReturnUsed heuristic
+{
+  const codeStandalone = `void main() { clrscr(); getch(); }`;
+  const codeMultiple = `void main() { getch(); getche(); }`;
+  const codeAssign = `void main() { char c = getch(); }`;
+  const codeSwitch = `void main() { switch(getch()) { case 'a': break; } }`;
+  const codeIf = `void main() { if (getch() == 'y') {} }`;
+  const codeWhile = `void main() { while (getche() != 13) {} }`;
+  const codeReturn = `int f() { return getch(); }`;
+  const codeArg = `void main() { printf("%c", getche()); }`;
+
+  assert(
+    detectGetchReturnUsed(codeStandalone) === false &&
+      detectGetchReturnUsed(codeMultiple) === false &&
+      detectGetchReturnUsed(codeAssign) === true &&
+      detectGetchReturnUsed(codeSwitch) === true &&
+      detectGetchReturnUsed(codeIf) === true &&
+      detectGetchReturnUsed(codeWhile) === true &&
+      detectGetchReturnUsed(codeReturn) === true &&
+      detectGetchReturnUsed(codeArg) === true,
+    "Wrapper 11: detectGetchReturnUsed distinguishes statement pauses from consumed return values"
+  );
 }
 
 console.log("\n=======================================================");
@@ -546,6 +567,164 @@ try {
 } finally {
   try {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  } catch {}
+}
+
+console.log("\n=======================================================");
+console.log("Suite 4: Extended Conio & dos.h APIs Smoke Tests");
+console.log("=======================================================");
+
+const extendedFixtures = [
+  {
+    name: "Extended 1: All conio no-op stubs & color/cursor constants compile cleanly",
+    code: `#include <stdio.h>
+#include <conio.h>
+void main() {
+    clrscr();
+    clreol();
+    gotoxy(10, 20);
+    textcolor(RED);
+    textbackground(BLUE);
+    textattr(0x1F);
+    highvideo();
+    lowvideo();
+    normvideo();
+    window(1, 1, 80, 25);
+    _setcursortype(_NOCURSOR);
+    _setcursortype(_SOLIDCURSOR);
+    _setcursortype(_NORMALCURSOR);
+    delline();
+    insline();
+    printf("Conio Stubs OK %d %d", BLACK, WHITE);
+}`,
+    stdin: "\n",
+    expectedOutput: "Conio Stubs OK 0 15",
+  },
+  {
+    name: "Extended 2: wherex, wherey, and kbhit return values",
+    code: `#include <stdio.h>
+#include <conio.h>
+void main() {
+    int x = wherex();
+    int y = wherey();
+    int k = kbhit();
+    printf("x=%d y=%d k=%d", x, y, k);
+}`,
+    stdin: "\n",
+    expectedOutput: "x=1 y=1 k=0",
+  },
+  {
+    name: "Extended 3: cprintf, cputs, putch, and cscanf",
+    code: `#include <stdio.h>
+#include <conio.h>
+void main() {
+    int val;
+    cputs("Prompt:");
+    putch('>');
+    cscanf("%d", &val);
+    cprintf("Echo=%d", val * 2);
+}`,
+    stdin: "21\n",
+    expectedOutput: "42",
+  },
+  {
+    name: "Extended 4: dos.h delay() and sleep() execute instantly without blocking",
+    code: `#include <stdio.h>
+#include <dos.h>
+void main() {
+    delay(500);
+    sleep(1);
+    printf("Timing OK");
+}`,
+    stdin: "\n",
+    expectedOutput: "Timing OK",
+  },
+  {
+    name: "Extended 5: system(\"cls\") and system(\"clear\") safely succeed as no-ops",
+    code: `#include <stdio.h>
+#include <stdlib.h>
+void main() {
+    int r1 = system("cls");
+    int r2 = system("clear");
+    int r3 = system("rm -rf /dangerous/path");
+    printf("results: %d %d %d", r1, r2, r3);
+}`,
+    stdin: "\n",
+    expectedOutput: "0 0 0",
+  },
+  {
+    name: "Extended 6: Return-consumed getch() reads from stdin",
+    code: `#include <stdio.h>
+#include <conio.h>
+void main() {
+    char c1, c2;
+    c1 = getch();
+    c2 = getche();
+    printf("Chars: %c %c", c1, c2);
+}`,
+    stdin: "XY\n",
+    expectedOutput: "X Y",
+  },
+  {
+    name: "Extended 7: Standalone getch() pause does NOT swallow scanf input",
+    code: `#include <stdio.h>
+#include <conio.h>
+void main() {
+    int num;
+    getch();
+    scanf("%d", &num);
+    printf("Number: %d", num);
+}`,
+    stdin: "99\n",
+    expectedOutput: "99",
+  },
+];
+
+const extTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "turboc-extended-"));
+
+try {
+  extendedFixtures.forEach((fixture) => {
+    const wrappedCode = wrapTurboCCode(fixture.code);
+    const srcFile = path.join(extTmpDir, "test.c");
+    const exeFile = path.join(extTmpDir, "test.exe");
+    fs.writeFileSync(srcFile, wrappedCode, "utf8");
+
+    try {
+      // Compile with local gcc
+      execSync(`gcc -O2 -Wall -Wno-unused-result "${srcFile}" -o "${exeFile}"`, {
+        stdio: "pipe",
+      });
+
+      const start = Date.now();
+      // Execute with stdin
+      const actualStdout = execSync(`"${exeFile}"`, {
+        input: fixture.stdin,
+        stdio: "pipe",
+        timeout: 3000,
+      }).toString();
+      const elapsed = Date.now() - start;
+
+      // Ensure delay/sleep didn't actually block for > 1000ms
+      if (fixture.name.includes("dos.h") && elapsed >= 1200) {
+        assert(false, fixture.name, `Execution took ${elapsed}ms; delay/sleep should be no-ops`);
+        return;
+      }
+
+      // Compare using compareTurboCOutput
+      const comparison = compareTurboCOutput(actualStdout, fixture.expectedOutput);
+      assert(
+        comparison.passed,
+        fixture.name,
+        `Expected: "${fixture.expectedOutput}", Actual stdout: "${actualStdout.trim()}"`
+      );
+    } catch (err: unknown) {
+      const errorObj = err as { stderr?: Buffer; message?: string };
+      assert(false, fixture.name, errorObj.stderr?.toString() || errorObj.message);
+    }
+  });
+} finally {
+  try {
+    fs.rmSync(extTmpDir, { recursive: true, force: true });
   } catch {}
 }
 

@@ -2,13 +2,16 @@
 
 ## Overview
 
-Many university engineering curriculums, particularly in India, continue to teach C programming using **Borland Turbo C / C++ 3.0** (released in the early 1990s for MS-DOS). 
+Many university engineering curriculums continue to teach C programming using vintage **Borland Turbo C / C++ 3.0** (released in the early 1990s for MS-DOS). 
 
 In undergraduate lab courses, students are routinely instructed to write:
 - `void main()` instead of `int main(void)`
-- `#include <conio.h>` or `#include < conio.h >`
-- `clrscr()` to clear the DOS screen at the start of execution
-- `getch()` or `getche()` at the end of the program to pause the console until a key is pressed
+- `#include <conio.h>` or `#include <dos.h>`
+- `clrscr()` or `system("cls")` to clear the DOS screen
+- `getch()` or `getche()` at the end of the program to pause the console until a key is pressed, or `ch = getch()` to read single characters
+- `gotoxy(x, y)`, `textcolor()`, `textbackground()`, and `highvideo()` for DOS console styling
+- `delay(ms)` or `sleep(s)` for animation pauses
+- `cprintf()`, `cputs()`, `putch()`, and `cscanf()`
 - `gets()` for string input
 - Prompts before `scanf` without trailing newlines (e.g. `printf("Enter three integers:"); scanf(...); printf("Average = %.2f", avg);`), producing output like:
   ```text
@@ -16,7 +19,7 @@ In undergraduate lab courses, students are routinely instructed to write:
   ```
 - Glued labels without separating whitespace (e.g. `Simple Interest=100.00`, `a=5, b=3`, `Total: 15`).
 
-On modern Linux-based automated judges (running GCC 14/15 in C17/C23 mode), these vintage lab programs immediately fail with **Compilation Error** (missing `<conio.h>`, `void main` signature), **Time Limit Exceeded** (`getch()` hanging on stdin), or **Wrong Answer** (prompts polluting expected stdout).
+On modern Linux-based automated judges (running GCC 14/15 in C17/C23 mode), these vintage lab programs immediately fail with **Compilation Error** (missing `<conio.h>`, `void main` signature), **Time Limit Exceeded** (`getch()` hanging on stdin or `delay()` sleeping), or **Wrong Answer** (prompts polluting expected stdout).
 
 **Turbo C Mode** is an opt-in compatibility feature on InsidCode designed to bridge this 35-year gap. When enabled, it compiles legacy college lab code cleanly on modern GCC and judges the output with a relaxed tail comparator.
 
@@ -39,12 +42,14 @@ On modern Linux-based automated judges (running GCC 14/15 in C17/C23 mode), thes
 |                       Server Evaluation Pipeline                        |
 |                                                                         |
 |  1. Unsupported Header Guard                                            |
-|     - Detects <graphics.h>, <dos.h>, <bios.h>                           |
+|     - Detects <graphics.h>, <bios.h>                                    |
 |     - Returns friendly Compile Error explaining Linux environment       |
 |                                                                         |
 |  2. Source Preprocessing & Wrapping (src/lib/turboc.ts)                 |
-|     - Strips <conio.h> while preserving exact line count                |
-|     - Injects prelude: clrscr(), getch(), safe gets(), #line 1          |
+|     - Strips <conio.h> & <dos.h> while preserving exact line count      |
+|     - Injects prelude: conio stubs, dos.h shims, colors, safe gets      |
+|     - Contextual getch() heuristic (no-op pause vs stdin reader)        |
+|     - Safe system("cls") shim blocking dangerous commands               |
 |     - Wraps void main() -> user_main() and injects standard main()      |
 |                                                                         |
 |  3. Compilation & Execution (GCC 15 on Linux)                           |
@@ -68,10 +73,10 @@ On modern Linux-based automated judges (running GCC 14/15 in C17/C23 mode), thes
 
 When `compat: "turboc"` is requested:
 
-### Line-Preserving Conio Stripping
-Students need compiler line numbers in error messages to match their editor line numbers exactly. The conio stripper uses regex anchored on lines:
+### Line-Preserving Conio & DOS Header Stripping
+Students need compiler line numbers in error messages to match their editor line numbers exactly. The stripper uses regex anchored on lines:
 ```regex
-^\s*#\s*include\s*[<"]\s*conio\.h\s*[>"]\s*(?:\/\/.*)?$
+^\s*#\s*include\s*[<"]\s*(?:conio|dos)\.h\s*[>"]\s*(?:\/\/.*)?$
 ```
 Matches are replaced with an empty blank line rather than removed, keeping total line count unchanged.
 
@@ -79,21 +84,87 @@ Matches are replaced with an empty blank line rather than removed, keeping total
 The source is wrapped with:
 ```c
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-/* Turbo C Compatibility Shims */
-static void clrscr(void) {}
-static int getch(void) { return 0; }
-static int getche(void) { return 0; }
+/* Turbo C Color Constants */
+#ifndef BLACK
+#define BLACK 0
+#define BLUE 1
+#define GREEN 2
+#define CYAN 3
+#define RED 4
+#define MAGENTA 5
+#define BROWN 6
+#define LIGHTGRAY 7
+#define DARKGRAY 8
+#define LIGHTBLUE 9
+#define LIGHTGREEN 10
+#define LIGHTCYAN 11
+#define LIGHTRED 12
+#define LIGHTMAGENTA 13
+#define YELLOW 14
+#define WHITE 15
+#define BLINK 128
+#endif
 
-/* Safe gets shim using fgets without trailing newline */
-static char* insidcode_gets(char *s) {
-  if (!s) return NULL;
-  if (!fgets(s, 1024, stdin)) return NULL;
-  size_t len = strlen(s);
-  if (len > 0 && s[len - 1] == '\n') s[len - 1] = '\0';
-  return s;
+/* Turbo C Cursor Type Constants */
+#ifndef _NOCURSOR
+#define _NOCURSOR 0
+#define _SOLIDCURSOR 1
+#define _NORMALCURSOR 2
+#endif
+
+/* Conio No-op Stubs */
+static inline void clrscr(void) {}
+static inline void clreol(void) {}
+static inline void gotoxy(int x, int y) { (void)x; (void)y; }
+static inline void textcolor(int c) { (void)c; }
+static inline void textbackground(int c) { (void)c; }
+static inline void textattr(int a) { (void)a; }
+static inline void highvideo(void) {}
+static inline void lowvideo(void) {}
+static inline void normvideo(void) {}
+static inline void window(int l, int t, int r, int b) { (void)l; (void)t; (void)r; (void)b; }
+static inline void _setcursortype(int t) { (void)t; }
+static inline void delline(void) {}
+static inline void insline(void) {}
+
+/* Conio Query Functions */
+static inline int wherex(void) { return 1; }
+static inline int wherey(void) { return 1; }
+static inline int kbhit(void) { return 0; }
+
+/* Conio I/O Shims */
+#define cprintf printf
+#define cscanf scanf
+static inline int cputs(const char *s) {
+  if (!s) return EOF;
+  return fputs(s, stdout);
 }
+static inline int putch(int c) {
+  return putchar(c);
+}
+
+/* dos.h Timing Controls */
+static inline void delay(unsigned int ms) { (void)ms; }
+static inline unsigned int insidcode_sleep(unsigned int s) { (void)s; return 0; }
+#define sleep insidcode_sleep
+
+/* Safe system() shim: no-ops cls/clear, blocks all other commands */
+static inline int insidcode_system(const char *cmd) {
+  if (!cmd) return 0;
+  // If cls or clear, safely return 0; block any dangerous commands
+  ...
+}
+#define system insidcode_system
+
+/* Contextual getch() / getche() */
+// If return value is used (e.g. c = getch()): reads via getchar()
+// If called as a standalone pause statement: no-op returning 0
+
+/* Safe gets() shim using fgets without trailing newline */
+static inline char* insidcode_gets(char *s) { ... }
 #define gets insidcode_gets
 
 #define main user_main
@@ -110,8 +181,16 @@ int main(void) {
 }
 ```
 
+### Contextual `getch()` / `getche()` Heuristic
+In traditional DOS lab programs, `getch()` is used for two completely distinct purposes:
+1. **Console pause at end of program**: `getch();` at the end of `main()`. If this read from stdin on a headless Linux judge, the program would hang until TLE (Time Limit Exceeded). Here, it safely no-ops returning 0.
+2. **Interactive character input**: `char ch = getch();` or `switch(getch())`. Here, the AST/heuristic recognizes the return value is consumed and automatically routes it to `getchar()`, allowing interactive character-based lab solutions to work seamlessly.
+
+### Safe `system("cls")` & Command Blocking
+Many students write `system("cls");` or `system("clear");`. Rather than spawning a real shell sub-process (which is costly and dangerous in multi-tenant judge workers), the injected `system` shim intercepts `cls` and `clear` as safe no-ops and blocks all other commands.
+
 ### `#line 1` Directive
-Because the prelude contains 17 lines of shims, any compilation error in student code would normally be offset by +17 lines. Inscribing `#line 1` directly before the student's code resets GCC's internal line counter. If an error is on line 5 of their code, GCC reports `line 5`.
+Because the prelude contains shim definitions, any compilation error in student code would normally be offset by the prelude line count. Inscribing `#line 1` directly before the student's code resets GCC's internal line counter. If an error is on line 5 of their code, GCC reports `line 5`.
 
 ### Safe Wrapping Guards
 Code is **not** wrapped if:
@@ -124,14 +203,14 @@ Code is **not** wrapped if:
 
 ## 2. Unsupported Vintage Headers
 
-Turbo C included proprietary MS-DOS 16-bit graphics and hardware libraries. These cannot run on 64-bit Linux server containers without emulating an x86 DOS machine.
+Turbo C included proprietary MS-DOS 16-bit graphics and BIOS libraries. These cannot run on 64-bit Linux server containers without emulating an x86 DOS machine.
 
 When code includes these headers, the judge catches them before execution and returns an informative, educational Compile Error:
 
 - **`<graphics.h>`**:
   > *"Turbo C had graphics.h. The internet does not. InsidCode runs on modern Linux servers without a virtual graphics card. Try a plain C solution with printf."*
-- **`<dos.h>` or `<bios.h>`**:
-  > *"This uses DOS-specific hardware APIs from the 1980s that only run inside 16-bit MS-DOS. Use standard C library functions instead."*
+- **`<bios.h>`**:
+  > *"This uses BIOS hardware APIs from the 1980s that only run inside 16-bit MS-DOS. Use standard C library functions instead."*
 
 In the terminal output, these compilation failures are badged with:
 `Environment limitation (not a logic error)`.
@@ -178,28 +257,13 @@ The comparator examines the **tail** (the final output tokens) of the student's 
 
 - **Workspace Toggle**:
   Located adjacent to the language picker in `ProblemWorkspace.tsx`.
-  - Accessible button with `role="switch"`, `aria-checked`, and keyboard focus styling.
-  - Only visible when C is selected.
-  - Persisted across page reloads in `localStorage` (`"insidcode:turboc-mode"`).
-  - Toast confirmation on activation: *"Turbo C mode is on. We'll let void main() slide this time."*
-- **Raw Stdout Preserved**:
-  Clicking "Run Code" does not filter out prompts; the student sees their interactive prompts and stdout verbatim.
-- **Result Badge**:
-  When a submission is evaluated in Turbo C mode, the terminal displays a cyan badge:
-  `Judged in Turbo C mode`.
-- **Hints**:
-  If a test case fails due to glued digits, the amber hint box is rendered prominently above the failed test case details.
-
----
-
-## 5. Scope & Duels Policy
-
-### Duels (1v1 Matchmaking)
-Turbo C mode is **strictly disabled in 1v1 Duels**.
-- Duel submissions evaluate solely against the standard competitive programming judge.
-- The `compat` parameter is never sent from `src/app/duel/[roomCode]/page.tsx`.
-- Even if a client manually injects `compat: "turboc"`, duel evaluation pipelines do not honor compatibility modes, protecting competitive integrity and Elo ratings.
-
-### Problem Evaluation Integrity
-- Hidden test cases and expected outputs remain completely concealed on the server.
-- Turbo C mode changes only source compilation shims and output token parsing; it does not alter scoring rules, XP awards, streak calculations, or leaderboard rankings.
+  - Accessible switch (`role="switch"`, `aria-checked`).
+  - Off by default; selection remembered in browser `localStorage`.
+  - Only visible when the selected language is C.
+  - Excluded entirely from Duels.
+- **Microcopy**:
+  - Tooltip: *"Your college still uses Turbo C. We get it. Turn this on and we'll quietly fix the old-style stuff."*
+  - Toast on enable: *"Turbo C mode is on. We'll let void main() slide this time."*
+  - Result badge: *"Judged in Turbo C mode"*.
+- **Full Output Transparency**:
+  The student always sees their raw output exactly as generated (including all prompts and labels) in the terminal output tab. Relaxed matching is applied solely to calculate the verdict.
