@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Flame, Lock, Loader2, Swords, Trophy, Award, Medal } from "lucide-react";
+import { Flame, Lock, Swords, Trophy, Award, Medal } from "lucide-react";
+import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
+import { LoadError } from "@/components/ui/LoadError";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
 interface LeaderboardUser {
   rank: number;
@@ -36,11 +39,15 @@ export default function LeaderboardPage() {
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [isFrozen, setIsFrozen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const showSkeleton = useDelayedFlag(loading);
   const [personalDuelStats, setPersonalDuelStats] = useState<PersonalDuelStats | null>(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch(`/api/leaderboard?tab=${activeTab}`);
         if (res.ok) {
@@ -48,15 +55,17 @@ export default function LeaderboardPage() {
           setUsers(data.leaderboard || []);
           setIsFrozen(data.isFrozen || false);
           setPersonalDuelStats(data.personalDuelStats || null);
+        } else {
+          setLoadError(true);
         }
       } catch {
-        // silent
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchLeaderboard();
-  }, [activeTab]);
+  }, [activeTab, reloadKey]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-6">
@@ -197,9 +206,48 @@ export default function LeaderboardPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--fg-dimmed)" }} />
-          </div>
+          <SkeletonRegion label="Loading leaderboard" style={{ minHeight: 10 * 56 }}>
+            {showSkeleton &&
+              Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={i}
+                  aria-hidden="true"
+                  className="grid grid-cols-12 items-center px-4 py-3.5"
+                  style={{
+                    height: 56,
+                    borderBottom: i < 9 ? "1px solid var(--border)" : "none",
+                    borderLeft: "2px solid transparent",
+                  }}
+                >
+                  <div className="col-span-1 flex justify-center">
+                    <Skeleton style={{ height: 13, width: 14 }} />
+                  </div>
+                  <div className="col-span-6 sm:col-span-4 flex items-center gap-2.5">
+                    <Skeleton style={{ height: 28, width: 28, flexShrink: 0 }} />
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      <Skeleton style={{ height: 12, width: "60%" }} />
+                      <Skeleton style={{ height: 9, width: "35%" }} />
+                    </div>
+                  </div>
+                  <div className="hidden sm:block col-span-2" />
+                  <div className="hidden sm:flex col-span-2 justify-center">
+                    <Skeleton style={{ height: 12, width: 28 }} />
+                  </div>
+                  <div className="hidden sm:flex col-span-1 justify-center">
+                    <Skeleton style={{ height: 12, width: 20 }} />
+                  </div>
+                  <div className="col-span-5 sm:col-span-2 flex justify-end">
+                    <Skeleton style={{ height: 12, width: 44 }} />
+                  </div>
+                </div>
+              ))}
+          </SkeletonRegion>
+        ) : loadError ? (
+          <LoadError
+            message="We couldn't load the leaderboard. Check your connection and try again."
+            onRetry={() => setReloadKey((k) => k + 1)}
+            minHeight={10 * 56}
+          />
         ) : users.length === 0 ? (
           <div className="py-16 text-center text-[12px]" style={{ color: "var(--fg-muted)" }}>
             {activeTab === "xp" ? "No active rankings recorded yet." : "No ranked duelists with 3+ completed matches yet."}
