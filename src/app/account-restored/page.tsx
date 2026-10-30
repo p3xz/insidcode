@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { CheckCircle2, ArrowRight, Loader2, ShieldCheck, Scale, FileText } from "lucide-react";
+import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
 
 interface RestoreDetails {
   isRestored: boolean;
@@ -97,12 +98,14 @@ export default function AccountRestoredPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[80vh] items-center justify-center">
-        <div className="flex items-center gap-2 text-xs" style={{ color: "var(--fg-muted)" }}>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Verifying account restoration status...</span>
+      <SkeletonRegion label="Verifying account restoration status" className="flex min-h-[80vh] items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-3" aria-hidden="true">
+          <Skeleton style={{ height: 24, width: "60%" }} />
+          <Skeleton style={{ height: 12, width: "100%" }} />
+          <Skeleton style={{ height: 12, width: "85%" }} />
+          <Skeleton style={{ height: 36, width: "100%", marginTop: 8 }} />
         </div>
-      </div>
+      </SkeletonRegion>
     );
   }
 

@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   ExternalLink,
 } from "lucide-react";
+import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/Skeleton";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { DifficultyLevel } from "@/types";
 
 interface SpectatorPlayer {
@@ -85,6 +87,7 @@ export default function DuelSpectatorPage() {
   const [spectatorCount, setSpectatorCount] = useState<number>(1);
   const [isParticipant, setIsParticipant] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDelayedFlag(loading);
   const [error, setError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -185,12 +188,30 @@ export default function DuelSpectatorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-center px-4">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00F0FF]" />
-        <p className="font-mono text-xs text-[#8B93A7] tracking-wider uppercase">
-          Connecting to Duel Spectator Stream...
-        </p>
-      </div>
+      <SkeletonRegion
+        label="Connecting to duel spectator stream"
+        className="mx-auto max-w-6xl px-4 py-8 space-y-6 min-h-[70vh]"
+      >
+        {showSkeleton && (
+          <div aria-hidden="true" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <Skeleton style={{ height: 24, width: 220 }} />
+              <Skeleton style={{ height: 28, width: 110 }} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="p-4 space-y-3" style={{ border: "1px solid var(--border)", borderRadius: 4 }}>
+                  <div className="flex items-center gap-3">
+                    <Skeleton style={{ height: 36, width: 36 }} />
+                    <Skeleton style={{ height: 14, width: 140 }} />
+                  </div>
+                  <SkeletonText lines={3} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </SkeletonRegion>
     );
   }
 
