@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { ShieldCheck, AlertTriangle, Loader2, ArrowRight, User, AtSign } from "lucide-react";
+import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -136,9 +137,14 @@ export default function OnboardingPage() {
 
   if (pageLoading || status === "loading") {
     return (
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin" style={{ color: "var(--accent)" }} />
-      </div>
+<SkeletonRegion label="Loading onboarding" className="flex min-h-[70vh] items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-3" aria-hidden="true">
+          <Skeleton style={{ height: 24, width: "60%" }} />
+          <Skeleton style={{ height: 12, width: "100%" }} />
+          <Skeleton style={{ height: 12, width: "85%" }} />
+          <Skeleton style={{ height: 36, width: "100%", marginTop: 8 }} />
+        </div>
+      </SkeletonRegion>
     );
   }
 
