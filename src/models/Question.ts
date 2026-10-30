@@ -106,6 +106,7 @@ const QuestionSchema = new Schema<IQuestion>(
 );
 
 QuestionSchema.index({ phase: 1, difficulty: 1, isPublished: 1 });
+QuestionSchema.index({ isPublished: 1, problemId: 1 });
 
 export const Question: Model<IQuestion> =
   mongoose.models.Question || mongoose.model<IQuestion>("Question", QuestionSchema);

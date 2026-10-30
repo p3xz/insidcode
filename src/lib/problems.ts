@@ -12,6 +12,7 @@
 
 import { connectToDatabase } from "@/lib/mongodb";
 import { Question } from "@/models/Question";
+import { unstable_cache } from "next/cache";
 
 import { DifficultyLevel } from "@/types";
 
@@ -44,7 +45,7 @@ export interface PublicProblemData {
  * Returns only fields safe to expose in server-rendered HTML.
  * Returns null if the problem does not exist or is not published.
  */
-export async function getPublicProblem(
+async function fetchPublicProblemInternal(
   idOrSlug: string
 ): Promise<PublicProblemData | null> {
   try {
@@ -64,6 +65,25 @@ export async function getPublicProblem(
     // In case of DB error during SSR, fall back gracefully — client will retry
     return null;
   }
+}
+
+/**
+ * Fetches a single published problem by its slug or problemId.
+ * Cached via Next.js unstable_cache with tag invalidation.
+ */
+export async function getPublicProblem(
+  idOrSlug: string
+): Promise<PublicProblemData | null> {
+  const normalizedKey = idOrSlug.toLowerCase().trim();
+  const getCached = unstable_cache(
+    async () => fetchPublicProblemInternal(idOrSlug),
+    [`problem-${normalizedKey}`],
+    {
+      revalidate: 600, // 10 minutes revalidation
+      tags: ["problems-catalog", `problem-${normalizedKey}`],
+    }
+  );
+  return getCached();
 }
 
 /**

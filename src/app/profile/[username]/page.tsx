@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Calendar, Layers, Edit3, Code2, Swords } from "lucide-react";
 import { ProfilePageSkeleton } from "@/components/ui/PageSkeletons";
 import { LoadError } from "@/components/ui/LoadError";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import useSWR from "swr";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 interface ProfileData {
@@ -71,35 +73,32 @@ export default function UserProfilePage() {
   const params = useParams();
   const username = params?.username as string;
 
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const showSkeleton = useDelayedFlag(loading);
+  const { data: session } = useSession();
+  const swrKey = username ? [session?.user?.id || "anon", `/api/profile/${username}`] : null;
 
-  useEffect(() => {
-    if (!username) return;
-
-    const fetchProfile = async () => {
-      setLoading(true);
-      setLoadError(false);
-      try {
-        const res = await fetch(`/api/profile/${username}`);
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(data.profile);
-        } else if (res.status !== 404) {
-          setLoadError(true);
+  const { data, error, isLoading, mutate: revalidateProfile } = useSWR(
+    swrKey,
+    () =>
+      fetch(`/api/profile/${username}`).then(async (res) => {
+        if (!res.ok) {
+          const err = new Error("Failed to load profile.");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (err as any).status = res.status;
+          throw err;
         }
-      } catch {
-        setLoadError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
+        return res.json();
+      }),
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 5000,
+    }
+  );
 
-    fetchProfile();
-  }, [username, reloadKey]);
+  const profile: ProfileData | null = data?.profile || null;
+  const loading = isLoading && !data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadError = Boolean(error && (error as any).status !== 404);
+  const showSkeleton = useDelayedFlag(loading);
 
   if (loading) {
     return showSkeleton ? <ProfilePageSkeleton /> : <div aria-busy="true" className="min-h-[60vh]" />;
@@ -110,7 +109,7 @@ export default function UserProfilePage() {
       <div className="mx-auto max-w-4xl">
         <LoadError
           message="We couldn't load this profile. Check your connection and try again."
-          onRetry={() => setReloadKey((k) => k + 1)}
+          onRetry={() => revalidateProfile()}
           minHeight={320}
         />
       </div>

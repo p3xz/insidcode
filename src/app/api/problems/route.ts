@@ -108,6 +108,13 @@ export async function GET(req: NextRequest) {
     const totalSolved = allPublished.filter((q) => userSolvedProblems.includes(q.problemId)).length;
     const overallPercentage = totalPublished > 0 ? Math.round((totalSolved / totalPublished) * 100) : 0;
 
+    const headers: Record<string, string> = {};
+    if (!session?.user?.id && !statusParam) {
+      headers["Cache-Control"] = "public, s-maxage=300, stale-while-revalidate=600";
+    } else {
+      headers["Cache-Control"] = "private, no-store";
+    }
+
     return NextResponse.json({
       questions: enrichedQuestions,
       pagination: {
@@ -122,7 +129,7 @@ export async function GET(req: NextRequest) {
         overallPercentage,
         phases: phaseStats,
       },
-    });
+    }, { headers });
   } catch (error) {
     console.error("Problems list route error:", error);
     return NextResponse.json({ error: "Failed to load problems directory." }, { status: 500 });

@@ -7,6 +7,7 @@ import { Question } from "@/models/Question";
 import { AdminAction } from "@/models/AdminAction";
 import { LIMITS } from "@/lib/constants";
 import { z } from "zod";
+import { revalidateTag } from "next/cache";
 
 const AdminProblemSchema = z.object({
   problemId: z.string().min(1).max(10).regex(/^\d+$/, "Problem ID must be digits (e.g. 001)"),
@@ -171,6 +172,8 @@ export async function POST(req: NextRequest) {
     });
 
     // Audit log
+    try { revalidateTag("problems-catalog"); } catch {} 
+
     await AdminAction.create({
       adminId: admin._id.toString(),
       adminUsername: admin.username,

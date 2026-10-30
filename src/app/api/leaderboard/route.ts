@@ -181,6 +181,10 @@ export async function GET(req: NextRequest) {
       frozenAt: config?.frozenAt,
       currentUserRank,
       tab,
+    }, {
+      headers: {
+        "Cache-Control": currentUserId ? "private, no-store" : "public, s-maxage=30, stale-while-revalidate=60",
+      },
     });
   } catch (error) {
     console.error("Leaderboard route error:", error);

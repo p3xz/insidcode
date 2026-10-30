@@ -148,6 +148,10 @@ export async function GET() {
         duelKd,
         duelRatio: duelKd,
       },
+    }, {
+      headers: {
+        "Cache-Control": "private, no-store",
+      },
     });
   } catch (error) {
     console.error("Stats route error:", error);

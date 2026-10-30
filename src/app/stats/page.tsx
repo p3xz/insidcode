@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Flame, Zap, Send, CheckCircle2, Code2, Swords } from "lucide-react";
 import { StatsPageSkeleton } from "@/components/ui/PageSkeletons";
 import { LoadError } from "@/components/ui/LoadError";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import useSWR from "swr";
+import { useSession } from "next-auth/react";
 
 interface UserStatsData {
   totalSolved: number;
@@ -82,32 +84,32 @@ function ProgressBar({ value, max, color = "var(--success)" }: { value: number; 
 }
 
 export default function UserStatsPage() {
-  const [stats, setStats] = useState<UserStatsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const showSkeleton = useDelayedFlag(loading);
+  const { data: session } = useSession();
+  const swrKey = session?.user?.id ? [session.user.id, "/api/stats"] : null;
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      setLoadError(false);
-      try {
-        const res = await fetch("/api/stats");
-        if (res.ok) {
-          const data = await res.json();
-          setStats(data.stats);
-        } else if (res.status !== 401) {
-          setLoadError(true);
+  const { data, error, isLoading, mutate: revalidateStats } = useSWR(
+    swrKey,
+    () =>
+      fetch("/api/stats").then(async (res) => {
+        if (!res.ok) {
+          const err = new Error("Failed to load user statistics.");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (err as any).status = res.status;
+          throw err;
         }
-      } catch {
-        setLoadError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [reloadKey]);
+        return res.json();
+      }),
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 5000,
+    }
+  );
+
+  const stats: UserStatsData | null = data?.stats || null;
+  const loading = isLoading && !data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadError = Boolean(error && (error as any).status !== 401);
+  const showSkeleton = useDelayedFlag(loading);
 
   if (loading) {
     return showSkeleton ? <StatsPageSkeleton /> : <div aria-busy="true" className="min-h-[60vh]" />;
@@ -118,7 +120,7 @@ export default function UserStatsPage() {
       <div className="mx-auto max-w-4xl">
         <LoadError
           message="We couldn't load your statistics. Check your connection and try again."
-          onRetry={() => setReloadKey((k) => k + 1)}
+          onRetry={() => revalidateStats()}
           minHeight={320}
         />
       </div>

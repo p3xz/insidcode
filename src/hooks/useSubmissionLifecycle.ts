@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { mutate } from "swr";
 import { SubmissionStatus, IFailedTestCaseInfo } from "@/types";
 
 export type SubmissionPhase =
@@ -309,6 +310,18 @@ export function useSubmissionLifecycle(
                     },
                   }
                 )
+              );
+
+              // Invalidate SWR caches for stats, problem directory, and user state
+              mutate(
+                (key) =>
+                  Array.isArray(key) &&
+                  typeof key[1] === "string" &&
+                  (key[1].startsWith("/api/stats") ||
+                    key[1].startsWith("/api/problems") ||
+                    key[1].startsWith("/api/leaderboard")),
+                undefined,
+                { revalidate: true }
               );
             }
           }
