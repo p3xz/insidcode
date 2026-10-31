@@ -1,27 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Question } from "@/models/Question";
-import { auth } from "@/lib/auth";
-import { User } from "@/models/User";
-import { Submission } from "@/models/Submission";
 import { checkRateLimit } from "@/lib/rateLimit";
-import { findNextUnsolvedProblem } from "@/lib/problems";
+import { normalizeProblemIdentifier } from "@/lib/problems";
 
+/**
+ * Public problem endpoint.
+ * Serves public problem statement, examples, constraints, starter templates.
+ * NEVER contains hidden test cases, expected outputs, or per-user data (userState).
+ * Safe to cache publicly across all users and CDN edge nodes.
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectToDatabase();
     const { id } = await params;
+    const norm = normalizeProblemIdentifier(id);
 
-    if (!id) {
-      return NextResponse.json({ error: "Problem identifier is required." }, { status: 400 });
+    if (!norm.valid) {
+      return NextResponse.json({ error: "Invalid problem identifier." }, { status: 400 });
     }
 
-    // Lookup by problemId or slug
+    const clientIp = req.headers.get("x-forwarded-for") || "problems_anon";
+    const rateLimit = checkRateLimit(`public_problem_${clientIp}`, { limit: 120, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
+    }
+
+    await connectToDatabase();
+
+    const queryConditions: Array<{ problemId?: string; slug?: string }> = [
+      { problemId: norm.normalizedLookup },
+    ];
+    if (norm.canonicalId && norm.canonicalId !== norm.normalizedLookup) {
+      queryConditions.push({ problemId: norm.canonicalId });
+    }
+    if (norm.isSlug) {
+      queryConditions.push({ slug: norm.normalizedLookup });
+    }
+
     const question = await Question.findOne({
-      $or: [{ problemId: id }, { slug: id.toLowerCase() }],
+      $or: queryConditions,
       isPublished: true,
     })
       .select("-hiddenTestCases")
@@ -31,73 +51,18 @@ export async function GET(
       return NextResponse.json({ error: "Problem not found." }, { status: 404 });
     }
 
-    const session = await auth();
-    const problemRateLimit = checkRateLimit(`problem_${session?.user?.id || req.headers.get("x-forwarded-for") || "problem_anon"}`, { limit: 120, windowMs: 60000 });
-    if (!problemRateLimit.success) {
-      return NextResponse.json({ error: "Rate limit exceeded. Please try again shortly." }, { status: 429 });
-    }
-    let isSolved = false;
-    let isAttempted = false;
-    let lastSubmission = null;
-    let nextProblem: { problemId: string; title: string; phase: number } | null = null;
-    let isAllSolved = false;
-
-    if (session?.user?.id) {
-      const user = await User.findById(session.user.id).select("solvedProblems attemptedProblems");
-      if (user) {
-        isSolved = user.solvedProblems?.includes(question.problemId) || false;
-        isAttempted = user.attemptedProblems?.includes(question.problemId) || false;
-
-        try {
-          const allQuestions = await Question.find({ isPublished: true })
-            .select("problemId title phase slug")
-            .sort({ problemId: 1 })
-            .lean();
-          const nextRes = findNextUnsolvedProblem(
-            question.problemId,
-            question.phase,
-            allQuestions,
-            user.solvedProblems || []
-          );
-          nextProblem = nextRes.nextProblem
-            ? {
-                problemId: nextRes.nextProblem.problemId,
-                title: nextRes.nextProblem.title,
-                phase: nextRes.nextProblem.phase,
-              }
-            : null;
-          isAllSolved = nextRes.isAllSolved;
-        } catch {
-          // Non-blocking fallback
-        }
+    return NextResponse.json(
+      {
+        problem: question,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600",
+        },
       }
-
-      // Fetch user's latest submission for this problem
-      lastSubmission = await Submission.findOne({
-        userId: session.user.id,
-        problemId: question.problemId,
-      })
-        .sort({ createdAt: -1 })
-        .select("language code status runtime createdAt")
-        .lean();
-    }
-
-    return NextResponse.json({
-      problem: question,
-      userState: {
-        isSolved,
-        isAttempted,
-        lastSubmission,
-        nextProblem,
-        isAllSolved,
-      },
-    }, {
-      headers: {
-        "Cache-Control": session?.user?.id ? "private, no-store" : "public, s-maxage=300, stale-while-revalidate=600",
-      },
-    });
+    );
   } catch (error) {
-    console.error("Single problem route error:", error);
+    console.error("Public problem route error:", error);
     return NextResponse.json({ error: "Failed to load problem details." }, { status: 500 });
   }
 }
