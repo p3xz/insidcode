@@ -111,7 +111,13 @@ export async function PUT(
       isPublished: question.isPublished,
     });
 
-    try { revalidateTag("problems-catalog"); revalidateTag(`problem-${question.problemId}`); revalidateTag(`problem-${question.slug}`); } catch {}
+    try {
+      revalidateTag("problems-catalog");
+      revalidateTag(`problem-v2-${question.problemId}`);
+      revalidateTag(`problem-v2-${question.slug}`);
+      revalidateTag(`problem-${question.problemId}`);
+      revalidateTag(`problem-${question.slug}`);
+    } catch {}
 
     // Log admin action
     await AdminAction.create({
@@ -168,7 +174,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Problem not found." }, { status: 404 });
     }
 
-    try { revalidateTag("problems-catalog"); revalidateTag(`problem-${question.problemId}`); revalidateTag(`problem-${question.slug}`); } catch {}
+    try {
+      revalidateTag("problems-catalog");
+      revalidateTag(`problem-v2-${question.problemId}`);
+      revalidateTag(`problem-v2-${question.slug}`);
+      revalidateTag(`problem-${question.problemId}`);
+      revalidateTag(`problem-${question.slug}`);
+    } catch {}
 
     // Log admin action
     await AdminAction.create({

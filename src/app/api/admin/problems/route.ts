@@ -171,8 +171,14 @@ export async function POST(req: NextRequest) {
       slug: data.slug.toLowerCase(),
     });
 
-    // Audit log
-    try { revalidateTag("problems-catalog"); } catch {} 
+    // Revalidate public caches
+    try {
+      revalidateTag("problems-catalog");
+      revalidateTag(`problem-v2-${newQuestion.problemId}`);
+      revalidateTag(`problem-v2-${newQuestion.slug}`);
+      revalidateTag(`problem-${newQuestion.problemId}`);
+      revalidateTag(`problem-${newQuestion.slug}`);
+    } catch {} 
 
     await AdminAction.create({
       adminId: admin._id.toString(),

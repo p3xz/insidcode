@@ -1,19 +1,16 @@
 /**
- * Server-safe problem fetcher.
+ * Server-safe problem fetcher and identifier normalization.
  *
- * This module is ONLY imported by server components / generateMetadata.
- * It does NOT expose hiddenTestCases, and it does NOT include any user
- * authentication state — that stays in the API route.
+ * This module is imported by server components, API routes, and metadata generators.
+ * It strictly excludes hiddenTestCases and per-user state (userState).
  *
  * Fields intentionally excluded:
  *  - hiddenTestCases   (test suite — never exposed publicly)
- *  - starterTemplates  (returned separately to the client workspace)
  */
 
 import { connectToDatabase } from "@/lib/mongodb";
 import { Question } from "@/models/Question";
 import { unstable_cache } from "next/cache";
-
 import { DifficultyLevel } from "@/types";
 
 export interface PublicProblemData {
@@ -40,55 +37,185 @@ export interface PublicProblemData {
   };
 }
 
+export interface NormalizedProblemIdentifier {
+  valid: boolean;
+  canonicalId?: string; // e.g. "001"
+  normalizedLookup: string; // "001" or "001-positive-negative-or-zero"
+  isCanonical: boolean; // true if already in canonical "001" format
+  isSlug: boolean;
+  raw: string;
+}
+
 /**
- * Fetches a single published problem by its slug or problemId.
- * Returns only fields safe to expose in server-rendered HTML.
- * Returns null if the problem does not exist or is not published.
+ * Strict ID normalization:
+ * - Numeric strings (e.g. "1", "01", "23"): padded to at least 3 digits ("001", "023"). 4+ digits unchanged.
+ * - Slugs: lowercase letters, digits, and hyphens matching ^[a-z0-9-]+$ (max 120 chars).
+ * - Anything else: marked invalid (no raw injection or complex objects reach queries).
  */
-async function fetchPublicProblemInternal(
-  idOrSlug: string
-): Promise<PublicProblemData | null> {
-  try {
-    await connectToDatabase();
+export function normalizeProblemIdentifier(input: unknown): NormalizedProblemIdentifier {
+  if (typeof input !== "string") {
+    return { valid: false, normalizedLookup: "", isCanonical: false, isSlug: false, raw: String(input ?? "") };
+  }
 
-    const question = await Question.findOne({
-      $or: [{ problemId: idOrSlug }, { slug: idOrSlug.toLowerCase() }],
-      isPublished: true,
-    })
-      .select(
-        "problemId title slug phase difficulty description constraints examples tags xp starterTemplates"
-      )
-      .lean<PublicProblemData>();
+  const trimmed = input.trim();
+  if (!trimmed || trimmed.length > 120) {
+    return { valid: false, normalizedLookup: "", isCanonical: false, isSlug: false, raw: trimmed };
+  }
 
-    return question ?? null;
-  } catch {
-    // In case of DB error during SSR, fall back gracefully — client will retry
-    return null;
+  // 1. Numeric ID
+  if (/^\d+$/.test(trimmed)) {
+    const canonicalId = trimmed.length < 3 ? trimmed.padStart(3, "0") : trimmed;
+    const isCanonical = trimmed === canonicalId;
+    return {
+      valid: true,
+      canonicalId,
+      normalizedLookup: canonicalId,
+      isCanonical,
+      isSlug: false,
+      raw: trimmed,
+    };
+  }
+
+  // 2. Slug
+  const slugCandidate = trimmed.toLowerCase();
+  if (/^[a-z0-9-]+$/.test(slugCandidate)) {
+    const prefixMatch = slugCandidate.match(/^(\d+)-/);
+    let canonicalId: string | undefined;
+    if (prefixMatch) {
+      const num = prefixMatch[1];
+      canonicalId = num.length < 3 ? num.padStart(3, "0") : num;
+    }
+    return {
+      valid: true,
+      canonicalId,
+      normalizedLookup: slugCandidate,
+      isCanonical: false,
+      isSlug: true,
+      raw: trimmed,
+    };
+  }
+
+  return { valid: false, normalizedLookup: "", isCanonical: false, isSlug: false, raw: trimmed };
+}
+
+export type ProblemLookupResult =
+  | { status: "found"; problem: PublicProblemData }
+  | { status: "notFound"; normalizedId: string }
+  | { status: "invalidIdentifier"; raw: string };
+
+class ProblemNotFoundSentinel extends Error {
+  constructor(public normalizedId: string) {
+    super(`Problem "${normalizedId}" not found in database.`);
+    this.name = "ProblemNotFoundSentinel";
   }
 }
 
 /**
- * Fetches a single published problem by its slug or problemId.
+ * Executes a function with quick retries and backoff for transient DB/network issues.
+ */
+async function withTransientRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 150): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise((res) => setTimeout(res, delayMs * Math.pow(2, attempt)));
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
+ * Fetches a single published problem directly from MongoDB.
+ * Never exposes hiddenTestCases or per-user state.
+ * Throws on database or connection errors so they are never conflated with 404s.
+ */
+export async function fetchPublicProblemInternal(
+  lookupKey: string
+): Promise<PublicProblemData | null> {
+  await connectToDatabase();
+
+  const norm = normalizeProblemIdentifier(lookupKey);
+  if (!norm.valid) {
+    return null;
+  }
+
+  const queryConditions: Array<{ problemId?: string; slug?: string }> = [
+    { problemId: norm.normalizedLookup },
+  ];
+
+  if (norm.canonicalId && norm.canonicalId !== norm.normalizedLookup) {
+    queryConditions.push({ problemId: norm.canonicalId });
+  }
+
+  if (norm.isSlug) {
+    queryConditions.push({ slug: norm.normalizedLookup });
+  }
+
+  const question = await Question.findOne({
+    $or: queryConditions,
+    isPublished: true,
+  })
+    .select(
+      "problemId title slug phase difficulty description constraints examples tags xp starterTemplates"
+    )
+    .lean<PublicProblemData>();
+
+  return question ?? null;
+}
+
+/**
+ * Fetches a single published problem by its slug or problemId with discriminated result.
  * Cached via Next.js unstable_cache with tag invalidation.
+ * GUARANTEE: Never caches null or transient errors. Uses versioned cache key "problem-v2"
+ * to immediately bypass any historical poisoned cache entries.
  */
 export async function getPublicProblem(
   idOrSlug: string
-): Promise<PublicProblemData | null> {
-  const normalizedKey = idOrSlug.toLowerCase().trim();
+): Promise<ProblemLookupResult> {
+  const norm = normalizeProblemIdentifier(idOrSlug);
+  if (!norm.valid) {
+    return { status: "invalidIdentifier", raw: idOrSlug };
+  }
+
+  const { normalizedLookup } = norm;
+
+  // unstable_cache only stores genuine "found" problem objects.
+  // If not found, ProblemNotFoundSentinel is thrown, preventing unstable_cache from writing null.
   const getCached = unstable_cache(
-    async () => fetchPublicProblemInternal(idOrSlug),
-    [`problem-${normalizedKey}`],
+    async () => {
+      const result = await withTransientRetry(() =>
+        fetchPublicProblemInternal(normalizedLookup)
+      );
+      if (!result) {
+        throw new ProblemNotFoundSentinel(normalizedLookup);
+      }
+      return result;
+    },
+    [`problem-v2-${normalizedLookup}`],
     {
       revalidate: 600, // 10 minutes revalidation
-      tags: ["problems-catalog", `problem-${normalizedKey}`],
+      tags: ["problems-catalog", `problem-v2-${normalizedLookup}`],
     }
   );
-  return getCached();
+
+  try {
+    const problem = await getCached();
+    return { status: "found", problem };
+  } catch (err) {
+    if (err instanceof ProblemNotFoundSentinel) {
+      return { status: "notFound", normalizedId: normalizedLookup };
+    }
+    // Transient database / connection errors are thrown to trigger the retryable error card
+    throw err;
+  }
 }
 
 /**
  * Fetches all published problem slugs for sitemap generation.
- * Uses only the index-covered fields for efficiency.
  */
 export async function getAllPublishedProblemSlugs(): Promise<
   Array<{ slug: string; updatedAt: Date }>
