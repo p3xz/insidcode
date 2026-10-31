@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import useSWR from "swr";
 import { Logo } from "@/components/ui/Logo";
 import { useSession, signOut } from "next-auth/react";
+import { clearUserDeviceData } from "@/lib/storage/deviceCache";
 import { ThemeToggle } from "./ThemeToggle";
 import {
   Flame,
@@ -30,6 +31,17 @@ import { AnimatedNumber } from "@/components/problem/submission/AnimatedNumber";
 export function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const handleSignOut = async (callbackUrl: string) => {
+    if (session?.user?.id) {
+      try {
+        await clearUserDeviceData(session.user.id);
+      } catch {
+        // ignore storage errors on logout
+      }
+    }
+    signOut({ callbackUrl });
+  };
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
@@ -172,7 +184,7 @@ export function Navbar() {
             <ThemeToggle />
             {session?.user && (
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => handleSignOut("/login")}
                 className="btn btn-secondary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
                 style={{
                   border: "1px solid var(--border)",
