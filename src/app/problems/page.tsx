@@ -91,7 +91,7 @@ export default function ProblemsDirectoryPage() {
   const showSkeleton = useDelayedFlag(loading);
 
   const handlePrefetchProblem = (problemId: string) => {
-    preload([session?.user?.id || "anon", `/api/problems/${problemId}`], () =>
+    preload(`/api/problems/${problemId}`, () =>
       fetch(`/api/problems/${problemId}`).then((r) => r.json())
     );
   };

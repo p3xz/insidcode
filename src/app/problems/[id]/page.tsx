@@ -1,8 +1,8 @@
 import React from "react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { getPublicProblem } from "@/lib/problems";
+import { getPublicProblem, normalizeProblemIdentifier } from "@/lib/problems";
 import { ProblemPageClient } from "@/components/problem/ProblemPageClient";
 
 interface Props {
@@ -21,64 +21,100 @@ const PHASE_LABELS: Record<number, string> = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const problem = await getPublicProblem(id);
+  try {
+    const { id } = await params;
+    const norm = normalizeProblemIdentifier(id);
+    if (!norm.valid) {
+      return {
+        title: "Problem | InsidCode",
+        robots: { index: false, follow: false },
+      };
+    }
 
-  if (!problem) {
+    const result = await getPublicProblem(norm.normalizedLookup);
+    if (result.status !== "found") {
+      return {
+        title: "Problem Not Found | InsidCode",
+        description: "The requested programming problem could not be found on InsidCode.",
+        robots: { index: false, follow: false },
+      };
+    }
+
+    const problem = result.problem;
+    const phaseLabel = PHASE_LABELS[problem.phase] ?? `Phase ${problem.phase}`;
+    const canonicalUrl = `${BASE_URL}/problems/${problem.problemId}`;
+
+    const title = `${problem.title}: ${problem.difficulty} Programming Problem`;
+    const description = `Practice "${problem.title}" on InsidCode. A ${problem.difficulty.toLowerCase()} ${phaseLabel.toLowerCase()} challenge. Solve it in Python, JavaScript, C, C++, or Java with instant code execution and server-verified tests.`;
+
     return {
-      title: "Problem Not Found",
-      description: "The requested programming problem could not be found on InsidCode.",
+      title,
+      description,
+      alternates: {
+        canonical: canonicalUrl,
+      },
+      openGraph: {
+        title: `${problem.title} | InsidCode`,
+        description,
+        url: canonicalUrl,
+        type: "website",
+        images: [
+          {
+            url: "/og-image.jpg",
+            width: 1200,
+            height: 630,
+            alt: `InsidCode: ${problem.title}`,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${problem.title} | InsidCode`,
+        description,
+        images: ["/og-image.jpg"],
+      },
+    };
+  } catch {
+    // Never let metadata failure take down the page
+    return {
+      title: "Problem | InsidCode",
       robots: { index: false, follow: false },
     };
   }
-
-  const phaseLabel = PHASE_LABELS[problem.phase] ?? `Phase ${problem.phase}`;
-  const canonicalUrl = `${BASE_URL}/problems/${problem.slug}`;
-
-  const title = `${problem.title}: ${problem.difficulty} Programming Problem`;
-  const description = `Practice "${problem.title}" on InsidCode. A ${problem.difficulty.toLowerCase()} ${phaseLabel.toLowerCase()} challenge. Solve it in Python, JavaScript, C, C++, or Java with instant code execution and server-verified tests.`;
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: `/problems/${problem.slug}`,
-    },
-    openGraph: {
-      title: `${problem.title} | InsidCode`,
-      description,
-      url: canonicalUrl,
-      type: "website",
-      images: [
-        {
-          url: "/og-image.jpg",
-          width: 1200,
-          height: 630,
-          alt: `InsidCode: ${problem.title}`,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${problem.title} | InsidCode`,
-      description,
-      images: ["/og-image.jpg"],
-    },
-  };
 }
 
 // Server-rendered SEO content for a problem.
 // The actual interactive workspace (Monaco, Run, Submit) is in ProblemPageClient.
 export default async function SingleProblemPage({ params }: Props) {
   const { id } = await params;
-  const problem = await getPublicProblem(id);
+  const norm = normalizeProblemIdentifier(id);
 
-  if (!problem) {
+  if (!norm.valid) {
     notFound();
   }
 
+  // Canonical redirect for non-canonical numeric inputs:
+  // e.g. /problems/1 or /problems/01 -> /problems/001
+  if (!norm.isCanonical && norm.canonicalId && !norm.isSlug) {
+    redirect(`/problems/${norm.canonicalId}`);
+  }
+
+  const result = await getPublicProblem(norm.normalizedLookup);
+
+  if (result.status === "invalidIdentifier" || result.status === "notFound") {
+    notFound();
+  }
+
+  const problem = result.problem;
+
+  // Canonical redirect if visited via slug:
+  // e.g. /problems/001-positive-negative-or-zero -> /problems/001
+  if (id !== problem.problemId) {
+    redirect(`/problems/${problem.problemId}`);
+  }
+
   const phaseLabel = PHASE_LABELS[problem.phase] ?? `Phase ${problem.phase}`;
-  const canonicalUrl = `${BASE_URL}/problems/${problem.slug}`;
+  const canonicalUrl = `${BASE_URL}/problems/${problem.problemId}`;
 
   // BreadcrumbList JSON-LD — per-problem
   const breadcrumbJsonLd = {
@@ -200,8 +236,12 @@ export default async function SingleProblemPage({ params }: Props) {
         </article>
       </div>
 
-      {/* Full interactive problem workspace — client component, unchanged */}
-      <ProblemPageClient problemId={problem.problemId} problemSlug={problem.slug} />
+      {/* Full interactive problem workspace */}
+      <ProblemPageClient
+        problemId={problem.problemId}
+        problemSlug={problem.slug}
+        initialProblem={problem as unknown as import("@/types").IQuestion}
+      />
     </>
   );
 }
