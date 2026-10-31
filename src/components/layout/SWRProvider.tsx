@@ -3,19 +3,52 @@
 import React, { useEffect, useRef } from "react";
 import { SWRConfig, useSWRConfig } from "swr";
 import { useSession } from "next-auth/react";
+import {
+  getPublicCache,
+  setPublicCache,
+  clearUserDeviceData,
+  performStorageCleanup,
+} from "@/lib/storage/deviceCache";
+import { ServiceWorkerManager } from "@/components/pwa/ServiceWorkerManager";
 
-const defaultFetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const error = new Error("An error occurred while fetching data.");
-    // Attach extra info to the error object.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (error as any).info = await res.json().catch(() => ({}));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (error as any).status = res.status;
-    throw error;
+const persistentFetcher = async (url: string) => {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      const error = new Error("An error occurred while fetching data.");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (error as any).info = await res.json().catch(() => ({}));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (error as any).status = res.status;
+      throw error;
+    }
+    const data = await res.json();
+
+    // Persist safe public GET endpoints to IndexedDB device cache
+    if (
+      url.startsWith("/api/problems") &&
+      !url.includes("/user-state")
+    ) {
+      setPublicCache(url, data).catch(() => {});
+    } else if (url.startsWith("/api/leaderboard")) {
+      setPublicCache(url, data).catch(() => {});
+    }
+
+    return data;
+  } catch (err) {
+    // If offline or network error, fallback to device cache if available
+    if (
+      url.startsWith("/api/problems") &&
+      !url.includes("/user-state")
+    ) {
+      const cached = await getPublicCache(url);
+      if (cached) return cached;
+    } else if (url.startsWith("/api/leaderboard")) {
+      const cached = await getPublicCache(url);
+      if (cached) return cached;
+    }
+    throw err;
   }
-  return res.json();
 };
 
 function UserCacheClearer() {
@@ -23,13 +56,25 @@ function UserCacheClearer() {
   const { mutate } = useSWRConfig();
   const prevUserIdRef = useRef<string | undefined>(undefined);
 
+  // App initialization: perform background cleanup of expired cache entries
+  useEffect(() => {
+    performStorageCleanup().catch(() => {});
+  }, []);
+
   useEffect(() => {
     const currentUserId = session?.user?.id;
-    // If user changed or logged out, clear all SWR cache entries to prevent stale data leaks
+
+    // If user changed or logged out, wipe all local user data and in-memory caches
     if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== currentUserId) {
-      // Clear cache entries without revalidating
+      if (prevUserIdRef.current) {
+        // Synchronously wipe IndexedDB user entries and drafts
+        clearUserDeviceData(prevUserIdRef.current).catch(() => {});
+      }
+
+      // Clear SWR cache entries without revalidating
       mutate(() => true, undefined, { revalidate: false });
-      // Also clear any catalog session storage if present
+
+      // Clear any session storage
       try {
         if (typeof window !== "undefined") {
           sessionStorage.removeItem("insidcode:catalog-cache");
@@ -48,7 +93,7 @@ export function SWRProvider({ children }: { children: React.ReactNode }) {
   return (
     <SWRConfig
       value={{
-        fetcher: defaultFetcher,
+        fetcher: persistentFetcher,
         revalidateOnFocus: true,
         revalidateOnReconnect: true,
         // Throttle focus/reconnect revalidations to max once per 30 seconds
@@ -59,6 +104,7 @@ export function SWRProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       <UserCacheClearer />
+      <ServiceWorkerManager />
       {children}
     </SWRConfig>
   );

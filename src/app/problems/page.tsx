@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { FreshnessBadge } from "@/components/ui/FreshnessBadge";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { prefetchProblemsOnIdle } from "@/lib/storage/prefetch";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -43,6 +46,7 @@ interface PhaseStat {
 export default function ProblemsDirectoryPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { isOnline } = useNetworkStatus();
 
 
   const [search, setSearch] = useState("");
@@ -79,7 +83,14 @@ export default function ProblemsDirectoryPage() {
     }
   );
 
-  const problems: ProblemRow[] = data?.questions || [];
+  const problems: ProblemRow[] = useMemo(() => data?.questions || [], [data?.questions]);
+
+  useEffect(() => {
+    if (problems.length > 0) {
+      const unsolved = problems.filter((p) => !p.isSolved).map((p) => p.problemId);
+      prefetchProblemsOnIdle(unsolved);
+    }
+  }, [problems]);
   const totalPages = data?.pagination?.totalPages || 1;
   const phaseStats: PhaseStat[] = data?.stats?.phases || [];
   const totalSolved = data?.stats?.totalSolved || 0;
@@ -106,6 +117,7 @@ export default function ProblemsDirectoryPage() {
       <div className="mb-8" style={{ borderBottom: "1px solid var(--border)", paddingBottom: "1.5rem" }}>
         <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--fg)" }}>
           Problems Directory
+          <FreshnessBadge className="ml-2 align-middle font-normal" isFromCache={Boolean(data && isLoading)} isOnline={isOnline} />
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1 text-[13px]">
           <span style={{ color: "var(--fg-muted)" }}>

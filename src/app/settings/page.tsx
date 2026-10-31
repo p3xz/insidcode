@@ -16,7 +16,9 @@ import {
   X,
   AtSign,
   Award,
+  Database,
 } from "lucide-react";
+import { clearAllDeviceData } from "@/lib/storage/deviceCache";
 import { signOut, useSession } from "next-auth/react";
 import {
   Alert,
@@ -90,6 +92,24 @@ export default function SettingsPage() {
   const [usernameLoading, setUsernameLoading] = useState(false);
 
   // Delete modal state
+  // Clear local data modal state
+  const [isClearDataModalOpen, setIsClearDataModalOpen] = useState(false);
+  const [isClearingData, setIsClearingData] = useState(false);
+  const [clearDataSuccess, setClearDataSuccess] = useState(false);
+
+  const handleClearLocalData = async () => {
+    setIsClearingData(true);
+    try {
+      await clearAllDeviceData();
+      setClearDataSuccess(true);
+      setIsClearDataModalOpen(false);
+      setTimeout(() => {
+        setClearDataSuccess(false);
+      }, 4000);
+    } finally {
+      setIsClearingData(false);
+    }
+  };
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -677,6 +697,75 @@ export default function SettingsPage() {
           Authenticated via <strong className="text-[var(--fg)] capitalize">{settings.provider}</strong> OAuth. No password is stored or required.
         </p>
       </div>
+
+      {/* Device Storage & Privacy */}
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Database className="h-4 w-4 text-[var(--primary)]" />
+          <h3 className="text-sm font-bold text-[var(--fg)]">Device Storage & Privacy</h3>
+        </div>
+        <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+          Manage data stored on this browser. Recommended when using a shared computer (e.g. college lab machine).
+        </p>
+
+        {clearDataSuccess && (
+          <div className="rounded-lg border border-[var(--easy)]/30 bg-[var(--easy)]/10 p-3 text-xs text-[var(--easy)] flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>All local caches, code drafts, and service worker storage have been completely removed from this browser.</span>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setIsClearDataModalOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-2 text-xs font-bold text-[var(--fg)] hover:border-[var(--primary)]/50 transition cursor-pointer"
+        >
+          <Trash2 className="h-3.5 w-3.5 text-[var(--fg-muted)]" />
+          Clear Local Data
+        </button>
+      </div>
+
+      {/* Clear Local Data Confirmation Modal */}
+      {isClearDataModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-2xl space-y-4">
+            <h3 className="text-sm font-bold text-[var(--fg)]">
+              Clear Local Data from this Computer?
+            </h3>
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+              This will immediately remove:
+            </p>
+            <ul className="text-xs text-[var(--fg-muted)] list-disc list-inside space-y-1">
+              <li>All offline problem statements and catalog caches</li>
+              <li>Saved unsubmitted code drafts on this device</li>
+              <li>Service worker offline application caches</li>
+            </ul>
+            <p className="text-xs text-[var(--fg-dimmed)]">
+              Your solved questions, XP, streaks, and account data on the server remain unaffected.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsClearDataModalOpen(false)}
+                disabled={isClearingData}
+                className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3.5 py-1.5 text-xs text-[var(--fg-muted)] hover:text-[var(--fg)] transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleClearLocalData}
+                disabled={isClearingData}
+                className="flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3.5 py-1.5 text-xs font-bold text-black hover:opacity-90 transition cursor-pointer"
+              >
+                {isClearingData && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Clear Everything Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Danger Zone */}
       <div className="rounded-xl border border-[#FF4D6D]/30 bg-[var(--bg-surface)] p-6 space-y-4">

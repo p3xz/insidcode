@@ -8,6 +8,8 @@ import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import useSWR from "swr";
+import { FreshnessBadge } from "@/components/ui/FreshnessBadge";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useSession } from "next-auth/react";
 
 interface LeaderboardUser {
@@ -38,6 +40,7 @@ interface PersonalDuelStats {
 
 export default function LeaderboardPage() {
   const { data: session } = useSession();
+  const { isOnline } = useNetworkStatus();
   const [activeTab, setActiveTab] = useState<"xp" | "duel">("xp");
 
   const swrKey = [session?.user?.id || "anon", `/api/leaderboard?tab=${activeTab}`];
@@ -73,6 +76,7 @@ export default function LeaderboardPage() {
           <p className="section-label mb-1">Rankings</p>
           <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--fg)" }}>
             {activeTab === "xp" ? "Global Leaderboard" : "Duel Arena Leaderboard"}
+            <FreshnessBadge className="ml-2 align-middle font-normal" isFromCache={Boolean(data && isLoading)} isOnline={isOnline} />
           </h1>
           <p className="mt-1 text-[12px]" style={{ color: "var(--fg-muted)" }}>
             {activeTab === "xp"
