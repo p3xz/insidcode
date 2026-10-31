@@ -125,16 +125,16 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     cached.promise = (async () => {
       let connectUri = rawUri.trim();
 
-      // Manually resolve SRV if needed
+      // Manually resolve SRV if needed (fallback to original URI if custom DNS fails)
       if (connectUri.startsWith("mongodb+srv://")) {
         try {
           connectUri = await resolveSrvToStandardUri(connectUri);
         } catch (srvErr) {
-          console.error(
-            "[MongoDB] Manual SRV resolution failed:",
+          console.warn(
+            "[MongoDB] Manual SRV resolution failed; falling back to native Mongoose SRV:",
             (srvErr as Error).message
           );
-          throw srvErr;
+          connectUri = rawUri.trim();
         }
       }
 
@@ -149,13 +149,15 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
       try {
         const instance = await mongoose.connect(connectUri, opts);
 
-        // Verify with ping
-        const pingResult = await instance.connection.db
-          ?.admin()
-          .command({ ping: 1 });
-        console.log(
-          `[MongoDB] Connected and verified. Ping: ${pingResult?.ok === 1 ? "OK" : "FAILED"}`
-        );
+        // Verify with ping on current authenticated database
+        try {
+          const pingResult = await instance.connection.db?.command({ ping: 1 });
+          console.log(
+            `[MongoDB] Connected and verified. Ping: ${pingResult?.ok === 1 ? "OK" : "FAILED"}`
+          );
+        } catch (pingErr) {
+          console.warn("[MongoDB] Ping check warning:", (pingErr as Error).message);
+        }
 
         return instance;
       } catch (connErr) {
