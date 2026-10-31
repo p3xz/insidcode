@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import useSWR from "swr";
 import { Logo } from "@/components/ui/Logo";
 import { useSession, signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -35,27 +36,38 @@ export function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const avatarRef = useRef<HTMLDivElement>(null);
 
-  const sessionXp = session?.user?.xp || 0;
-  const sessionStreak = session?.user?.currentStreak || 0;
+  const { data: profileData } = useSWR(
+    session?.user ? "/api/user/profile" : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    { revalidateOnFocus: true }
+  );
+
+  const currentXp = profileData?.user?.xp ?? session?.user?.xp ?? 0;
+  const currentStreak = profileData?.user?.currentStreak ?? session?.user?.currentStreak ?? 0;
+
   const [liveXp, setLiveXp] = useState<{ from: number; value: number }>({
-    from: sessionXp,
-    value: sessionXp,
+    from: currentXp,
+    value: currentXp,
   });
-  const [liveStreak, setLiveStreak] = useState<number>(sessionStreak);
+  const [liveStreak, setLiveStreak] = useState<number>(currentStreak);
   const [streakPulsing, setStreakPulsing] = useState(false);
 
   useEffect(() => {
     setLiveXp((prev) => {
-      if (sessionXp > prev.value) {
-        return { from: sessionXp, value: sessionXp };
+      if (currentXp !== prev.value) {
+        return { from: prev.value, value: currentXp };
       }
       return prev;
     });
-  }, [sessionXp]);
+  }, [currentXp]);
 
   useEffect(() => {
-    setLiveStreak((prev) => Math.max(prev, sessionStreak));
-  }, [sessionStreak]);
+    setLiveStreak(currentStreak);
+  }, [currentStreak]);
 
   useEffect(() => {
     const handleProgressUpdate = (e: Event) => {

@@ -6,6 +6,7 @@ import { executeCodeOnlineCompilerSync } from "@/lib/onlinecompiler";
 import { calculateStreak } from "@/lib/streak";
 import { checkAndAwardAchievements } from "@/lib/achievements";
 import { checkUnsupportedHeaders, wrapTurboCCode, compareTurboCOutput } from "@/lib/turboc";
+import { findNextUnsolvedProblem } from "@/lib/problems";
 
 export interface SubmissionEvaluationResult {
   submissionId: string;
@@ -15,9 +16,19 @@ export interface SubmissionEvaluationResult {
   totalTests: number;
   awardedXp: number;
   awardedLanguagePoints: number;
+  languageAlreadyRewarded?: boolean;
   isFirstSolve: boolean;
   currentStreak: number;
   totalXp: number;
+  language?: string;
+  solvedLanguages?: string[];
+  unsolvedLanguages?: string[];
+  nextProblem?: {
+    problemId: string;
+    title: string;
+    phase: number;
+  } | null;
+  isAllSolved?: boolean;
   errorDetails?: string;
   failedTestCase?: IFailedTestCaseInfo;
   isTurboCMode?: boolean;
@@ -180,6 +191,11 @@ export async function evaluateAndRecordSubmission(
 
   let awardedXp = 0;
   let awardedLanguagePoints = 0;
+  let isNewLanguageSolve = false;
+  let solvedLanguages: string[] = [];
+  let unsolvedLanguages: string[] = [];
+  let nextProblem: { problemId: string; title: string; phase: number } | null = null;
+  let isAllSolved = false;
   const isFirstAcceptedSolve = status === "Accepted" && !user.solvedProblems.includes(problemId);
 
   // Update user statistics and progress
@@ -200,41 +216,82 @@ export async function evaluateAndRecordSubmission(
         language,
         points: 10,
       });
+      isNewLanguageSolve = true;
       awardedLanguagePoints = 10;
+      awardedXp = 10;
+      user.xp += awardedXp;
+
       if (!user.languagePoints) {
         user.languagePoints = { python: 0, javascript: 0, c: 0, cpp: 0, java: 0 };
       }
       const langKey = language as keyof typeof user.languagePoints;
       if (langKey in user.languagePoints) {
         user.languagePoints[langKey] = (user.languagePoints[langKey] || 0) + 10;
+        if (typeof (user as { markModified?: (path: string) => void }).markModified === "function") {
+          (user as { markModified?: (path: string) => void }).markModified!("languagePoints");
+        }
       }
     } catch (err: unknown) {
       // E11000 duplicate key error indicates (userId, problemId, language) already awarded points
       const mongoErr = err as { code?: number };
       if (mongoErr?.code === 11000) {
         awardedLanguagePoints = 0;
+        awardedXp = 0;
       } else {
         console.error("LanguageSolve insertion error:", err);
       }
     }
 
     if (isFirstAcceptedSolve) {
-      awardedXp = question.xp;
-      user.xp += awardedXp;
       user.solvedProblems.push(problemId);
-
-      // Calculate streak
-      const streakResult = calculateStreak(
-        user.currentStreak,
-        user.longestStreak,
-        user.lastActiveDate
-      );
-      user.currentStreak = streakResult.currentStreak;
-      user.longestStreak = streakResult.longestStreak;
-      user.lastActiveDate = streakResult.lastActiveDate;
 
       // Check achievements
       await checkAndAwardAchievements(user, question.difficulty, question.phase);
+    }
+
+    // Calculate streak
+    const streakResult = calculateStreak(
+      user.currentStreak,
+      user.longestStreak,
+      user.lastActiveDate
+    );
+    user.currentStreak = streakResult.currentStreak;
+    user.longestStreak = streakResult.longestStreak;
+    user.lastActiveDate = streakResult.lastActiveDate;
+
+    try {
+      const allSolves = await LanguageSolve.find({
+        userId: user._id.toString(),
+        problemId: question.problemId,
+      }).select("language").lean();
+      solvedLanguages = allSolves.map((s: { language: string }) => s.language);
+      const supported = ["c", "cpp", "python", "javascript", "java"];
+      unsolvedLanguages = supported.filter((l) => !solvedLanguages.includes(l));
+    } catch {
+      // Non-blocking fallback
+    }
+
+    try {
+      const allPublished = await Question.find({ isPublished: true })
+        .select("problemId title phase slug")
+        .sort({ problemId: 1 })
+        .lean();
+      const nextRes = findNextUnsolvedProblem(
+        question.problemId,
+        question.phase,
+        allPublished,
+        user.solvedProblems
+      );
+      nextProblem = nextRes.nextProblem
+        ? {
+            problemId: nextRes.nextProblem.problemId,
+            title: nextRes.nextProblem.title,
+            phase: nextRes.nextProblem.phase,
+          }
+        : null;
+      isAllSolved = nextRes.isAllSolved;
+    } catch {
+      // Non-blocking fallback
     }
   }
 
@@ -265,9 +322,15 @@ export async function evaluateAndRecordSubmission(
     totalTests: testSuite.length,
     awardedXp,
     awardedLanguagePoints,
+    languageAlreadyRewarded: status === "Accepted" && !isNewLanguageSolve,
     isFirstSolve: isFirstAcceptedSolve,
     currentStreak: user.currentStreak,
     totalXp: user.xp,
+    language,
+    solvedLanguages,
+    unsolvedLanguages,
+    nextProblem,
+    isAllSolved,
     errorDetails: status !== "Accepted" ? errorDetails : undefined,
     failedTestCase: status === "Wrong Answer" ? failedTestCase : undefined,
     isTurboCMode: isTurboC,

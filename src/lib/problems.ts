@@ -105,3 +105,62 @@ export async function getAllPublishedProblemSlugs(): Promise<
     return [];
   }
 }
+
+export interface ProblemCatalogItem {
+  problemId: string;
+  title: string;
+  phase: number;
+  slug?: string;
+}
+
+/**
+ * Finds the next unsolved problem in catalog order:
+ * 1. Next unsolved problem in the same phase (after current, then wrapping in phase)
+ * 2. If all in phase solved, first unsolved in subsequent phases (ascending)
+ * 3. If all problems solved, returns isAllSolved: true
+ */
+export function findNextUnsolvedProblem(
+  currentProblemId: string,
+  currentPhase: number,
+  allProblems: ProblemCatalogItem[],
+  solvedProblemIds: string[]
+): { nextProblem: ProblemCatalogItem | null; isAllSolved: boolean } {
+  const solvedSet = new Set(solvedProblemIds);
+  const unsolved = allProblems.filter((p) => !solvedSet.has(p.problemId));
+
+  if (unsolved.length === 0) {
+    return { nextProblem: null, isAllSolved: true };
+  }
+
+  // 1. Unsolved problems in the current phase
+  const samePhaseUnsolved = unsolved.filter((p) => p.phase === currentPhase);
+  if (samePhaseUnsolved.length > 0) {
+    const sortedSamePhase = [...samePhaseUnsolved].sort((a, b) =>
+      a.problemId.localeCompare(b.problemId, undefined, { numeric: true })
+    );
+    const nextInSamePhase = sortedSamePhase.find(
+      (p) => p.problemId.localeCompare(currentProblemId, undefined, { numeric: true }) > 0
+    );
+    if (nextInSamePhase) {
+      return { nextProblem: nextInSamePhase, isAllSolved: false };
+    }
+    return { nextProblem: sortedSamePhase[0], isAllSolved: false };
+  }
+
+  // 2. Next phases in ascending order (with wraparound)
+  const allPhases = Array.from(new Set(allProblems.map((p) => p.phase))).sort((a, b) => a - b);
+  const higherPhases = allPhases.filter((ph) => ph > currentPhase);
+  const lowerPhases = allPhases.filter((ph) => ph < currentPhase);
+  const orderedPhases = [...higherPhases, ...lowerPhases];
+
+  for (const ph of orderedPhases) {
+    const phaseUnsolved = unsolved
+      .filter((p) => p.phase === ph)
+      .sort((a, b) => a.problemId.localeCompare(b.problemId, undefined, { numeric: true }));
+    if (phaseUnsolved.length > 0) {
+      return { nextProblem: phaseUnsolved[0], isAllSolved: false };
+    }
+  }
+
+  return { nextProblem: unsolved[0], isAllSolved: false };
+}

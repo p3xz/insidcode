@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { findNextUnsolvedProblem } from "@/lib/problems";
 
 export async function GET(
   req: NextRequest,
@@ -38,12 +39,37 @@ export async function GET(
     let isSolved = false;
     let isAttempted = false;
     let lastSubmission = null;
+    let nextProblem: { problemId: string; title: string; phase: number } | null = null;
+    let isAllSolved = false;
 
     if (session?.user?.id) {
       const user = await User.findById(session.user.id).select("solvedProblems attemptedProblems");
       if (user) {
         isSolved = user.solvedProblems?.includes(question.problemId) || false;
         isAttempted = user.attemptedProblems?.includes(question.problemId) || false;
+
+        try {
+          const allQuestions = await Question.find({ isPublished: true })
+            .select("problemId title phase slug")
+            .sort({ problemId: 1 })
+            .lean();
+          const nextRes = findNextUnsolvedProblem(
+            question.problemId,
+            question.phase,
+            allQuestions,
+            user.solvedProblems || []
+          );
+          nextProblem = nextRes.nextProblem
+            ? {
+                problemId: nextRes.nextProblem.problemId,
+                title: nextRes.nextProblem.title,
+                phase: nextRes.nextProblem.phase,
+              }
+            : null;
+          isAllSolved = nextRes.isAllSolved;
+        } catch {
+          // Non-blocking fallback
+        }
       }
 
       // Fetch user's latest submission for this problem
@@ -62,6 +88,8 @@ export async function GET(
         isSolved,
         isAttempted,
         lastSubmission,
+        nextProblem,
+        isAllSolved,
       },
     }, {
       headers: {
