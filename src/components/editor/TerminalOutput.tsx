@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { LazyMotion, domAnimation, m } from "motion/react";
 import {
   CheckCircle2,
@@ -14,6 +15,9 @@ import {
   Flame,
   RotateCcw,
   ShieldAlert,
+  ArrowRight,
+  Sparkles,
+  Trophy,
 } from "lucide-react";
 import { SubmissionStatus, IFailedTestCaseInfo } from "@/types";
 import {
@@ -41,7 +45,18 @@ export interface ExecutionResultData {
   testsPassed?: number;
   totalTests?: number;
   awardedXp?: number;
+  awardedLanguagePoints?: number;
+  languageAlreadyRewarded?: boolean;
   isFirstSolve?: boolean;
+  language?: string;
+  solvedLanguages?: string[];
+  unsolvedLanguages?: string[];
+  nextProblem?: {
+    problemId: string;
+    title: string;
+    phase: number;
+  } | null;
+  isAllSolved?: boolean;
   errorDetails?: string;
   systemError?: string;
   failedTestCase?: IFailedTestCaseInfo;
@@ -66,6 +81,39 @@ interface TerminalOutputProps {
   placeholderSlotCount?: number;
 }
 
+function formatLanguageName(lang?: string): string {
+  switch (lang?.toLowerCase()) {
+    case "python":
+      return "Python";
+    case "javascript":
+      return "JavaScript";
+    case "c":
+      return "C";
+    case "cpp":
+      return "C++";
+    case "java":
+      return "Java";
+    default:
+      return lang ? lang.toUpperCase() : "Code";
+  }
+}
+
+function formatUnsolvedHint(unsolved?: string[]): string | null {
+  if (!unsolved || unsolved.length === 0) {
+    return "Mastered in all supported languages!";
+  }
+  const formatted = unsolved.map(formatLanguageName);
+  if (formatted.length === 1) {
+    return `Solve it in ${formatted[0]} for +10 XP`;
+  }
+  if (formatted.length === 2) {
+    return `Solve it in ${formatted[0]} or ${formatted[1]} for +10 XP each`;
+  }
+  const last = formatted[formatted.length - 1];
+  const others = formatted.slice(0, -1).join(", ");
+  return `Solve it in ${others}, or ${last} for +10 XP each`;
+}
+
 export function TerminalOutput({
   result,
   isRunning,
@@ -82,8 +130,38 @@ export function TerminalOutput({
   onRetrySubmit,
   placeholderSlotCount = 4,
 }: TerminalOutputProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"output" | "input">("output");
   const reduced = useReducedMotion();
+
+  const nextProblem = result?.nextProblem || submissionResult?.nextProblem || null;
+  const isAllSolved = Boolean(result?.isAllSolved || submissionResult?.isAllSolved);
+  const unsolvedLanguages = result?.unsolvedLanguages || submissionResult?.unsolvedLanguages;
+  const unsolvedHint = formatUnsolvedHint(unsolvedLanguages);
+
+  useEffect(() => {
+    if (result?.status !== "Accepted" || !nextProblem) return;
+    router.prefetch(`/problems/${nextProblem.problemId}`);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if ((e.altKey && e.key.toLowerCase() === "n") || e.key === "Enter") {
+        e.preventDefault();
+        router.push(`/problems/${nextProblem.problemId}`);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [result?.status, nextProblem, router]);
 
   const isJudgingPhase =
     isSubmitting ||
@@ -321,92 +399,184 @@ export function TerminalOutput({
                 </div>
               ) : (
                 <LazyMotion features={domAnimation} strict>
-                  <div className="space-y-3">
-                    {/* Status Result Header (with restrained 300ms shake on Wrong Answer) */}
-                    {badge && (
-                      <m.div
-                        key={`verdict-banner-${
-                          submissionResult?.submissionId ?? result.status
-                        }`}
-                        initial={{ x: 0 }}
-                        animate={
-                          result.status === "Wrong Answer" && !reduced
-                            ? { x: [0, -6, 6, -4, 4, 0] }
-                            : { x: 0 }
-                        }
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${badge.bg}`}
-                      >
-                        <div className="space-y-1">
+                  <div className="space-y-4">
+                    {/* Dedicated Full Accepted Result Card */}
+                    {result.status === "Accepted" ? (
+                      <div className="rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/5 p-4 sm:p-5 space-y-4">
+                        {/* Top Row: Big checkmark + Accepted + Tests Passed + Runtime */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#22C55E]/20 border border-[#22C55E]/40 text-[#4ADE80] shadow-[0_0_15px_rgba(34,197,94,0.2)]">
+                              <CheckCircle2 className="h-6 w-6" aria-hidden="true" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-base font-bold text-[#F5F7FA]">Accepted</h3>
+                                {result.isTurboCMode && (
+                                  <span className="inline-flex items-center gap-1 rounded border border-[#00F0FF]/30 bg-[#00F0FF]/10 px-2 py-0.5 text-[10px] font-semibold text-[#00F0FF]">
+                                    Turbo C mode
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-[#8B93A7]">
+                                {result.testsPassed} / {result.totalTests} tests passed
+                                {typeof result.runtime === "number" && ` • ${result.runtime} ms`}
+                                {result.language && ` • ${formatLanguageName(result.language)}`}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Badges: XP & Streak */}
                           <div className="flex flex-wrap items-center gap-2">
-                            <badge.icon
-                              className={`h-4 w-4 shrink-0 ${badge.color}`}
-                              aria-hidden="true"
-                            />
-                            <span className={`font-semibold ${badge.color}`}>
-                              {badge.label}
-                            </span>
-                            {result.totalTests ? (
-                              <span
-                                className="text-[11px]"
-                                style={{ color: "var(--fg-muted)" }}
-                              >
-                                ({result.testsPassed} / {result.totalTests}{" "}
-                                tests passed)
-                              </span>
-                            ) : null}
-                            {result.isTurboCMode && (
-                              <span className="inline-flex items-center gap-1 rounded border border-[#00F0FF]/30 bg-[#00F0FF]/10 px-2 py-0.5 text-[10px] font-semibold text-[#00F0FF]">
-                                Judged in Turbo C mode
-                              </span>
+                            {result.awardedXp && result.awardedXp > 0 ? (
+                              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#22D3EE]/35 bg-[#22D3EE]/15 px-3 py-1 text-xs font-bold text-[#22D3EE]">
+                                <Award className="h-3.5 w-3.5" />
+                                <span>+{result.awardedXp} XP earned</span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#8B93A7]/30 bg-[#181B24] px-3 py-1 text-xs font-medium text-[#8B93A7]">
+                                <span>Already solved in {formatLanguageName(result.language)} · 0 XP</span>
+                              </div>
+                            )}
+
+                            {submissionResult?.streakIncreased && submissionResult.currentStreak > 0 && (
+                              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#F59E0B]/35 bg-[#F59E0B]/15 px-3 py-1 text-xs font-bold text-[#FBBF24]">
+                                <Flame className="h-3.5 w-3.5" />
+                                <span>{submissionResult.currentStreak}-day streak</span>
+                              </div>
                             )}
                           </div>
-                          {badge.explanation && (
-                            <p className="font-sans text-[11px] text-[#8B93A7]">
-                              {badge.explanation}
-                            </p>
+                        </div>
+
+                        {/* Points breakdown & Data-driven language hint */}
+                        <div className="rounded-lg border border-[#252936] bg-[#11131A] p-3 text-xs space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[#8B93A7]">
+                            <span className="flex items-center gap-1.5 text-[#F5F7FA]">
+                              <Code2 className="h-4 w-4 text-[#00F0FF]" />
+                              <span>Language points:</span>
+                              <strong className="text-[#4ADE80]">
+                                {result.awardedXp && result.awardedXp > 0
+                                  ? `+10 ${formatLanguageName(result.language)} XP`
+                                  : `+0 XP (${formatLanguageName(result.language)} already recorded)`}
+                              </strong>
+                            </span>
+                            {submissionResult?.totalXp ? (
+                              <span className="text-[#8B93A7]">
+                                Total XP: <strong className="text-[#F5F7FA]">{submissionResult.totalXp}</strong>
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* Data-driven Hint for remaining languages */}
+                          {unsolvedHint && (
+                            <div className="flex items-center gap-2 pt-1 border-t border-[#252936]/60 text-[11px] text-[#22D3EE]">
+                              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                              <span>{unsolvedHint}</span>
+                            </div>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          {result.status === "Accepted" && (
-                            <>
-                              {result.awardedXp && result.awardedXp > 0 ? (
-                                <div className="inline-flex items-center gap-1 rounded-full border border-[#22D3EE]/35 bg-[#22D3EE]/10 px-2.5 py-0.5 font-bold text-[#22D3EE]">
-                                  <Award className="h-3.5 w-3.5" />
-                                  <span>+{result.awardedXp} XP</span>
-                                </div>
-                              ) : submissionResult ? (
-                                <span className="font-sans text-[11px] text-[#8B93A7]">
-                                  Previously solved · 0 XP
-                                </span>
-                              ) : null}
-
-                              {submissionResult?.streakIncreased &&
-                                submissionResult.currentStreak > 0 && (
-                                  <div className="inline-flex items-center gap-1 rounded-full border border-[#F59E0B]/35 bg-[#F59E0B]/10 px-2.5 py-0.5 font-bold text-[#FBBF24]">
-                                    <Flame className="h-3.5 w-3.5" />
-                                    <span>
-                                      {submissionResult.currentStreak}-day
-                                      streak
-                                    </span>
-                                  </div>
-                                )}
-                            </>
-                          )}
-
-                          {result.status !== "Accepted" && onRetrySubmit && (
+                        {/* Next Problem Primary Action */}
+                        <div className="pt-1 flex flex-wrap items-center gap-3">
+                          {nextProblem ? (
                             <button
                               type="button"
-                              onClick={onRetrySubmit}
-                              className="inline-flex items-center gap-1 rounded-md border border-[#252936] bg-[#11131A]/90 px-2.5 py-1 font-sans text-[11px] font-semibold text-[#F5F7FA] hover:border-[#22D3EE]/50 hover:text-[#22D3EE] transition cursor-pointer"
+                              onClick={() => router.push(`/problems/${nextProblem.problemId}`)}
+                              onMouseEnter={() => router.prefetch(`/problems/${nextProblem.problemId}`)}
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#00F0FF] hover:bg-[#00D4E0] active:scale-[0.99] px-5 py-2.5 text-xs font-bold text-[#090A0F] shadow-[0_0_15px_rgba(0,240,255,0.25)] transition cursor-pointer"
                             >
-                              <RotateCcw className="h-3 w-3" />
-                              <span>Try again</span>
+                              <span>Next Problem: {nextProblem.title}</span>
+                              <ArrowRight className="h-4 w-4" />
+                              <span className="text-[10px] opacity-75 font-mono ml-1 hidden sm:inline">(Enter)</span>
+                            </button>
+                          ) : isAllSolved ? (
+                            <div className="w-full flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10 p-3">
+                              <div className="flex items-center gap-2 text-xs font-bold text-[#FBBF24]">
+                                <Trophy className="h-4 w-4 shrink-0" />
+                                <span>You&apos;ve solved every problem on InsidCode!</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => router.push("/problems")}
+                                className="inline-flex items-center gap-1.5 rounded-md border border-[#F59E0B]/40 bg-[#11131A] px-3 py-1.5 text-xs font-semibold text-[#FBBF24] hover:bg-[#F59E0B]/20 transition cursor-pointer"
+                              >
+                                <span>View Problems Directory</span>
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => router.push("/problems")}
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#00F0FF] hover:bg-[#00D4E0] active:scale-[0.99] px-5 py-2.5 text-xs font-bold text-[#090A0F] shadow-[0_0_15px_rgba(0,240,255,0.25)] transition cursor-pointer"
+                            >
+                              <span>Explore More Problems</span>
+                              <ArrowRight className="h-4 w-4" />
                             </button>
                           )}
                         </div>
-                      </m.div>
+                      </div>
+                    ) : (
+                      /* Non-Accepted Verdict Banner (Wrong Answer, TLE, etc.) */
+                      badge && (
+                        <m.div
+                          key={`verdict-banner-${
+                            submissionResult?.submissionId ?? result.status
+                          }`}
+                          initial={{ x: 0 }}
+                          animate={
+                            result.status === "Wrong Answer" && !reduced
+                              ? { x: [0, -6, 6, -4, 4, 0] }
+                              : { x: 0 }
+                          }
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${badge.bg}`}
+                        >
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <badge.icon
+                                className={`h-4 w-4 shrink-0 ${badge.color}`}
+                                aria-hidden="true"
+                              />
+                              <span className={`font-semibold ${badge.color}`}>
+                                {badge.label}
+                              </span>
+                              {result.totalTests ? (
+                                <span
+                                  className="text-[11px]"
+                                  style={{ color: "var(--fg-muted)" }}
+                                >
+                                  ({result.testsPassed} / {result.totalTests}{" "}
+                                  tests passed)
+                                </span>
+                              ) : null}
+                              {result.isTurboCMode && (
+                                <span className="inline-flex items-center gap-1 rounded border border-[#00F0FF]/30 bg-[#00F0FF]/10 px-2 py-0.5 text-[10px] font-semibold text-[#00F0FF]">
+                                  Judged in Turbo C mode
+                                </span>
+                              )}
+                            </div>
+                            {badge.explanation && (
+                              <p className="font-sans text-[11px] text-[#8B93A7]">
+                                {badge.explanation}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {onRetrySubmit && (
+                              <button
+                                type="button"
+                                onClick={onRetrySubmit}
+                                className="inline-flex items-center gap-1 rounded-md border border-[#252936] bg-[#11131A]/90 px-2.5 py-1 font-sans text-[11px] font-semibold text-[#F5F7FA] hover:border-[#22D3EE]/50 hover:text-[#22D3EE] transition cursor-pointer"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                <span>Try again</span>
+                              </button>
+                            )}
+                          </div>
+                        </m.div>
+                      )
                     )}
 
                     {/* Phase 3: Staggered Per-Test Result Reveal Grid */}
