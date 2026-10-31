@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ProblemWorkspace } from "@/components/problem/ProblemWorkspace";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { ProblemPageSkeleton } from "@/components/ui/PageSkeletons";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
+import { IQuestion } from "@/types";
 
 interface ProblemPageClientProps {
   /** The problemId (e.g. "001") — used to fetch full problem data including user state */
@@ -48,9 +49,17 @@ export function ProblemPageClient({ problemId }: ProblemPageClientProps) {
     }
   );
 
-  const problem = data?.problem || null;
+  const [cachedProblem, setCachedProblem] = useState<IQuestion | null>(null);
+
+  useEffect(() => {
+    if (data?.problem) {
+      setCachedProblem(data.problem);
+    }
+  }, [data?.problem]);
+
+  const activeProblem = data?.problem || cachedProblem;
   const isSolved = Boolean(data?.userState?.isSolved);
-  const loading = isLoading && !data;
+  const loading = isLoading && !activeProblem;
   const error = swrError?.message || null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const canRetry = Boolean(swrError && (swrError as any).status !== 404);
@@ -67,7 +76,7 @@ export function ProblemPageClient({ problemId }: ProblemPageClientProps) {
     );
   }
 
-  if (error || !problem) {
+  if ((error || !activeProblem) && !activeProblem) {
     return (
       <div className="flex h-[calc(100vh-3.5rem)] flex-col items-center justify-center bg-[#090A0F] text-center p-4">
         <h2 className="text-xl font-bold text-[#F5F7FA] mb-2">{error || "Problem Not Found"}</h2>
@@ -95,5 +104,15 @@ export function ProblemPageClient({ problemId }: ProblemPageClientProps) {
     );
   }
 
-  return <ProblemWorkspace problem={problem} initialSolved={isSolved} />;
+  const nextProblem = data?.userState?.nextProblem || null;
+  const isAllSolved = Boolean(data?.userState?.isAllSolved);
+
+  return (
+    <ProblemWorkspace
+      problem={activeProblem!}
+      initialSolved={isSolved}
+      initialNextProblem={nextProblem}
+      initialIsAllSolved={isAllSolved}
+    />
+  );
 }

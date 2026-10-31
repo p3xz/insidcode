@@ -33,6 +33,8 @@ import { useSubmissionLifecycle } from "@/hooks/useSubmissionLifecycle";
 interface ProblemWorkspaceProps {
   problem: IQuestion;
   initialSolved?: boolean;
+  initialNextProblem?: { problemId: string; title: string; phase: number } | null;
+  initialIsAllSolved?: boolean;
 }
 
 function getValidLanguage(lang?: string | null): SupportedLanguageId | null {
@@ -47,6 +49,8 @@ function getValidLanguage(lang?: string | null): SupportedLanguageId | null {
 export function ProblemWorkspace({
   problem,
   initialSolved = false,
+  initialNextProblem = null,
+  initialIsAllSolved = false,
 }: ProblemWorkspaceProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -152,11 +156,14 @@ export function ProblemWorkspace({
     session?.user?.defaultLanguage,
   ]);
 
+  const userId = session?.user?.id || session?.user?.email || "guest";
+
   useEffect(() => {
-    const savedCodeKey = `code_${problem.problemId}_${selectedLanguage}`;
+    const userKey = `code_${userId}_${problem.problemId}_${selectedLanguage}`;
+    const legacyKey = `code_${problem.problemId}_${selectedLanguage}`;
     const saved =
       typeof window !== "undefined"
-        ? localStorage.getItem(savedCodeKey)
+        ? localStorage.getItem(userKey) || localStorage.getItem(legacyKey)
         : null;
 
     if (saved) {
@@ -167,14 +174,20 @@ export function ProblemWorkspace({
         `# Write your solution for ${problem.title} here\n`;
       setCode(template);
     }
-  }, [problem, selectedLanguage]);
+  }, [
+    problem.problemId,
+    problem.starterTemplates,
+    problem.title,
+    selectedLanguage,
+    userId,
+  ]);
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
-    localStorage.setItem(
-      `code_${problem.problemId}_${selectedLanguage}`,
-      newCode
-    );
+    if (typeof window !== "undefined") {
+      const userKey = `code_${userId}_${problem.problemId}_${selectedLanguage}`;
+      localStorage.setItem(userKey, newCode);
+    }
   };
 
   const handleLanguageSelect = (lang: SupportedLanguageId) => {
@@ -398,7 +411,14 @@ export function ProblemWorkspace({
         testsPassed: lifecycleResult.testsPassed,
         totalTests: lifecycleResult.totalTests,
         awardedXp: lifecycleResult.awardedXp,
+        awardedLanguagePoints: lifecycleResult.awardedLanguagePoints,
+        languageAlreadyRewarded: lifecycleResult.languageAlreadyRewarded,
         isFirstSolve: lifecycleResult.isFirstSolve,
+        language: lifecycleResult.language || selectedLanguage,
+        solvedLanguages: lifecycleResult.solvedLanguages,
+        unsolvedLanguages: lifecycleResult.unsolvedLanguages,
+        nextProblem: lifecycleResult.nextProblem,
+        isAllSolved: lifecycleResult.isAllSolved,
         errorDetails: lifecycleResult.errorDetails,
         failedTestCase: lifecycleResult.failedTestCase,
         isTurboCMode: lifecycleResult.isTurboCMode,
@@ -753,7 +773,15 @@ export function ProblemWorkspace({
             }`}
           >
             <TerminalOutput
-              result={execResult}
+              result={
+                execResult
+                  ? {
+                      ...execResult,
+                      nextProblem: execResult.nextProblem ?? initialNextProblem,
+                      isAllSolved: execResult.isAllSolved ?? initialIsAllSolved,
+                    }
+                  : null
+              }
               isRunning={isRunning}
               isSubmitting={isSubmittingOrJudging}
               queuePosition={queuePosition}

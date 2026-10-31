@@ -19,9 +19,19 @@ export interface SubmissionApiResponse {
   totalTests: number;
   awardedXp: number;
   awardedLanguagePoints?: number;
+  languageAlreadyRewarded?: boolean;
   isFirstSolve: boolean;
   currentStreak: number;
   totalXp: number;
+  language?: string;
+  solvedLanguages?: string[];
+  unsolvedLanguages?: string[];
+  nextProblem?: {
+    problemId: string;
+    title: string;
+    phase: number;
+  } | null;
+  isAllSolved?: boolean;
   errorDetails?: string;
   failedTestCase?: IFailedTestCaseInfo;
   isTurboCMode?: boolean;
@@ -312,14 +322,23 @@ export function useSubmissionLifecycle(
                 )
               );
 
-              // Invalidate SWR caches for stats, problem directory, and user state
+              // Invalidate SWR caches for stats, problem directory, and user state (avoid active problem endpoint)
               mutate(
-                (key) =>
-                  Array.isArray(key) &&
-                  typeof key[1] === "string" &&
-                  (key[1].startsWith("/api/stats") ||
-                    key[1].startsWith("/api/problems") ||
-                    key[1].startsWith("/api/leaderboard")),
+                (key) => {
+                  const keyStr =
+                    typeof key === "string"
+                      ? key
+                      : Array.isArray(key) && typeof key[1] === "string"
+                      ? key[1]
+                      : "";
+                  return (
+                    keyStr.startsWith("/api/stats") ||
+                    keyStr === "/api/problems" ||
+                    keyStr.startsWith("/api/problems?") ||
+                    keyStr.startsWith("/api/leaderboard") ||
+                    keyStr.startsWith("/api/user/profile")
+                  );
+                },
                 undefined,
                 { revalidate: true }
               );
