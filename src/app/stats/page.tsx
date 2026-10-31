@@ -6,6 +6,8 @@ import { StatsPageSkeleton } from "@/components/ui/PageSkeletons";
 import { LoadError } from "@/components/ui/LoadError";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import useSWR from "swr";
+import { FreshnessBadge } from "@/components/ui/FreshnessBadge";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useSession } from "next-auth/react";
 
 interface UserStatsData {
@@ -85,6 +87,7 @@ function ProgressBar({ value, max, color = "var(--success)" }: { value: number; 
 
 export default function UserStatsPage() {
   const { data: session } = useSession();
+  const { isOnline } = useNetworkStatus();
   const swrKey = session?.user?.id ? [session.user.id, "/api/stats"] : null;
 
   const { data, error, isLoading, mutate: revalidateStats } = useSWR(
@@ -158,6 +161,7 @@ export default function UserStatsPage() {
         <p className="section-label mb-1">Analytics</p>
         <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--fg)" }}>
           Performance Statistics
+          <FreshnessBadge className="ml-2 align-middle font-normal" isFromCache={Boolean(data && isLoading)} isOnline={isOnline} />
         </h1>
         <p className="mt-1 text-[12px]" style={{ color: "var(--fg-muted)" }}>
           Real-time telemetry tracking problem resolution, duel combat, and practice momentum.

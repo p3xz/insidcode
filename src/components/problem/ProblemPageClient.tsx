@@ -9,6 +9,8 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { IQuestion } from "@/types";
+import { getPublicCache, getUserCache, setUserCache } from "@/lib/storage/deviceCache";
+import { prefetchProblemsOnIdle } from "@/lib/storage/prefetch";
 
 interface ProblemPageClientProps {
   /** The problemId (e.g. "001") — used to fetch full problem data */
@@ -51,6 +53,39 @@ export function ProblemPageClient({
   const [cachedProblem, setCachedProblem] = useState<IQuestion | null>(
     initialProblem || null
   );
+  const [cachedUserState, setCachedUserState] = useState<
+    UserStateApiResponse["userState"] | null
+  >(null);
+
+  // Hydrate from device cache immediately upon client mount (0ms paint)
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!initialProblem && problemId) {
+      getPublicCache<PublicProblemApiResponse>(`/api/problems/${problemId}`).then(
+        (cached) => {
+          if (!cancelled && cached?.problem) {
+            setCachedProblem(cached.problem);
+          }
+        }
+      );
+    }
+
+    if (session?.user?.id && problemId) {
+      getUserCache<UserStateApiResponse>(
+        session.user.id,
+        `/api/problems/${problemId}/user-state`
+      ).then((cached) => {
+        if (!cancelled && cached?.userState) {
+          setCachedUserState(cached.userState);
+        }
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [problemId, initialProblem, session?.user?.id]);
 
   // 1. Public Problem Content (safe to cache publicly, identical for all users)
   const {
@@ -105,6 +140,22 @@ export function ProblemPageClient({
     }
   }, [publicData?.problem]);
 
+  useEffect(() => {
+    if (userStateData?.userState && session?.user?.id) {
+      setCachedUserState(userStateData.userState);
+      setUserCache(
+        session.user.id,
+        `/api/problems/${problemId}/user-state`,
+        userStateData
+      ).catch(() => {});
+
+      // Instagram-style idle prefetch for next unsolved problem
+      if (userStateData.userState.nextProblem?.problemId) {
+        prefetchProblemsOnIdle([userStateData.userState.nextProblem.problemId]);
+      }
+    }
+  }, [userStateData, session?.user?.id, problemId]);
+
   const activeProblem = publicData?.problem || cachedProblem || initialProblem || null;
   const loading = isPublicLoading && !activeProblem;
   const error = publicError?.message || null;
@@ -153,9 +204,10 @@ export function ProblemPageClient({
     );
   }
 
-  const isSolved = Boolean(userStateData?.userState?.isSolved);
-  const nextProblem = userStateData?.userState?.nextProblem || null;
-  const isAllSolved = Boolean(userStateData?.userState?.isAllSolved);
+  const activeUserState = userStateData?.userState || cachedUserState || null;
+  const isSolved = Boolean(activeUserState?.isSolved);
+  const nextProblem = activeUserState?.nextProblem || null;
+  const isAllSolved = Boolean(activeUserState?.isAllSolved);
 
   return (
     <ProblemWorkspace
