@@ -20,6 +20,7 @@ import {
   Swords,
   AlertTriangle,
   Loader2,
+  WifiOff,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import {
@@ -29,6 +30,9 @@ import {
   AlertDescription,
 } from "@/components/ui/alert";
 import { useSubmissionLifecycle } from "@/hooks/useSubmissionLifecycle";
+import { getDraft, setDraft, deleteDraft } from "@/lib/storage/deviceCache";
+import { setSubmissionInFlightFlag } from "@/lib/storage/prefetch";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 interface ProblemWorkspaceProps {
   problem: IQuestion;
@@ -54,6 +58,7 @@ export function ProblemWorkspace({
 }: ProblemWorkspaceProps) {
   const router = useRouter();
   const { data: session } = useSession();
+  const { isOnline } = useNetworkStatus();
 
   const userManuallySwitchedRef = useRef(false);
   const prevUserLanguageRef = useRef<string | undefined>(undefined);
@@ -166,14 +171,26 @@ export function ProblemWorkspace({
         ? localStorage.getItem(userKey) || localStorage.getItem(legacyKey)
         : null;
 
-    if (saved) {
-      setCode(saved);
-    } else {
-      const template =
-        problem.starterTemplates?.[selectedLanguage] ||
-        `# Write your solution for ${problem.title} here\n`;
-      setCode(template);
-    }
+    let cancelled = false;
+    getDraft(userId, problem.problemId, selectedLanguage).then((idbDraft) => {
+      if (cancelled) return;
+      if (idbDraft) {
+        setCode(idbDraft);
+      } else if (saved) {
+  
+        setCode(saved);
+        setDraft(userId, problem.problemId, selectedLanguage, saved).catch(() => {});
+      } else {
+        const template =
+          problem.starterTemplates?.[selectedLanguage] ||
+          `# Write your solution for ${problem.title} here\n`;
+        setCode(template);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     problem.problemId,
     problem.starterTemplates,
@@ -187,6 +204,7 @@ export function ProblemWorkspace({
     if (typeof window !== "undefined") {
       const userKey = `code_${userId}_${problem.problemId}_${selectedLanguage}`;
       localStorage.setItem(userKey, newCode);
+      setDraft(userId, problem.problemId, selectedLanguage, newCode).catch(() => {});
     }
   };
 
@@ -219,7 +237,11 @@ export function ProblemWorkspace({
       problem.starterTemplates?.[selectedLanguage] ||
       `# Write your solution for ${problem.title} here\n`;
     setCode(template);
-    localStorage.removeItem(`code_${problem.problemId}_${selectedLanguage}`);
+    const userKey = `code_${userId}_${problem.problemId}_${selectedLanguage}`;
+    const legacyKey = `code_${problem.problemId}_${selectedLanguage}`;
+    localStorage.removeItem(userKey);
+    localStorage.removeItem(legacyKey);
+    deleteDraft(userId, problem.problemId, selectedLanguage).catch(() => {});
   };
 
   const handleRunCode = async () => {
@@ -391,7 +413,9 @@ export function ProblemWorkspace({
     setActiveMobileTab("terminal");
     setExecResult(null);
 
-    const lifecycleResult = await submit(() =>
+    let lifecycleResult = null;
+    try {
+      lifecycleResult = await submit(() =>
       fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -403,6 +427,10 @@ export function ProblemWorkspace({
         }),
       })
     );
+
+    } finally {
+      setSubmissionInFlightFlag(false);
+    }
 
     if (lifecycleResult) {
       setExecResult({
@@ -469,6 +497,17 @@ export function ProblemWorkspace({
       >
         {announcement}
       </div>
+
+      {!isOnline && (
+        <div className="flex items-center justify-between gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-400">
+          <div className="flex items-center gap-2">
+            <WifiOff className="h-4 w-4 shrink-0 text-amber-400" />
+            <span>
+              You&apos;re offline. Run and Submit need an active connection. Your code drafts are saved on this device.
+            </span>
+          </div>
+        </div>
+      )}
 
       {notice && (
         <div className="px-3 pt-3 lg:px-4">
@@ -701,7 +740,8 @@ export function ProblemWorkspace({
               <button
                 type="button"
                 onClick={handleRunCode}
-                disabled={isRunning || isSubmittingOrJudging}
+                disabled={isRunning || isSubmittingOrJudging || !isOnline}
+                title={!isOnline ? "You're offline. Run and Submit need an active connection." : "Run code"}
                 className="flex items-center gap-1.5 rounded-md border border-[#252936] bg-[#181B24] px-3 py-1 text-xs font-semibold text-[#F5F7FA] hover:bg-[#252936] active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition"
               >
                 <Play className="h-3.5 w-3.5 text-[#00F0FF]" />
@@ -719,7 +759,7 @@ export function ProblemWorkspace({
                 type="button"
                 onClick={handleSubmitCode}
                 disabled={
-                  isRunning || isSubmittingOrJudging || isCreatingDuel
+                  isRunning || isSubmittingOrJudging || isCreatingDuel || !isOnline
                 }
                 aria-busy={isSubmittingOrJudging}
                 className={`flex items-center gap-1.5 rounded-md bg-[#00F0FF] px-3.5 py-1 text-xs font-bold text-[#090A0F] hover:bg-[#00F0FF]/90 active:scale-95 disabled:opacity-60 disabled:active:scale-100 transition-all duration-120 shadow-lg shadow-[#00F0FF]/10 ${
@@ -738,7 +778,7 @@ export function ProblemWorkspace({
                 type="button"
                 onClick={handleStartProblemDuel}
                 disabled={
-                  isRunning || isSubmittingOrJudging || isCreatingDuel
+                  isRunning || isSubmittingOrJudging || isCreatingDuel || !isOnline
                 }
                 title="Challenge another developer on this exact problem in a 1v1 Duel"
                 className="flex items-center gap-1.5 rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-2.5 sm:px-3 py-1 text-xs font-bold text-[var(--warning)] hover:bg-[var(--warning)]/20 disabled:opacity-50 transition"
