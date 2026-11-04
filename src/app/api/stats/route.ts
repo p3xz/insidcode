@@ -7,6 +7,7 @@ import { CURRICULUM_PHASES } from "@/lib/constants";
 import { calculateDuelKd, calculateDuelWinRate } from "@/lib/duelStats";
 import { getDuelRank, resolveUserChampionPosition } from "@/lib/duelRanks";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { deriveXpBreakdown } from "@/lib/xpConsistency";
 
 export async function GET() {
   try {
@@ -103,6 +104,7 @@ export async function GET() {
 
     const championPosition = await resolveUserChampionPosition(user._id.toString(), duelsPlayed);
     const resolvedRank = getDuelRank(duelPoints, championPosition);
+    const xpBreakdown = deriveXpBreakdown(user.xp, user.languagePoints);
 
     return NextResponse.json({
       stats: {
@@ -114,7 +116,7 @@ export async function GET() {
         totalMedium,
         hardSolved,
         totalHard,
-        xp: user.xp,
+        xp: xpBreakdown.totalXp,
         currentStreak: user.currentStreak,
         longestStreak: user.longestStreak,
         totalSubmissions: user.totalSubmissions,
@@ -123,13 +125,9 @@ export async function GET() {
         phaseBreakdown,
         heatmap: heatmapMap,
         recentSubmissions,
-        languagePoints: user.languagePoints || {
-          python: 0,
-          javascript: 0,
-          c: 0,
-          cpp: 0,
-          java: 0,
-        },
+        languagePoints: xpBreakdown.languages,
+        languagePointsTotal: xpBreakdown.languageSum,
+        otherXp: xpBreakdown.otherXp,
         duelRating,
         duelPoints,
         duelRank: resolvedRank.rankName,

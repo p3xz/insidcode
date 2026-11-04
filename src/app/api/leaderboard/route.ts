@@ -146,10 +146,26 @@ export async function GET(req: NextRequest) {
     }
 
     const rawUsers = await User.find(userQuery)
-      .select("username displayName image selectedTitle xp solvedProblems currentStreak role")
-      .sort({ xp: -1, solvedProblems: -1, currentStreak: -1 })
+      .select("username displayName image selectedTitle xp solvedProblems currentStreak role updatedAt createdAt")
+      .sort({ xp: -1, currentStreak: -1, updatedAt: 1, username: 1 })
       .limit(100)
       .lean();
+
+    // Deterministic tie-breaking:
+    // 1. XP DESC
+    // 2. Solved count DESC
+    // 3. Earliest updatedAt ASC (first to achieve score)
+    // 4. Username ASC (stable lexicographical order)
+    rawUsers.sort((a, b) => {
+      if ((b.xp || 0) !== (a.xp || 0)) return (b.xp || 0) - (a.xp || 0);
+      const countA = a.solvedProblems?.length || 0;
+      const countB = b.solvedProblems?.length || 0;
+      if (countB !== countA) return countB - countA;
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return a.username.localeCompare(b.username);
+    });
 
     let currentUserRank: number | null = null;
 
