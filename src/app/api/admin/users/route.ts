@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
       query.isBanned = true;
     } else if (filter === "admin") {
       query.role = "admin";
+    } else if (filter === "active") {
+      query.isBanned = false;
     }
 
     if (search.trim()) {
@@ -49,12 +51,23 @@ export async function GET(req: NextRequest) {
       query.$or = [{ username: regex }, { displayName: regex }, { email: regex }];
     }
 
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
+    const ALLOWED_SORTS: Record<string, string> = {
+      createdAt: "createdAt",
+      xp: "xp",
+      currentStreak: "currentStreak",
+      lastActiveDate: "lastActiveDate",
+    };
+    const sortField = ALLOWED_SORTS[sortBy] || "createdAt";
+    const sortConfig: Record<string, 1 | -1> = { [sortField]: sortOrder };
+
     const totalCount = await User.countDocuments(query);
     const totalPages = Math.ceil(totalCount / limit);
 
     const users = await User.find(query)
       .select("username displayName email image provider role xp currentStreak longestStreak solvedProblems isBanned banReason bannedAt bannedUntil leaderboardVisible createdAt")
-      .sort({ createdAt: -1 })
+      .sort(sortConfig)
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
@@ -77,6 +90,7 @@ export async function GET(req: NextRequest) {
         bannedAt: u.bannedAt,
         bannedUntil: u.bannedUntil,
         leaderboardVisible: u.leaderboardVisible,
+        lastActiveDate: u.lastActiveDate,
         createdAt: u.createdAt,
       })),
       pagination: {

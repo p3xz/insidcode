@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { requireAdminUser } from "@/lib/auth";
+import { requireAdminMutationUser } from "@/lib/security";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Appeal } from "@/models/Appeal";
 import { User } from "@/models/User";
@@ -71,7 +72,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await requireAdminUser();
+    const authResult = await requireAdminMutationUser(req, "APPEAL_DECISION");
     const admin = authResult.admin;
     if (!admin) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
