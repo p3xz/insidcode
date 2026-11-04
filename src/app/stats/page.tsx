@@ -37,6 +37,8 @@ interface UserStatsData {
   duelNextRankName?: string | null;
   isChampion?: boolean;
   duelChampionPosition?: number | null;
+  otherXp?: number;
+  languagePointsTotal?: number;
   languagePoints?: {
     python?: number;
     javascript?: number;
@@ -513,7 +515,7 @@ export default function UserStatsPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className={`grid grid-cols-2 ${(stats.otherXp || 0) > 0 ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3`}>
           {[
             { key: "python", label: "Python" },
             { key: "javascript", label: "JavaScript" },
@@ -521,7 +523,7 @@ export default function UserStatsPage() {
             { key: "cpp", label: "C++" },
             { key: "java", label: "Java" },
           ].map(({ key, label }) => {
-            const pts = stats.languagePoints?.[key as keyof typeof stats.languagePoints] || 0;
+            const pts = key === "_other" ? (stats.otherXp || 0) : (stats.languagePoints?.[key as keyof typeof stats.languagePoints] || 0);
             return (
               <div
                 key={key}
