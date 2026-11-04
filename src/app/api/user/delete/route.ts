@@ -4,6 +4,9 @@ import { User } from "@/models/User";
 import { Submission } from "@/models/Submission";
 import { FriendRequest } from "@/models/FriendRequest";
 import { Notification } from "@/models/Notification";
+import { Appeal } from "@/models/Appeal";
+import { Execution } from "@/models/Execution";
+import { LanguageSolve } from "@/models/LanguageSolve";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
@@ -58,6 +61,15 @@ export async function POST(req: NextRequest) {
 
     // Anonymize/delete submissions
     await Submission.deleteMany({ userId });
+
+    // Delete user appeals
+    await Appeal.deleteMany({ $or: [{ userId: user._id }, { userId }] });
+
+    // Delete playground scratchpad executions
+    await Execution.deleteMany({ userId });
+
+    // Delete language solve achievements
+    await LanguageSolve.deleteMany({ userId });
 
     // Delete user account
     await User.findByIdAndDelete(userId);

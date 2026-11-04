@@ -1,9 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Execution } from "@/models/Execution";
 import { ExecutionStatus } from "@/types";
 
+function verifyCallbackSecret(req: NextRequest): boolean {
+  const secretEnv = process.env.COMPILER_CALLBACK_SECRET;
+  if (!secretEnv || secretEnv.trim() === "") {
+    console.error("[Execution Callback] Rejecting request: COMPILER_CALLBACK_SECRET is not configured.");
+    return false;
+  }
+
+  const headerSecret = req.headers.get("x-compiler-secret");
+  const authHeader = req.headers.get("authorization");
+  let bearerSecret: string | null = null;
+  if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+    bearerSecret = authHeader.slice(7).trim();
+  }
+  const querySecret = req.nextUrl.searchParams.get("secret");
+
+  const providedSecret = headerSecret || bearerSecret || querySecret;
+  if (!providedSecret) {
+    return false;
+  }
+
+  const expectedBuf = Buffer.from(secretEnv);
+  const providedBuf = Buffer.from(providedSecret);
+
+  if (expectedBuf.length !== providedBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expectedBuf, providedBuf);
+}
+
 export async function POST(req: NextRequest) {
+  if (!verifyCallbackSecret(req)) {
+    return NextResponse.json({ error: "Unauthorized callback request" }, { status: 401 });
+  }
+
   try {
     let body: Record<string, unknown>;
     try {

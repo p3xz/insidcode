@@ -35,6 +35,7 @@ export default function FeedbackPage() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [website, setWebsite] = useState(""); // Honeypot field for bot mitigation
   const [isSending, setIsSending] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -75,6 +76,7 @@ export default function FeedbackPage() {
           subject: subject.trim(),
           message: message.trim(),
           contactEmail: contactEmail.trim() || undefined,
+          website: website.trim() || undefined,
         }),
       });
 
@@ -85,6 +87,7 @@ export default function FeedbackPage() {
         setSubject("");
         setMessage("");
         setContactEmail("");
+        setWebsite("");
       } else {
         setErrorMessage(data.error || "Unable to send feedback. Please try again.");
       }
@@ -258,13 +261,27 @@ export default function FeedbackPage() {
           />
         </div>
 
+        {/* Honeypot field (hidden from legitimate users, traps bots) */}
+        <div style={{ display: "none" }} aria-hidden="true">
+          <label htmlFor="website">Website</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </div>
+
         {/* Destination Note & Submit */}
         <div
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4"
           style={{ borderTop: "1px solid var(--border)" }}
         >
           <p className="text-[11px] mono" style={{ color: "var(--fg-dimmed)" }}>
-            Destination: nam4sh@gmail.com
+            Destination: Platform Engineering Team
           </p>
 
           <button

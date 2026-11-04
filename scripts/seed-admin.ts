@@ -5,7 +5,7 @@ const targetUsername = process.argv[2];
 
 if (!targetUsername) {
   console.log("Usage: npm run seed:admin <username_or_email>");
-  console.log("Example: npm run seed:admin nam4sh@gmail.com");
+  console.log("Example: npm run seed:admin admin@example.com");
   process.exit(1);
 }
 

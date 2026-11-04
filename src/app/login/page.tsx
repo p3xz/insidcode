@@ -16,6 +16,17 @@ function LoginContent() {
     switch (errCode) {
       case "AccessDenied":
         return "Access was denied. Your account may be suspended or lacks required permissions.";
+      case "OAuthAccountNotLinked": {
+        const providerParam = searchParams?.get("provider");
+        const providerName = providerParam
+          ? providerParam.charAt(0).toUpperCase() + providerParam.slice(1)
+          : null;
+        return providerName
+          ? `An account with this email already exists using ${providerName}. Please sign in with ${providerName}.`
+          : "An account with this email already exists with another provider. Please sign in with your original provider.";
+      }
+      case "UnverifiedEmail":
+        return "Your email address is not verified by your OAuth provider. Please verify your email before signing in.";
       case "OAuthSignin":
       case "OAuthCallbackError":
         return "Unable to sign in with OAuth provider. Please try again.";

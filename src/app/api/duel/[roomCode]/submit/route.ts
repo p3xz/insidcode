@@ -4,7 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { DuelRoom } from "@/models/DuelRoom";
 import { CodeSubmissionSchema } from "@/lib/validations";
 import { evaluateAndRecordSubmission } from "@/lib/submission";
-import { acquireSubmissionLock, releaseSubmissionLock } from "@/lib/rateLimit";
+import { checkRateLimit, acquireSubmissionLock, releaseSubmissionLock } from "@/lib/rateLimit";
 import { finalizeDuelMatch } from "@/lib/duel";
 
 const ROUND_DURATION_MS = 5 * 60 * 1000; // 5 minutes per round
@@ -28,6 +28,22 @@ export async function POST(
     }
 
     const normalizedCode = roomCode.trim().toUpperCase();
+    if (!/^DUEL-[A-Z0-9]{3,8}$/.test(normalizedCode)) {
+      return NextResponse.json({ error: "Invalid duel room code format." }, { status: 400 });
+    }
+
+    const rateLimit = checkRateLimit(`duel_submit_${currentUserId}`, { limit: 15, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: `Too many submissions. Please wait ${rateLimit.reset}s before trying again.` },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.reset),
+          },
+        }
+      );
+    }
 
     const body = await req.json();
     const parseResult = CodeSubmissionSchema.safeParse(body);
