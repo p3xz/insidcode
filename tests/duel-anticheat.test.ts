@@ -11,6 +11,7 @@ import {
   computeInteractionProof,
   DUEL_MIN_SOLVE_SECONDS,
   evaluateDuelTelemetryIntegrity,
+  mergeMonotonicTelemetry,
   sha256HexSync,
 } from "../src/lib/duelAntiCheatShared";
 import {
@@ -384,6 +385,52 @@ test("finalizeDuelMatch guards Elo updates behind !room.eloVoided", () => {
     "utf8"
   );
   assert.ok(duelLib.includes("if (room.eloVoided)"), "finalizeDuelMatch must bypass Elo updates when voided");
+});
+
+test("mergeMonotonicTelemetry preserves warnings and violation counters across tab closes & reopens", () => {
+  const serverPrior = {
+    keystrokes: 22,
+    backspaces: 3,
+    pasteBlockedCount: 2,
+    pasteBlockedChars: 140,
+    unexplainedBurstCount: 1,
+    maxBurstChars: 90,
+    focusLostCount: 3,
+    blurredMs: 42000,
+    foregroundMs: 18000,
+    idleGapsCount: 2,
+    lastWarning: "External paste blocked (2 attempts).",
+    lastWarningSeverity: "danger" as const,
+    warningDismissed: false,
+    lastCheckpointAtMs: 1700000050000,
+  };
+
+  // Fresh reopened tab starts with zeroed volatile counters
+  const freshReopenTab = {
+    keystrokes: 0,
+    backspaces: 0,
+    pasteBlockedCount: 0,
+    pasteBlockedChars: 0,
+    unexplainedBurstCount: 0,
+    maxBurstChars: 0,
+    focusLostCount: 0,
+    blurredMs: 0,
+    foregroundMs: 0,
+    idleGapsCount: 0,
+  };
+
+  const merged = mergeMonotonicTelemetry(freshReopenTab, serverPrior);
+  assert.strictEqual(merged.pasteBlockedCount, 2, "Must retain blocked paste count after tab reopen");
+  assert.strictEqual(merged.focusLostCount, 3, "Must retain focus switch count");
+  assert.strictEqual(merged.blurredMs, 42000, "Must retain prior blurred duration");
+  assert.strictEqual(merged.lastWarning, serverPrior.lastWarning, "Active warnings must persist after tab close/reopen");
+
+  const arenaCode = fs.readFileSync(
+    path.join(process.cwd(), "src/app/duel/[roomCode]/page.tsx"),
+    "utf8"
+  );
+  assert.ok(arenaCode.includes('addEventListener("selectstart"'), "Duel Arena must block selectstart outside editor");
+  assert.ok(arenaCode.includes('addEventListener("copy"'), "Duel Arena must block document copy outside editor");
 });
 
 console.log("\n======================================================");

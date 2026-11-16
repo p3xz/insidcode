@@ -212,6 +212,9 @@ export async function GET(
       isPlayer1,
       isPlayer2,
       roundChallenge,
+      myTelemetry: activeRoundData
+        ? (isPlayer1 ? activeRoundData.player1TelemetrySummary : activeRoundData.player2TelemetrySummary) || null
+        : null,
       minSolveSeconds: activeRoundData
         ? (DUEL_MIN_SOLVE_SECONDS[activeRoundData.difficulty as DuelDifficulty] ?? 25)
         : null,

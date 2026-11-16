@@ -174,6 +174,30 @@ export default function DuelSpectatorPage() {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const blockCopy = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const blockKeys = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "a" || key === "c" || key === "x") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("selectstart", blockCopy, { capture: true });
+    document.addEventListener("copy", blockCopy, { capture: true });
+    document.addEventListener("keydown", blockKeys, { capture: true });
+    return () => {
+      document.removeEventListener("selectstart", blockCopy, { capture: true });
+      document.removeEventListener("copy", blockCopy, { capture: true });
+      document.removeEventListener("keydown", blockKeys, { capture: true });
+    };
+  }, []);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;

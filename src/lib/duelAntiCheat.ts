@@ -54,26 +54,19 @@ function timingSafeEqualStr(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-/**
- * Verifies that:
- *  1. The roundChallenge HMAC matches the authenticated player, room, round, and server startedAtMs.
- *  2. The client telemetry's codeHash equals the actual SHA-256 of the submitted code.
- *  3. The interactionDigest binds the challenge, codeHash, and Monaco telemetry metrics.
- */
-export function verifyDuelInteractionToken(params: {
+export function verifyRoundChallengeSignature(params: {
   userId: string;
   roomCode: string;
   roundNumber: number;
   expectedStartedAtMs: number;
-  submittedCode: string;
-  telemetry?: DuelTelemetryPayload | null;
+  roundChallenge?: string | null;
 }): { valid: boolean; reason?: string } {
-  const { telemetry } = params;
-  if (!telemetry || typeof telemetry.roundChallenge !== "string" || typeof telemetry.interactionDigest !== "string") {
+  const { roundChallenge } = params;
+  if (!roundChallenge || typeof roundChallenge !== "string") {
     return { valid: false, reason: "Missing editor telemetry challenge token." };
   }
 
-  const parts = telemetry.roundChallenge.split(".");
+  const parts = roundChallenge.split(".");
   if (parts.length !== 2) {
     return { valid: false, reason: "Malformed challenge token." };
   }
@@ -94,6 +87,39 @@ export function verifyDuelInteractionToken(params: {
   const expectedSig = expectedChallenge.split(".")[1] || "";
   if (!timingSafeEqualStr(sigHex, expectedSig)) {
     return { valid: false, reason: "Invalid challenge HMAC signature." };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Verifies that:
+ *  1. The roundChallenge HMAC matches the authenticated player, room, round, and server startedAtMs.
+ *  2. The client telemetry's codeHash equals the actual SHA-256 of the submitted code.
+ *  3. The interactionDigest binds the challenge, codeHash, and Monaco telemetry metrics.
+ */
+export function verifyDuelInteractionToken(params: {
+  userId: string;
+  roomCode: string;
+  roundNumber: number;
+  expectedStartedAtMs: number;
+  submittedCode: string;
+  telemetry?: DuelTelemetryPayload | null;
+}): { valid: boolean; reason?: string } {
+  const { telemetry } = params;
+  if (!telemetry || typeof telemetry.interactionDigest !== "string") {
+    return { valid: false, reason: "Missing editor telemetry challenge token." };
+  }
+
+  const challengeCheck = verifyRoundChallengeSignature({
+    userId: params.userId,
+    roomCode: params.roomCode,
+    roundNumber: params.roundNumber,
+    expectedStartedAtMs: params.expectedStartedAtMs,
+    roundChallenge: telemetry.roundChallenge,
+  });
+  if (!challengeCheck.valid) {
+    return challengeCheck;
   }
 
   const expectedCodeHash = sha256HexSync(params.submittedCode);

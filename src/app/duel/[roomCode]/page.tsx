@@ -31,6 +31,7 @@ import { SUPPORTED_LANGUAGES, SupportedLanguageId } from "@/lib/constants";
 import { IDuelRoom, IQuestion, SubmissionStatus } from "@/types";
 import InlineNotice from "@/components/ui/InlineNotice";
 import { useDuelAntiCheat } from "@/hooks/useDuelAntiCheat";
+import type { DuelTelemetryCheckpoint } from "@/lib/duelAntiCheatShared";
 
 function getDraftKey(roomCode: string, userId: string, round: number, language: string): string {
   return `duel_draft:${roomCode}:${userId}:${round}:${language}`;
@@ -65,6 +66,10 @@ export default function DuelArenaPage() {
   const [copyFailed, setCopyFailed] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [roundChallenge, setRoundChallenge] = useState<string | null>(null);
+  const [serverTelemetry, setServerTelemetry] = useState<Partial<DuelTelemetryCheckpoint> | null>(null);
+  const problemPaneRef = useRef<HTMLDivElement | null>(null);
+
+  const activeRoundStartedAt = room?.roundsData?.[(room?.currentRound || 1) - 1]?.startedAt ?? null;
 
   const {
     warning: antiCheatWarning,
@@ -81,9 +86,82 @@ export default function DuelArenaPage() {
     buildSubmissionTelemetry,
   } = useDuelAntiCheat({
     roomStatus: room?.status,
+    roomCode,
+    userId: session?.user?.id,
     roundNumber: room?.currentRound || 1,
+    roundStartedAt: activeRoundStartedAt,
+    serverTelemetry,
     roundChallenge,
   });
+
+  // Track previous round and initialization state to prevent starter code from overwriting drafts
+  // Document-level copy / select-all lockdown outside Monaco editor and inputs
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const isAllowedEditableTarget = (node: Node | EventTarget | null): boolean => {
+      if (!node) return false;
+      const el = node instanceof Element ? node : (node as Node).parentElement;
+      if (!el) return false;
+      if (problemPaneRef.current && problemPaneRef.current.contains(el)) {
+        return false;
+      }
+      return Boolean(el.closest(".monaco-editor, input, textarea, select"));
+    };
+
+    const handleSelectStart = (e: Event) => {
+      if (!isAllowedEditableTarget(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    const handleCopyOrCut = (e: ClipboardEvent) => {
+      const sel = window.getSelection();
+      const targetInsideQuestion =
+        problemPaneRef.current &&
+        ((e.target instanceof Node && problemPaneRef.current.contains(e.target)) ||
+          (sel?.anchorNode && problemPaneRef.current.contains(sel.anchorNode)) ||
+          (sel?.focusNode && problemPaneRef.current.contains(sel.focusNode)));
+
+      const inEditable =
+        !targetInsideQuestion &&
+        isAllowedEditableTarget(e.target) &&
+        isAllowedEditableTarget(document.activeElement);
+
+      if (!inEditable) {
+        e.preventDefault();
+        e.stopPropagation();
+        sel?.removeAllRanges();
+        reportQuestionCopyAttempt();
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key !== "a" && key !== "c" && key !== "x") return;
+
+      if (!isAllowedEditableTarget(e.target) || !isAllowedEditableTarget(document.activeElement)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (key === "c") {
+          reportQuestionCopyAttempt();
+        }
+      }
+    };
+
+    document.addEventListener("selectstart", handleSelectStart, { capture: true });
+    document.addEventListener("copy", handleCopyOrCut, { capture: true });
+    document.addEventListener("cut", handleCopyOrCut, { capture: true });
+    document.addEventListener("keydown", handleKeyDown, { capture: true });
+
+    return () => {
+      document.removeEventListener("selectstart", handleSelectStart, { capture: true });
+      document.removeEventListener("copy", handleCopyOrCut, { capture: true });
+      document.removeEventListener("cut", handleCopyOrCut, { capture: true });
+      document.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, [reportQuestionCopyAttempt]);
 
   // Track previous round and initialization state to prevent starter code from overwriting drafts
   const previousRoundRef = useRef<number>(1);
@@ -121,6 +199,9 @@ export default function DuelArenaPage() {
         }
         if ("roundChallenge" in data) {
           setRoundChallenge(data.roundChallenge || null);
+        }
+        if ("myTelemetry" in data) {
+          setServerTelemetry(data.myTelemetry || null);
         }
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -779,6 +860,7 @@ export default function DuelArenaPage() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
         {/* Left Pane: Problem Description (col-span-5) */}
         <div
+          ref={problemPaneRef}
           className={`h-full flex-col overflow-y-auto p-5 lg:col-span-5 select-none [&_*]:select-none ${
             activeMobileTab === "problem" ? "flex" : "hidden lg:flex"
           }`}
