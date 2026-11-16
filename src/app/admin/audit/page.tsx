@@ -46,6 +46,7 @@ const CATEGORIES = [
   { id: "MODERATION", label: "Moderation" },
   { id: "APPEALS", label: "Appeals" },
   { id: "SECURITY", label: "Security" },
+  { id: "DUELS", label: "Duel Anti-Cheat" },
   { id: "LEADERBOARD", label: "Leaderboard" },
   { id: "PROBLEMS", label: "Problems" },
   { id: "SEEDER", label: "Seeder" },
@@ -207,6 +208,7 @@ showSkeleton ? (
               <tbody className="divide-y divide-[#252936] text-[#F5F7FA]">
                 {logs.map((log) => {
                   const isSecurity = log.action === "UNAUTHORIZED_ADMIN_ACTION";
+                  const isDuelAntiCheat = log.action === "DUEL_ANTI_CHEAT_FLAG";
                   const isModeration = log.action === "USERNAME_REJECTED";
                   const isBan = log.action === "USER_BAN" || log.action === "USER_SUSPENDED";
                   const isAutomated = log.metadata?.source === "AUTOMATED" || log.adminId === "system";
@@ -238,6 +240,11 @@ showSkeleton ? (
                             <ShieldAlert className="h-3 w-3" />
                             SECURITY_ALERT
                           </span>
+                        ) : isDuelAntiCheat ? (
+                          <span className="inline-flex items-center gap-1 font-mono font-bold text-[#F59E0B] bg-[#F59E0B]/15 px-2 py-0.5 rounded text-[10px] border border-[#F59E0B]/30">
+                            <ShieldAlert className="h-3 w-3" />
+                            DUEL_ANTI_CHEAT
+                          </span>
                         ) : isModeration ? (
                           <span className="inline-flex items-center gap-1 font-mono font-semibold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded text-[11px] border border-[#EF4444]/20">
                             <AlertTriangle className="h-3 w-3" />
@@ -257,7 +264,14 @@ showSkeleton ? (
 
                       {/* Target */}
                       <td className="px-4 py-3 whitespace-nowrap font-mono text-[11px]">
-                        {log.targetProblemId ? (
+                        {log.targetUserId && isDuelAntiCheat ? (
+                          <Link
+                            href={`/admin/users?search=${encodeURIComponent(log.targetUserId)}`}
+                            className="text-[#00F0FF] hover:underline"
+                          >
+                            User {log.targetUserId.slice(-8)}
+                          </Link>
+                        ) : log.targetProblemId ? (
                           <span className="text-[#3B82F6]">Problem #{log.targetProblemId}</span>
                         ) : log.targetUserId ? (
                           <Link

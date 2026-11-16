@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { DuelRoom } from "@/models/DuelRoom";
-import { CodeSubmissionSchema } from "@/lib/validations";
+import { Question } from "@/models/Question";
+import { DuelSubmissionSchema } from "@/lib/validations";
+import { recordDuelAntiCheatAudit, verifyDuelInteractionToken } from "@/lib/duelAntiCheat";
+import { DuelDifficulty, evaluateDuelTelemetryIntegrity } from "@/lib/duelAntiCheatShared";
 import { evaluateAndRecordSubmission } from "@/lib/submission";
 import { checkRateLimit, acquireSubmissionLock, releaseSubmissionLock } from "@/lib/rateLimit";
 import { finalizeDuelMatch } from "@/lib/duel";
@@ -46,14 +49,14 @@ export async function POST(
     }
 
     const body = await req.json();
-    const parseResult = CodeSubmissionSchema.safeParse(body);
+    const parseResult = DuelSubmissionSchema.safeParse(body);
 
     if (!parseResult.success) {
       const errorMsg = parseResult.error.errors[0]?.message || "Invalid submission payload";
       return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
 
-    const { problemId, language, code } = parseResult.data;
+    const { problemId, language, code, telemetry } = parseResult.data;
 
     await connectToDatabase();
 
@@ -106,6 +109,80 @@ export async function POST(
       );
     }
 
+    const expectedStartedAtMs = activeRound.startedAt
+      ? new Date(activeRound.startedAt).getTime()
+      : now.getTime();
+
+    const tokenCheck = verifyDuelInteractionToken({
+      userId: currentUserId,
+      roomCode: normalizedCode,
+      roundNumber: room.currentRound,
+      expectedStartedAtMs,
+      submittedCode: code,
+      telemetry,
+    });
+
+    if (!tokenCheck.valid) {
+      return NextResponse.json(
+        {
+          error: "Anti-Cheat verification failed: Please reload the duel arena and submit directly from the code editor.",
+          antiCheatAction: "REJECT",
+        },
+        { status: 403 }
+      );
+    }
+
+    const questionDoc = await Question.findOne({ problemId, isPublished: true })
+      .select("starterTemplates difficulty")
+      .lean();
+
+    const starterTemplate =
+      questionDoc?.starterTemplates?.[language as keyof typeof questionDoc.starterTemplates] || "";
+    const difficulty = (activeRound.difficulty || questionDoc?.difficulty || "Medium") as DuelDifficulty;
+    const elapsedServerMs = Math.max(0, now.getTime() - expectedStartedAtMs);
+
+    const integrityVerdict = evaluateDuelTelemetryIntegrity({
+      difficulty,
+      elapsedServerMs,
+      starterTemplate,
+      submittedCode: code,
+      telemetry,
+      tokenValid: true,
+    });
+
+    if (integrityVerdict.action === "REJECT") {
+      return NextResponse.json(
+        {
+          error:
+            integrityVerdict.remainingFloorSec > 0
+              ? `Anti-Cheat Time Floor: Please review your solution for ${difficulty} problems (${integrityVerdict.remainingFloorSec}s remaining).`
+              : integrityVerdict.reasons[0] || "Submission rejected by Duel Anti-Cheat verification.",
+          antiCheatAction: "REJECT",
+          remainingFloorSec: integrityVerdict.remainingFloorSec,
+          flags: integrityVerdict.flags,
+        },
+        { status: 400 }
+      );
+    }
+
+    const telemetrySummary = {
+      keystrokes: telemetry.keystrokes,
+      backspaces: telemetry.backspaces,
+      pasteBlockedCount: telemetry.pasteBlockedCount,
+      pasteBlockedChars: telemetry.pasteBlockedChars,
+      unexplainedBurstCount: telemetry.unexplainedBurstCount,
+      maxBurstChars: telemetry.maxBurstChars,
+      focusLostCount: telemetry.focusLostCount,
+      blurredMs: telemetry.blurredMs,
+      foregroundMs: telemetry.foregroundMs,
+      solveDurationMs: elapsedServerMs,
+      changedChars: integrityVerdict.changedChars,
+      unfocusedRatio: integrityVerdict.unfocusedRatio,
+    };
+
+    const shouldVoidElo = integrityVerdict.action === "FLAG_AND_VOID_ELO";
+    const prefixedReasons = integrityVerdict.reasons.map((r) => `${user.username}: ${r}`);
+
     const lockAcquired = acquireSubmissionLock(currentUserId);
     if (!lockAcquired) {
       return NextResponse.json(
@@ -149,7 +226,18 @@ export async function POST(
               [`roundsData.$.${playerPrefix}TestsPassed`]: evalResult.testsPassed,
               [`roundsData.$.${playerPrefix}TotalTests`]: evalResult.totalTests,
               [`roundsData.$.${playerPrefix}Runtime`]: evalResult.runtime,
+              [`roundsData.$.${playerPrefix}IntegrityFlags`]: integrityVerdict.flags,
+              [`roundsData.$.${playerPrefix}RiskScore`]: integrityVerdict.riskScore,
+              [`roundsData.$.${playerPrefix}TelemetrySummary`]: telemetrySummary,
+              ...(shouldVoidElo ? { integrityFlagged: true, eloVoided: true } : {}),
             },
+            ...(shouldVoidElo && prefixedReasons.length > 0
+              ? {
+                  $addToSet: {
+                    integrityReasons: { $each: prefixedReasons },
+                  },
+                }
+              : {}),
             $inc: {
               [isPlayer1 ? "player1Score" : "player2Score"]: 1,
             },
@@ -206,12 +294,36 @@ export async function POST(
               [`roundsData.$.${playerPrefix}TestsPassed`]: evalResult.testsPassed,
               [`roundsData.$.${playerPrefix}TotalTests`]: evalResult.totalTests,
               [`roundsData.$.${playerPrefix}Runtime`]: evalResult.runtime,
+              [`roundsData.$.${playerPrefix}IntegrityFlags`]: integrityVerdict.flags,
+              [`roundsData.$.${playerPrefix}RiskScore`]: integrityVerdict.riskScore,
+              [`roundsData.$.${playerPrefix}TelemetrySummary`]: telemetrySummary,
+              ...(shouldVoidElo ? { integrityFlagged: true } : {}),
             },
+            ...(shouldVoidElo && prefixedReasons.length > 0
+              ? {
+                  $addToSet: {
+                    integrityReasons: { $each: prefixedReasons },
+                  },
+                }
+              : {}),
           }
         );
       }
 
       const currentRoomState = await DuelRoom.findOne({ roomCode: normalizedCode });
+
+      if (shouldVoidElo) {
+        await recordDuelAntiCheatAudit({
+          req,
+          roomCode: normalizedCode,
+          roundNumber: room.currentRound,
+          problemId,
+          userId: currentUserId,
+          username: user.username,
+          verdict: integrityVerdict,
+          telemetry,
+        });
+      }
 
       return NextResponse.json({
         submission: evalResult,
@@ -222,6 +334,9 @@ export async function POST(
         duelStatus: currentRoomState?.status || "ACTIVE",
         winner: currentRoomState?.winner || null,
         languagePoints: user.languagePoints,
+        eloVoided: Boolean(currentRoomState?.eloVoided),
+        integrityFlagged: Boolean(currentRoomState?.integrityFlagged),
+        integrityWarning: integrityVerdict.action !== "CLEAN" ? integrityVerdict.reasons[0] || null : null,
       });
     } finally {
       releaseSubmissionLock(currentUserId);
