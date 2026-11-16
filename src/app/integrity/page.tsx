@@ -38,7 +38,7 @@ export default function IntegrityPage() {
           </h1>
         </div>
         <p className="text-xs" style={{ color: "var(--fg-dimmed)" }}>
-          Last Updated & Effective Date: September 2026
+          Last Updated & Effective Date: November 17, 2026
         </p>
       </div>
 
@@ -163,6 +163,38 @@ export default function IntegrityPage() {
             </li>
             <li>
               <strong style={{ color: "var(--fg)" }}>Interactive UI Only:</strong> All code runs, submissions, and account actions must originate from authentic manual interactions through the official insidcode user interface.
+            </li>
+          </ul>
+        </section>
+
+        {/* 5. 1v1 Duel Arena Anti-Cheat & Practice Separation */}
+        <section
+          className="space-y-3 p-5"
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: "4px",
+            backgroundColor: "var(--bg-surface)",
+          }}
+        >
+          <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--fg)" }}>
+            <ShieldCheck className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <h2>5. 1v1 Duel Arena Anti-Cheat &amp; Solo Practice Separation</h2>
+          </div>
+          <p>
+            Competitive 1v1 Duels use dedicated anti-cheat safeguards across both Desktop and Mobile devices to keep head-to-head matches fair:
+          </p>
+          <ul className="list-disc pl-5 space-y-2" style={{ color: "var(--fg-muted)" }}>
+            <li>
+              <strong style={{ color: "var(--fg)" }}>Question Copy &amp; Paste Prevention (Desktop &amp; Mobile):</strong> Selecting or copying problem prompts is disabled inside both Duel Arena and Live Spectator views. Pasting external solutions (shortcuts, long-press paste, drag-and-drop, or mobile virtual keyboard clipboard inserts) into the Duel code editor is automatically blocked and reverted, while internal cut/copy/paste within your active Duel code remains permitted.
+            </li>
+            <li>
+              <strong style={{ color: "var(--fg)" }}>Keystroke, Visibility &amp; Time Floors:</strong> Active Duel rounds verify server-issued HMAC interaction challenges bound to the code hash, enforce difficulty-scaled minimum solve timers (Very Easy: 8s, Easy: 15s, Medium: 25s, Hard: 40s), detect unrealistic keystroke bursts, and track unfocused window/tab time (&gt;70% unfocused duration flags the match).
+            </li>
+            <li>
+              <strong style={{ color: "var(--fg)" }}>Fair Consequences:</strong> Premature or bot-forged requests are rejected before code evaluation. Matches flagged with high-confidence anti-cheat violations void Elo rating and Duel Points changes for that match and record forensic telemetry to the Admin Audit log rather than immediately banning accounts on isolated signals.
+            </li>
+            <li>
+              <strong style={{ color: "var(--fg)" }}>Solo Practice Remains Unrestricted:</strong> None of these clipboard restrictions, selection locks, or tab-focus checks apply when practicing problems in the standard problem workspace.
             </li>
           </ul>
         </section>

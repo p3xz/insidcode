@@ -341,6 +341,7 @@ export default function DuelHubPage() {
               <li>First Accepted submission scores 1 point.</li>
               <li>First player to 2 points wins the match.</li>
               <li>5 minutes allotted per round.</li>
+              <li><strong>Fair-Play Active (Desktop &amp; Mobile):</strong> Copying questions and external answer pasting are disabled inside Duels; keystroke dynamics, tab focus, and minimum solve timers are verified. Solo Practice remains unrestricted.</li>
             </ul>
           </div>
         </div>

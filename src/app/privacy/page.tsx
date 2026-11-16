@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           </h1>
         </div>
         <p className="text-xs" style={{ color: "var(--fg-dimmed)" }}>
-          Last Updated & Effective Date: September 2026
+          Last Updated & Effective Date: November 17, 2026
         </p>
       </div>
 
@@ -78,6 +78,9 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong style={{ color: "var(--fg)" }}>Code Submissions &amp; Practice Metrics:</strong> We store source code submissions, selected programming languages (Python, JavaScript, C, C++, Java), execution runtimes, problem completion status, practice streaks, 1v1 Duel outcomes (wins, losses, Elo rating, Duel Points, Duel Rank, Duel Ratio), and earned Experience Points (XP).
+            </li>
+            <li>
+              <strong style={{ color: "var(--fg)" }}>Duel Arena Integrity Telemetry:</strong> Strictly during active 1v1 Duel rounds (and never during standard Solo Practice), we collect non-biometric editor interaction telemetry—aggregate typing keystrokes, backspaces, blocked paste or selection counts, active window visibility durations, solve elapsed seconds, and SHA-256 interaction digests—solely to deter external copy-paste cheating and protect fair competitive rankings. We never read external tabs or capture personal clipboard text outside failed paste prevention checks.
             </li>
             <li>
               <strong style={{ color: "var(--fg)" }}>Cookie &amp; Consent Preferences:</strong> We store your cookie preference selections (Necessary, Functional, Analytics) and the version of the cookie policy you consented to. You can review or update these at any time via the <strong>Privacy Choices</strong> link in the site footer.
@@ -138,6 +141,9 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1" style={{ color: "var(--fg-muted)" }}>
             <li>
               <strong>Security Event Logging:</strong> When an account attempts unauthorized access to privileged administrative endpoints or manipulates server resources, the incident (including timestamp, endpoint, HTTP method, and account ID) is recorded in an immutable security audit ledger.
+            </li>
+            <li>
+              <strong>Duel Anti-Cheat Audit Records:</strong> When a 1v1 Duel submission triggers high-confidence fair-play alerts (such as massive zero-keystroke insertions, repeated blocked pastes, or &gt;70% unfocused window time), summary risk scores and interaction metrics are archived to our administrative audit log to explain voided Elo/Points changes and support dispute appeals.
             </li>
             <li>
               <strong>Suspension Data Retention:</strong> Information regarding policy violations, account suspensions, and administrative actions may be retained as necessary for security enforcement, moderation, dispute handling, and legal compliance.

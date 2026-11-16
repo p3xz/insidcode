@@ -38,7 +38,7 @@ export default function TermsPage() {
           </h1>
         </div>
         <p className="text-xs" style={{ color: "var(--fg-dimmed)" }}>
-          Last Updated & Effective Date: September 2026
+          Last Updated & Effective Date: November 17, 2026
         </p>
       </div>
 
@@ -94,6 +94,8 @@ export default function TermsPage() {
             <li>Attempting to break, escape, or exploit the sandbox code execution containers.</li>
             <li>Executing malicious code, fork bombs, cryptominers, or denial-of-service attack scripts.</li>
             <li>Using automated bots, scrapers, or third-party automation tools to mass-submit solutions or tamper with platform telemetry.</li>
+            <li>Copying, screenshotting to share prompts externally, or exfiltrating 1v1 Duel problem statements (including from Spectator views), or bypassing desktop/mobile editor controls to paste external or AI-generated answers into active Duel rounds.</li>
+            <li>Submitting scripted requests, modifying client telemetry digests, or exceeding 70% unfocused background tab time to seek external solutions during active 1v1 Duel rounds.</li>
             <li>Attempting unauthorized access to backend APIs, servers, or other user accounts.</li>
           </ul>
         </section>
@@ -168,6 +170,9 @@ export default function TermsPage() {
             </li>
             <li>
               <strong>Progress Revocation:</strong> Illegitimately gained XP, fake streak days, manipulated language points, manipulated Elo rating, Duel Points, and invalid leaderboard rankings will be removed.
+            </li>
+            <li>
+              <strong>Duel Fair-Play &amp; Rating Voiding:</strong> Active 1v1 Duel matches are governed by automated anti-cheat verification (blocking question copying and external answer pasting across desktop and mobile, checking keystroke bursts, tab-focus ratio, and minimum solve timers). Confirmed flagged matches void Elo rating and Duel Points deltas and log forensic telemetry for audit review. Solo Practice mode remains unaffected by these Duel controls.
             </li>
             <li>
               <strong>Voluntary Account Deletion:</strong> You may permanently delete your account at any time via Account Settings. Deletion removes your profile, submissions, and associated personal data. This action is irreversible.

@@ -14,12 +14,30 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: "v1.4.3",
+    releaseDate: "November 17, 2026",
+    title: "Duel Fair-Play Anti-Cheat Suite & Desktop/Mobile Protections",
+    summary:
+      "Hardened 1v1 Code Duels across desktop and mobile browsers with question copy locks, external paste & clipboard-chip prevention, typing cadence telemetry, tab-focus monitoring, difficulty-scaled solve floors, and automated Elo voiding while keeping Solo Practice 100% unrestricted.",
+    tag: "Latest",
+    added: [
+      "Duel Arena Copy & Paste Locks (Desktop & Mobile): Disabled question text selection and long-press copy across Duel Arena and Spectator views, and blocked external paste, drop, context-menu paste, and mobile virtual keyboard clipboard inserts inside the Duel editor.",
+      "Editor Interaction Verification & Minimum Solve Timers: Added per-round HMAC-SHA256 challenges, SHA-256 interaction digests, and difficulty-scaled solve time floors (Very Easy 8s, Easy 15s, Medium 25s, Hard 40s).",
+      "Keystroke Cadence & Tab-Visibility Telemetry: Tracks bulk unexplained insertions, typing speed anomalies, and unfocused tab durations (>70% unfocused voids rating deltas) paired with non-blocking live warnings.",
+      "Admin Audit Integration & Policy Updates: Added a dedicated Duel Anti-Cheat filter tab in /admin/audit and updated Terms of Use, Privacy Policy, Academic Integrity, and Duel Hub rules.",
+    ],
+    security: [
+      "Isolated Enforcement: Anti-cheat copy/paste controls run strictly inside active 1v1 Duels (duelMode) so Solo Practice problem pages remain completely open.",
+      "Crash-Safe Elo Voiding: High-confidence flagged Duel solves void rating and Duel Points adjustments cleanly before finalization without arbitrary instant account bans.",
+    ],
+  },
+  {
     version: "v1.4.2",
     releaseDate: "October 26, 2026",
     title: "Platform Polish Milestone: Leaderboard Overhaul, Game Submissions & Resilience",
     summary:
       "A major milestone showcasing our progress from v1.3.0 to now: pixel-perfect Leaderboard ranking medals (Gold, Silver, Bronze) and flame streak indicators, complete eradication of Unicode corruption, high-octane 4-phase game submission animations, non-penalizing judge recovery, 1v1 Duel expansion with beginner tiers, and rock-solid platform security.",
-    tag: "Latest",
+    tag: "Major",
     fixed: [
       "Leaderboard Glyphs Overhaul: Replaced raw '?' rank placeholders with radiant Gold (#F59E0B), Silver (#94A3B8), and Bronze (#D97706) SVG Medal icons paired with explicit rank numbers and full screen-reader aria-labels.",
       "Streak Glyph Eradication: Purged the corrupted Unicode replacement character (U+FFFD) for 0-streak accounts, replacing it with a clean en-dash entity and vibrant amber Flame icons for active practice streaks.",
