@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Trophy,
   Eye,
+  ShieldAlert,
 } from "lucide-react";
 import { ProblemPageSkeleton } from "@/components/ui/PageSkeletons";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
@@ -29,6 +30,7 @@ import { TerminalOutput, ExecutionResultData } from "@/components/editor/Termina
 import { SUPPORTED_LANGUAGES, SupportedLanguageId } from "@/lib/constants";
 import { IDuelRoom, IQuestion, SubmissionStatus } from "@/types";
 import InlineNotice from "@/components/ui/InlineNotice";
+import { useDuelAntiCheat } from "@/hooks/useDuelAntiCheat";
 
 function getDraftKey(roomCode: string, userId: string, round: number, language: string): string {
   return `duel_draft:${roomCode}:${userId}:${round}:${language}`;
@@ -62,6 +64,24 @@ export default function DuelArenaPage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [roundChallenge, setRoundChallenge] = useState<string | null>(null);
+
+  const {
+    warning: antiCheatWarning,
+    dismissWarning: dismissAntiCheatWarning,
+    pasteBlockedTotal,
+    tabSwitchesTotal,
+    unfocusedPercent,
+    markSystemCodeUpdate,
+    handlePasteBlocked,
+    handleEditorKeystroke,
+    handleEditorContentDelta,
+    buildSubmissionTelemetry,
+  } = useDuelAntiCheat({
+    roomStatus: room?.status,
+    roundNumber: room?.currentRound || 1,
+    roundChallenge,
+  });
 
   // Track previous round and initialization state to prevent starter code from overwriting drafts
   const previousRoundRef = useRef<number>(1);
@@ -96,6 +116,9 @@ export default function DuelArenaPage() {
         setRoom(data.room);
         if (data.problem) {
           setProblem(data.problem);
+        }
+        if ("roundChallenge" in data) {
+          setRoundChallenge(data.roundChallenge || null);
         }
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -132,9 +155,10 @@ export default function DuelArenaPage() {
       codeInitializedRef.current = true;
       previousRoundRef.current = room.currentRound;
       const initial = getInitialCode(selectedLanguage, room.currentRound);
+      markSystemCodeUpdate();
       setCode(initial);
     }
-  }, [problem, room, selectedLanguage, getInitialCode]);
+  }, [problem, room, selectedLanguage, getInitialCode, markSystemCodeUpdate]);
 
   // Handle round changes (switches code to current round's draft or starter template)
   useEffect(() => {
@@ -142,10 +166,11 @@ export default function DuelArenaPage() {
     if (codeInitializedRef.current && room.currentRound !== previousRoundRef.current) {
       previousRoundRef.current = room.currentRound;
       const nextCode = getInitialCode(selectedLanguage, room.currentRound);
+      markSystemCodeUpdate();
       setCode(nextCode);
       setExecResult(null);
     }
-  }, [room, problem, selectedLanguage, getInitialCode]);
+  }, [room, problem, selectedLanguage, getInitialCode, markSystemCodeUpdate]);
 
   // Debounced autosave to localStorage
   useEffect(() => {
@@ -337,6 +362,7 @@ export default function DuelArenaPage() {
     }
     setSelectedLanguage(newLang);
     const newCode = getInitialCode(newLang, room?.currentRound || 1);
+    markSystemCodeUpdate();
     setCode(newCode);
   };
 
@@ -345,6 +371,7 @@ export default function DuelArenaPage() {
     const template =
       problem?.starterTemplates?.[selectedLanguage] ||
       `# Write your solution for ${problem?.title || "problem"} here\n`;
+    markSystemCodeUpdate();
     setCode(template);
     if (typeof window !== "undefined" && roomCode && session?.user?.id && room) {
       try {
@@ -374,6 +401,7 @@ export default function DuelArenaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           problemId: problem.problemId,
+          telemetry: buildSubmissionTelemetry(code),
           language: selectedLanguage,
           code,
         }),
@@ -392,6 +420,9 @@ export default function DuelArenaPage() {
           awardedXp: sub.awardedXp,
           errorDetails: sub.errorDetails,
         });
+        if (data.integrityWarning) {
+          setNotice(data.integrityWarning);
+        }
 
         // Trigger immediate state refresh to sync score and next round
         fetchDuelState();
@@ -590,6 +621,13 @@ export default function DuelArenaPage() {
           <p className="text-[13px] text-white/70 mt-2 font-mono">
             Round 1 of 3 · {room.difficulty} Difficulty
           </p>
+        </div>
+      )}
+
+      {/* ANTI-CHEAT INTEGRITY NOTICE */}
+      {antiCheatWarning && (
+        <div className="px-4 pt-2 shrink-0">
+          <InlineNotice message={antiCheatWarning.message} onDismiss={dismissAntiCheatWarning} />
         </div>
       )}
 
@@ -871,6 +909,31 @@ export default function DuelArenaPage() {
                   </option>
                 ))}
               </select>
+              <span
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold mono"
+                title="Anti-Cheat Active: External paste blocked, keystrokes & tab focus verified"
+                style={{
+                  borderRadius: "2px",
+                  border: "1px solid var(--border)",
+                  backgroundColor:
+                    pasteBlockedTotal > 0 || unfocusedPercent > 50
+                      ? "color-mix(in srgb, var(--warning) 15%, transparent)"
+                      : "var(--bg)",
+                  color:
+                    pasteBlockedTotal > 0 || unfocusedPercent > 50
+                      ? "var(--warning)"
+                      : "var(--fg-dimmed)",
+                }}
+              >
+                <ShieldAlert className="h-3 w-3" />
+                <span>
+                  {pasteBlockedTotal > 0
+                    ? `PASTE BLOCKED (${pasteBlockedTotal})`
+                    : tabSwitchesTotal > 0
+                    ? `FOCUS WATCH (${tabSwitchesTotal})`
+                    : "FAIR PLAY GUARD"}
+                </span>
+              </span>
             </div>
 
             {/* Action Buttons */}
@@ -966,6 +1029,10 @@ export default function DuelArenaPage() {
             <CodeEditor
               language={selectedLanguage}
               code={code}
+              duelMode={true}
+              onPasteBlocked={handlePasteBlocked}
+              onEditorKeystroke={handleEditorKeystroke}
+              onEditorContentDelta={handleEditorContentDelta}
               onChange={setCode}
             />
           </div>
@@ -1054,6 +1121,27 @@ export default function DuelArenaPage() {
                   {room.rounds === 1 ? "Your opponent solved the target problem first." : "Your opponent won the Best of 3 match."}
                 </p>
               </>
+            )}
+
+            {room.eloVoided && (
+              <div
+                className="mb-4 p-3 rounded text-left text-[11px]"
+                style={{
+                  border: "1px solid rgba(255, 77, 109, 0.4)",
+                  backgroundColor: "rgba(255, 77, 109, 0.08)",
+                  color: "var(--danger)",
+                }}
+              >
+                <p className="font-bold mono mb-1 flex items-center gap-1.5">
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                  <span>ANTI-CHEAT: RATING &amp; POINTS VOIDED</span>
+                </p>
+                <p style={{ color: "var(--fg-muted)" }}>
+                  {room.integrityReasons?.length
+                    ? room.integrityReasons.join(" ")
+                    : "Match telemetry triggered automated fair-play thresholds. Elo and Duel Points were not modified."}
+                </p>
+              </div>
             )}
 
             {/* Score Summary Box */}

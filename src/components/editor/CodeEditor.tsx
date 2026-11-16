@@ -12,6 +12,10 @@ interface CodeEditorProps {
   onChange: (value: string) => void;
   fontSize?: number;
   minimap?: boolean;
+  duelMode?: boolean;
+  onPasteBlocked?: (info: { chars: number; timestamp: number }) => void;
+  onEditorKeystroke?: (info: { isBackspace: boolean; timestamp: number }) => void;
+  onEditorContentDelta?: (info: { insertedChars: number; deletedChars: number; timestamp: number }) => void;
 }
 
 export function CodeEditor({
@@ -20,10 +24,38 @@ export function CodeEditor({
   onChange,
   fontSize = 14,
   minimap = false,
+  duelMode = false,
+  onPasteBlocked,
+  onEditorKeystroke,
+  onEditorContentDelta,
 }: CodeEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
   const { resolvedTheme } = useTheme();
+  const lastInternalCopyRef = useRef<string>("");
+  const approvedInternalPasteUntilRef = useRef<number>(0);
+  const duelDisposablesRef = useRef<Array<{ dispose: () => void }>>([]);
+  const duelCallbacksRef = useRef({
+    duelMode,
+    onPasteBlocked,
+    onEditorKeystroke,
+    onEditorContentDelta,
+  });
+  useEffect(() => {
+    duelCallbacksRef.current = {
+      duelMode,
+      onPasteBlocked,
+      onEditorKeystroke,
+      onEditorContentDelta,
+    };
+  }, [duelMode, onPasteBlocked, onEditorKeystroke, onEditorContentDelta]);
+
+  useEffect(() => {
+    return () => {
+      duelDisposablesRef.current.forEach((d) => d.dispose());
+      duelDisposablesRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (!monacoRef.current) return;
@@ -85,6 +117,75 @@ export function CodeEditor({
     monaco.editor.setTheme(
       resolvedTheme === "light" ? "insidcode-light" : "insidcode-dark"
     );
+
+    duelDisposablesRef.current.forEach((d) => d.dispose());
+    duelDisposablesRef.current = [];
+
+    if (duelCallbacksRef.current.duelMode) {
+      const modifierKeyCodes = new Set<number>([
+        monaco.KeyCode.Shift,
+        monaco.KeyCode.Ctrl,
+        monaco.KeyCode.Alt,
+        monaco.KeyCode.Meta,
+        monaco.KeyCode.CapsLock,
+      ]);
+
+      duelDisposablesRef.current.push(
+        editorInstance.onKeyDown((e) => {
+          if (modifierKeyCodes.has(e.keyCode)) return;
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
+          const isBackspace =
+            e.keyCode === monaco.KeyCode.Backspace || e.keyCode === monaco.KeyCode.Delete;
+          duelCallbacksRef.current.onEditorKeystroke?.({
+            isBackspace,
+            timestamp: Date.now(),
+          });
+        })
+      );
+
+      duelDisposablesRef.current.push(
+        editorInstance.onDidChangeModelContent((e) => {
+          if (e.isFlush || e.isUndoing || e.isRedoing) return;
+          let insertedChars = 0;
+          let deletedChars = 0;
+          for (const change of e.changes) {
+            insertedChars += change.text.length;
+            deletedChars += change.rangeLength;
+          }
+          if (insertedChars > 0 || deletedChars > 0) {
+            duelCallbacksRef.current.onEditorContentDelta?.({
+              insertedChars,
+              deletedChars,
+              timestamp: Date.now(),
+            });
+          }
+        })
+      );
+
+      duelDisposablesRef.current.push(
+        editorInstance.onDidPaste((e) => {
+          const now = Date.now();
+          if (now <= approvedInternalPasteUntilRef.current) return;
+
+          const model = editorInstance.getModel();
+          const pastedText = model ? model.getValueInRange(e.range) : "";
+          if (pastedText && lastInternalCopyRef.current && pastedText === lastInternalCopyRef.current) {
+            return;
+          }
+
+          // Undo context-menu / clipboard-API paste that bypassed DOM onPaste
+          if (pastedText.length > 0) {
+            setTimeout(() => {
+              editorInstance.trigger("duel-anticheat", "undo", null);
+            }, 0);
+            duelCallbacksRef.current.onPasteBlocked?.({
+              chars: pastedText.length,
+              timestamp: now,
+            });
+          }
+        })
+      );
+    }
   };
 
   const getMonacoLang = (lang: string) => {
@@ -106,8 +207,58 @@ export function CodeEditor({
 
   const bgColor = resolvedTheme === "light" ? "#F9FAFB" : "#090A0F";
 
+  const captureInternalSelection = () => {
+    if (!duelMode || !editorRef.current) return;
+    const sel = editorRef.current.getSelection();
+    const model = editorRef.current.getModel();
+    if (sel && model) {
+      const selectedText = model.getValueInRange(sel);
+      if (selectedText) {
+        lastInternalCopyRef.current = selectedText;
+      }
+    }
+  };
+
+  const handlePasteCapture = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!duelMode) return;
+    const text = e.clipboardData?.getData("text/plain") || "";
+    if (!text) return;
+
+    if (lastInternalCopyRef.current && text === lastInternalCopyRef.current) {
+      approvedInternalPasteUntilRef.current = Date.now() + 250;
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    onPasteBlocked?.({ chars: text.length, timestamp: Date.now() });
+  };
+
+  const handleDropCapture = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!duelMode) return;
+    const text = e.dataTransfer?.getData("text/plain") || "";
+    const hasFiles = Boolean(e.dataTransfer?.files && e.dataTransfer.files.length > 0);
+    if (!text && !hasFiles) return;
+
+    if (text && lastInternalCopyRef.current && text === lastInternalCopyRef.current) {
+      approvedInternalPasteUntilRef.current = Date.now() + 250;
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    onPasteBlocked?.({ chars: text.length || 1, timestamp: Date.now() });
+  };
+
   return (
-    <div className="h-full w-full overflow-hidden" style={{ backgroundColor: bgColor }}>
+    <div
+      className="h-full w-full overflow-hidden"
+      style={{ backgroundColor: bgColor }}
+      onCopyCapture={captureInternalSelection}
+      onCutCapture={captureInternalSelection}
+      onPasteCapture={handlePasteCapture}
+      onDropCapture={handleDropCapture}
+    >
       <Editor
         height="100%"
         language={getMonacoLang(language)}

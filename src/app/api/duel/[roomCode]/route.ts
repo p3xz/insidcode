@@ -5,6 +5,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { DuelRoom } from "@/models/DuelRoom";
 import { Question } from "@/models/Question";
 import { finalizeDuelMatch } from "@/lib/duel";
+import { issueDuelRoundChallenge } from "@/lib/duelAntiCheat";
+import { DUEL_MIN_SOLVE_SECONDS, DuelDifficulty } from "@/lib/duelAntiCheatShared";
 
 const ROUND_DURATION_MS = 5 * 60 * 1000; // 5 minutes per round
 
@@ -148,6 +150,16 @@ export async function GET(
         }
       : null;
 
+    let roundChallenge: string | null = null;
+    if (room.status === "ACTIVE" && activeRoundData?.startedAt) {
+      roundChallenge = issueDuelRoundChallenge({
+        userId: currentUserId,
+        roomCode: room.roomCode,
+        roundNumber: activeRoundData.roundNumber,
+        startedAtMs: new Date(activeRoundData.startedAt).getTime(),
+      });
+    }
+
     // Sanitize roundsData so future round problem IDs/titles are not exposed early
     const sanitizedRounds = room.roundsData.map((r, idx) => {
       const isRevealed = idx < room.currentRound;
@@ -191,11 +203,18 @@ export async function GET(
         winner: room.winner,
         finishedAt: room.finishedAt,
         cancelReason: room.cancelReason,
+        integrityFlagged: Boolean(room.integrityFlagged),
+        eloVoided: Boolean(room.eloVoided),
+        integrityReasons: room.status === "FINISHED" ? (room.integrityReasons || []) : [],
         createdAt: room.createdAt,
       },
       problem,
       isPlayer1,
       isPlayer2,
+      roundChallenge,
+      minSolveSeconds: activeRoundData
+        ? (DUEL_MIN_SOLVE_SECONDS[activeRoundData.difficulty as DuelDifficulty] ?? 25)
+        : null,
       serverTime: now.toISOString(),
     });
   } catch (error) {
