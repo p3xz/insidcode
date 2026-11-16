@@ -78,6 +78,21 @@ export async function finalizeDuelMatch(roomCode: string): Promise<boolean> {
   const { User } = await import("@/models/User");
 
   try {
+    if (room.eloVoided) {
+      await DuelRoom.updateOne(
+        { roomCode: normalizedCode },
+        {
+          $set: {
+            player1RatingDelta: 0,
+            player2RatingDelta: 0,
+            player1PointsDelta: 0,
+            player2PointsDelta: 0,
+          },
+        }
+      );
+      return true;
+    }
+
     const isP1Winner = winnerId === p1Id;
     const isP2Winner = winnerId === p2Id;
     const winnerOutcome = isP1Winner ? "player1" : isP2Winner ? "player2" : "draw";

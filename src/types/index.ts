@@ -171,6 +171,12 @@ export interface IDuelRound {
   player2TotalTests?: number;
   player1Runtime?: number;
   player2Runtime?: number;
+  player1IntegrityFlags?: string[];
+  player2IntegrityFlags?: string[];
+  player1RiskScore?: number;
+  player2RiskScore?: number;
+  player1TelemetrySummary?: Record<string, unknown>;
+  player2TelemetrySummary?: Record<string, unknown>;
 }
 
 export interface IDuelRoom {
@@ -194,6 +200,9 @@ export interface IDuelRoom {
   player2RatingDelta?: number;
   player1PointsDelta?: number;
   player2PointsDelta?: number;
+  integrityFlagged?: boolean;
+  eloVoided?: boolean;
+  integrityReasons?: string[];
   cancelReason?: string;
   createdAt: Date;
   updatedAt: Date;

@@ -85,3 +85,24 @@ export const AdminAnnouncementSchema = z.object({
   title: z.string().min(1).max(120),
   message: z.string().min(1).max(500),
 });
+
+export const DuelTelemetrySchema = z.object({
+  roundChallenge: z.string().min(10).max(200),
+  interactionDigest: z.string().length(64),
+  codeHash: z.string().length(64),
+  keystrokes: z.number().int().min(0).max(100000),
+  backspaces: z.number().int().min(0).max(100000),
+  pasteBlockedCount: z.number().int().min(0).max(10000),
+  pasteBlockedChars: z.number().int().min(0).max(1000000),
+  unexplainedBurstCount: z.number().int().min(0).max(10000),
+  maxBurstChars: z.number().int().min(0).max(1000000),
+  focusLostCount: z.number().int().min(0).max(10000),
+  blurredMs: z.number().min(0).max(3600000),
+  foregroundMs: z.number().min(0).max(3600000),
+  clientElapsedMs: z.number().min(0).max(3600000),
+  idleGapsCount: z.number().int().min(0).max(10000),
+});
+
+export const DuelSubmissionSchema = CodeSubmissionSchema.extend({
+  telemetry: DuelTelemetrySchema,
+});

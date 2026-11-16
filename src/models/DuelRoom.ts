@@ -52,6 +52,12 @@ const DuelRoundSchema = new Schema<IDuelRound>(
     player2TotalTests: { type: Number, default: 0 },
     player1Runtime: { type: Number },
     player2Runtime: { type: Number },
+    player1IntegrityFlags: { type: [String], default: [] },
+    player2IntegrityFlags: { type: [String], default: [] },
+    player1RiskScore: { type: Number, default: 0 },
+    player2RiskScore: { type: Number, default: 0 },
+    player1TelemetrySummary: { type: Schema.Types.Mixed },
+    player2TelemetrySummary: { type: Schema.Types.Mixed },
   },
   { _id: false }
 );
@@ -141,6 +147,18 @@ const DuelRoomSchema = new Schema<IDuelRoom>(
     player2PointsDelta: {
       type: Number,
       default: 0,
+    },
+    integrityFlagged: {
+      type: Boolean,
+      default: false,
+    },
+    eloVoided: {
+      type: Boolean,
+      default: false,
+    },
+    integrityReasons: {
+      type: [String],
+      default: [],
     },
     cancelReason: {
       type: String,
