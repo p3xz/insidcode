@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
     const [rooms, liveCount, flaggedCount, finishedCount, totalCount] = await Promise.all([
       DuelRoom.find(query)
         .select(
-          "roomCode mode status difficulty currentRound rounds isRated player1 player2 player1Score player2Score winner roundStartedAt finishedAt createdAt integrityFlagged eloVoided integrityReasons roundsData.roundNumber roundsData.problemId roundsData.difficulty roundsData.startedAt roundsData.player1Status roundsData.player2Status roundsData.player1IntegrityFlags roundsData.player2IntegrityFlags roundsData.player1RiskScore roundsData.player2RiskScore roundsData.player1TelemetrySummary roundsData.player2TelemetrySummary"
+          "roomCode status difficulty currentRound rounds player1 player2 player1Score player2Score winner finishedAt createdAt integrityFlagged eloVoided integrityReasons roundsData.roundNumber roundsData.problemId roundsData.difficulty roundsData.startedAt roundsData.player1Status roundsData.player2Status roundsData.player1IntegrityFlags roundsData.player2IntegrityFlags roundsData.player1RiskScore roundsData.player2RiskScore roundsData.player1TelemetrySummary roundsData.player2TelemetrySummary"
         )
         .sort({ createdAt: -1 })
         .limit(limit)
@@ -103,10 +103,8 @@ export async function GET(req: NextRequest) {
     const duels = rooms.map((rawRoom) => {
       const room = rawRoom as SpectateRoomLike & {
         roomCode: string;
-        mode?: string;
         difficulty?: string;
         rounds?: number;
-        isRated?: boolean;
         player1: { userId: string; username: string; displayName: string };
         player2?: { userId?: string; username?: string; displayName?: string } | null;
         player1Score?: number;
@@ -134,12 +132,10 @@ export async function GET(req: NextRequest) {
 
       return {
         roomCode: room.roomCode,
-        mode: room.mode || "CASUAL",
         status: room.status,
         difficulty: room.difficulty || "Mixed",
         currentRound: room.currentRound || 1,
         rounds: room.rounds || 3,
-        isRated: room.isRated !== false,
         player1: {
           userId: room.player1?.userId || "",
           username: room.player1?.username || "player1",
@@ -166,9 +162,8 @@ export async function GET(req: NextRequest) {
           p1HasSignal ||
           p2HasSignal,
         hasActiveWarningText: Boolean(integrity.player1.lastWarning || integrity.player2?.lastWarning),
-        spectatorUrl: `/duel/${room.roomCode}/spectate`,
+        spectatorUrl: `/admin/duels/${room.roomCode}`,
         createdAt: room.createdAt || null,
-        roundStartedAt: room.roundStartedAt || null,
         finishedAt: room.finishedAt || null,
       };
     });
