@@ -6,6 +6,7 @@ import { Question } from "@/models/Question";
 import { finalizeDuelMatch } from "@/lib/duel";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { recordSpectatorPresence } from "@/lib/spectatorTracker";
+import { buildAdminRoomIntegrity } from "@/lib/duelSpectateAdmin";
 
 const ROUND_DURATION_MS = 5 * 60 * 1000; // 5 minutes per round
 
@@ -148,6 +149,9 @@ export async function GET(
         .lean();
     }
 
+    const isAdmin = Boolean(user && !user.isBanned && user.role === "admin");
+    const adminIntegrity = isAdmin ? buildAdminRoomIntegrity(room, now.getTime()) : null;
+
     // Sanitize spectator-safe player data (NEVER includes source code, drafts, or internal tokens)
     const safePlayer1 = {
       userId: room.player1.userId,
@@ -223,6 +227,8 @@ export async function GET(
       isParticipant,
       isPlayer1,
       isPlayer2,
+      isAdmin,
+      ...(adminIntegrity ? { adminIntegrity } : {}),
       serverTime: now.toISOString(),
     });
   } catch (error) {

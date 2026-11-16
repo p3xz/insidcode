@@ -1,5 +1,8 @@
 "use client";
 
+import AdminIntegrityPanel from "@/components/duel/AdminIntegrityPanel";
+import type { AdminRoomIntegritySnapshot } from "@/lib/duelSpectateAdmin";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -86,6 +89,8 @@ export default function DuelSpectatorPage() {
   const [problem, setProblem] = useState<SpectatorProblem | null>(null);
   const [spectatorCount, setSpectatorCount] = useState<number>(1);
   const [isParticipant, setIsParticipant] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [adminIntegrity, setAdminIntegrity] = useState<AdminRoomIntegritySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const showSkeleton = useDelayedFlag(loading);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +113,8 @@ export default function DuelSpectatorPage() {
         }
         setSpectatorCount(data.spectatorCount || 1);
         setIsParticipant(Boolean(data.isParticipant));
+        setIsAdmin(Boolean(data.isAdmin));
+        setAdminIntegrity(data.adminIntegrity || null);
         setError(null);
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -465,6 +472,15 @@ export default function DuelSpectatorPage() {
           )}
         </div>
       </div>
+
+      {isAdmin && adminIntegrity && (
+        <AdminIntegrityPanel
+          player1={room.player1}
+          player2={room.player2}
+          integrity={adminIntegrity}
+          roomStatus={room.status}
+        />
+      )}
 
       {/* ── Match Concluded Winner Showcase (When Finished) ───────────────── */}
       {isFinished && (
