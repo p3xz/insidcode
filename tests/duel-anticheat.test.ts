@@ -505,18 +505,30 @@ test("buildAdminRoomIntegrity surfaces live warnings, tab-away staleness, and om
   assert.strictEqual(serializedKeys.includes("interactionProof"), false);
 });
 
-test("Spectate route and Admin Duels route strictly enforce admin-only telemetry access", () => {
+test("Admin duel spectating is strictly isolated from public spectator routes", () => {
   const spectateRoute = fs.readFileSync(
     path.join(process.cwd(), "src/app/api/duel/[roomCode]/spectate/route.ts"),
     "utf8"
   );
-  assert.ok(
-    spectateRoute.includes('user.role === "admin"') && spectateRoute.includes("isAdmin ? buildAdminRoomIntegrity"),
-    "Spectate API must gate adminIntegrity behind admin role check"
+  assert.strictEqual(
+    spectateRoute.includes("adminIntegrity"),
+    false,
+    "Public spectate API must never compute or include adminIntegrity"
   );
-  assert.ok(
-    spectateRoute.includes("...(adminIntegrity ? { adminIntegrity } : {})"),
-    "Non-admin spectators must not receive adminIntegrity telemetry field"
+  assert.strictEqual(
+    spectateRoute.includes("buildAdminRoomIntegrity"),
+    false,
+    "Public spectate API must not import or call buildAdminRoomIntegrity"
+  );
+
+  const publicSpectatePage = fs.readFileSync(
+    path.join(process.cwd(), "src/app/duel/[roomCode]/spectate/page.tsx"),
+    "utf8"
+  );
+  assert.strictEqual(
+    publicSpectatePage.includes("AdminIntegrityPanel"),
+    false,
+    "Public spectate page must never bundle or import AdminIntegrityPanel"
   );
 
   const adminDuelsRoute = fs.readFileSync(
@@ -524,17 +536,32 @@ test("Spectate route and Admin Duels route strictly enforce admin-only telemetry
     "utf8"
   );
   assert.ok(
-    adminDuelsRoute.includes("requireAdminUser()"),
-    "Admin duels endpoint must enforce requireAdminUser()"
+    adminDuelsRoute.includes("requireAdminUser()") &&
+      adminDuelsRoute.includes("/admin/duels/${room.roomCode}"),
+    "Admin duels list API must enforce requireAdminUser() and link only to /admin/duels/[roomCode]"
   );
 
-  const spectatePage = fs.readFileSync(
-    path.join(process.cwd(), "src/app/duel/[roomCode]/spectate/page.tsx"),
+  const adminSpectateRoute = fs.readFileSync(
+    path.join(process.cwd(), "src/app/api/admin/duels/[roomCode]/route.ts"),
     "utf8"
   );
   assert.ok(
-    spectatePage.includes("isAdmin && adminIntegrity") && spectatePage.includes("<AdminIntegrityPanel"),
-    "Spectate page must only render AdminIntegrityPanel when adminIntegrity is provided"
+    adminSpectateRoute.includes("requireAdminUser()") &&
+      adminSpectateRoute.includes("buildAdminRoomIntegrity"),
+    "Admin duel spectate API must enforce requireAdminUser() and compute adminIntegrity"
+  );
+
+  const adminDuelsPage = fs.readFileSync(
+    path.join(process.cwd(), "src/app/admin/duels/page.tsx"),
+    "utf8"
+  );
+  const adminSpectatePage = fs.readFileSync(
+    path.join(process.cwd(), "src/app/admin/duels/[roomCode]/page.tsx"),
+    "utf8"
+  );
+  assert.ok(
+    adminDuelsPage.includes("requireAdminUser()") && adminSpectatePage.includes("requireAdminUser()"),
+    "Both /admin/duels and /admin/duels/[roomCode] server pages must enforce requireAdminUser()"
   );
 });
 
