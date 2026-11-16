@@ -18,6 +18,7 @@ import {
   issueDuelRoundChallenge,
   verifyDuelInteractionToken,
 } from "../src/lib/duelAntiCheat";
+import { buildAdminRoomIntegrity } from "../src/lib/duelSpectateAdmin";
 import { DuelSubmissionSchema } from "../src/lib/validations";
 
 let passed = 0;
@@ -431,6 +432,110 @@ test("mergeMonotonicTelemetry preserves warnings and violation counters across t
   );
   assert.ok(arenaCode.includes('addEventListener("selectstart"'), "Duel Arena must block selectstart outside editor");
   assert.ok(arenaCode.includes('addEventListener("copy"'), "Duel Arena must block document copy outside editor");
+});
+
+console.log("\n--- Suite 6: Admin Duel Spectating & Telemetry Isolation ---");
+
+test("buildAdminRoomIntegrity surfaces live warnings, tab-away staleness, and omits source code", () => {
+  const nowMs = 1_700_000_100_000;
+  const startedAtMs = nowMs - 100_000;
+  const snapshot = buildAdminRoomIntegrity(
+    {
+      status: "ACTIVE",
+      currentRound: 1,
+      integrityFlagged: true,
+      eloVoided: true,
+      integrityReasons: ["alice: Repeated blocked paste attempts"],
+      player2: { userId: "u2" },
+      roundsData: [
+        {
+          roundNumber: 1,
+          problemId: "two-sum",
+          difficulty: "Medium",
+          startedAt: new Date(startedAtMs),
+          player1Status: "CODING",
+          player2Status: "CODING",
+          player1RiskScore: 78,
+          player2RiskScore: 0,
+          player1IntegrityFlags: ["PASTE_ATTEMPT_SPAM"],
+          player2IntegrityFlags: [],
+          player1TelemetrySummary: {
+            keystrokes: 42,
+            backspaces: 5,
+            pasteBlockedCount: 3,
+            pasteBlockedChars: 210,
+            focusLostCount: 2,
+            blurredMs: 25_000,
+            unexplainedBurstCount: 1,
+            maxBurstChars: 96,
+            lastWarning: "External paste blocked (3 attempts).",
+            lastWarningSeverity: "danger",
+            warningDismissed: false,
+            lastCheckpointAtMs: nowMs - 15_000,
+          },
+          player2TelemetrySummary: {
+            keystrokes: 90,
+            backspaces: 10,
+            pasteBlockedCount: 0,
+            pasteBlockedChars: 0,
+            focusLostCount: 0,
+            blurredMs: 0,
+            lastWarning: null,
+            lastCheckpointAtMs: nowMs - 2_000,
+          },
+        },
+      ],
+    },
+    nowMs
+  );
+
+  assert.strictEqual(snapshot.eloVoided, true);
+  assert.strictEqual(snapshot.integrityFlagged, true);
+  assert.strictEqual(snapshot.player1.lastWarning, "External paste blocked (3 attempts).");
+  assert.strictEqual(snapshot.player1.lastWarningSeverity, "danger");
+  assert.strictEqual(snapshot.player1.pasteBlockedCount, 3);
+  assert.strictEqual(snapshot.player1.staleHeartbeatSec, 15, "Must detect stale closed/away tab heartbeat > 8s");
+  assert.strictEqual(snapshot.player1.unfocusedPercent, 40, "Must include live away time (25s + 15s of 100s)");
+  assert.strictEqual(snapshot.player2?.staleHeartbeatSec, null, "Active player heartbeat 2s ago must not be marked stale");
+  assert.strictEqual(snapshot.player2?.lastWarning, null);
+
+  const serializedKeys = JSON.stringify(snapshot);
+  assert.strictEqual(serializedKeys.includes("submittedCode"), false);
+  assert.strictEqual(serializedKeys.includes("starterTemplate"), false);
+  assert.strictEqual(serializedKeys.includes("interactionProof"), false);
+});
+
+test("Spectate route and Admin Duels route strictly enforce admin-only telemetry access", () => {
+  const spectateRoute = fs.readFileSync(
+    path.join(process.cwd(), "src/app/api/duel/[roomCode]/spectate/route.ts"),
+    "utf8"
+  );
+  assert.ok(
+    spectateRoute.includes('user.role === "admin"') && spectateRoute.includes("isAdmin ? buildAdminRoomIntegrity"),
+    "Spectate API must gate adminIntegrity behind admin role check"
+  );
+  assert.ok(
+    spectateRoute.includes("...(adminIntegrity ? { adminIntegrity } : {})"),
+    "Non-admin spectators must not receive adminIntegrity telemetry field"
+  );
+
+  const adminDuelsRoute = fs.readFileSync(
+    path.join(process.cwd(), "src/app/api/admin/duels/route.ts"),
+    "utf8"
+  );
+  assert.ok(
+    adminDuelsRoute.includes("requireAdminUser()"),
+    "Admin duels endpoint must enforce requireAdminUser()"
+  );
+
+  const spectatePage = fs.readFileSync(
+    path.join(process.cwd(), "src/app/duel/[roomCode]/spectate/page.tsx"),
+    "utf8"
+  );
+  assert.ok(
+    spectatePage.includes("isAdmin && adminIntegrity") && spectatePage.includes("<AdminIntegrityPanel"),
+    "Spectate page must only render AdminIntegrityPanel when adminIntegrity is provided"
+  );
 });
 
 console.log("\n======================================================");

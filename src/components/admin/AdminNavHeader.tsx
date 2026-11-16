@@ -11,6 +11,7 @@ import {
   Activity,
   FileText,
   Code2,
+  Swords,
   ArrowUpRight,
   Shield,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { href: "/admin/activity", label: "Activity", icon: Activity },
   { href: "/admin/audit", label: "Audit Logs", icon: FileText },
   { href: "/admin/problems", label: "Questions", icon: Code2 },
+  { href: "/admin/duels", label: "Live Duels", icon: Swords },
 ];
 
 export function AdminNavHeader({ adminUsername }: AdminNavHeaderProps) {
