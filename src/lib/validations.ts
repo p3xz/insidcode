@@ -106,3 +106,20 @@ export const DuelTelemetrySchema = z.object({
 export const DuelSubmissionSchema = CodeSubmissionSchema.extend({
   telemetry: DuelTelemetrySchema,
 });
+
+export const DuelTelemetryCheckpointSchema = z.object({
+  roundChallenge: z.string().min(10).max(200),
+  keystrokes: z.number().int().min(0).max(100000),
+  backspaces: z.number().int().min(0).max(100000),
+  pasteBlockedCount: z.number().int().min(0).max(10000),
+  pasteBlockedChars: z.number().int().min(0).max(1000000),
+  unexplainedBurstCount: z.number().int().min(0).max(10000),
+  maxBurstChars: z.number().int().min(0).max(1000000),
+  focusLostCount: z.number().int().min(0).max(10000),
+  blurredMs: z.number().min(0).max(3600000),
+  foregroundMs: z.number().min(0).max(3600000),
+  idleGapsCount: z.number().int().min(0).max(10000),
+  lastWarning: z.string().max(400).nullable().optional(),
+  lastWarningSeverity: z.enum(["info", "warning", "danger"]).optional(),
+  warningDismissed: z.boolean().optional(),
+});

@@ -5,7 +5,7 @@ import { DuelRoom } from "@/models/DuelRoom";
 import { Question } from "@/models/Question";
 import { DuelSubmissionSchema } from "@/lib/validations";
 import { recordDuelAntiCheatAudit, verifyDuelInteractionToken } from "@/lib/duelAntiCheat";
-import { DuelDifficulty, evaluateDuelTelemetryIntegrity } from "@/lib/duelAntiCheatShared";
+import { DuelDifficulty, DuelTelemetryCheckpoint, evaluateDuelTelemetryIntegrity, mergeMonotonicTelemetry } from "@/lib/duelAntiCheatShared";
 import { evaluateAndRecordSubmission } from "@/lib/submission";
 import { checkRateLimit, acquireSubmissionLock, releaseSubmissionLock } from "@/lib/rateLimit";
 import { finalizeDuelMatch } from "@/lib/duel";
@@ -141,12 +141,31 @@ export async function POST(
     const difficulty = (activeRound.difficulty || questionDoc?.difficulty || "Medium") as DuelDifficulty;
     const elapsedServerMs = Math.max(0, now.getTime() - expectedStartedAtMs);
 
+    const prevServerTelemetry = (
+      isPlayer1 ? activeRound.player1TelemetrySummary : activeRound.player2TelemetrySummary
+    ) as Partial<DuelTelemetryCheckpoint> | undefined;
+
+    const monotonicMerged = mergeMonotonicTelemetry(telemetry, prevServerTelemetry);
+    const effectiveTelemetry = {
+      ...telemetry,
+      keystrokes: monotonicMerged.keystrokes,
+      backspaces: monotonicMerged.backspaces,
+      pasteBlockedCount: monotonicMerged.pasteBlockedCount,
+      pasteBlockedChars: monotonicMerged.pasteBlockedChars,
+      unexplainedBurstCount: monotonicMerged.unexplainedBurstCount,
+      maxBurstChars: monotonicMerged.maxBurstChars,
+      focusLostCount: monotonicMerged.focusLostCount,
+      blurredMs: monotonicMerged.blurredMs,
+      foregroundMs: Math.max(0, elapsedServerMs - Math.min(elapsedServerMs, monotonicMerged.blurredMs)),
+      idleGapsCount: monotonicMerged.idleGapsCount,
+    };
+
     const integrityVerdict = evaluateDuelTelemetryIntegrity({
       difficulty,
       elapsedServerMs,
       starterTemplate,
       submittedCode: code,
-      telemetry,
+      telemetry: effectiveTelemetry,
       tokenValid: true,
     });
 
@@ -166,18 +185,22 @@ export async function POST(
     }
 
     const telemetrySummary = {
-      keystrokes: telemetry.keystrokes,
-      backspaces: telemetry.backspaces,
-      pasteBlockedCount: telemetry.pasteBlockedCount,
-      pasteBlockedChars: telemetry.pasteBlockedChars,
-      unexplainedBurstCount: telemetry.unexplainedBurstCount,
-      maxBurstChars: telemetry.maxBurstChars,
-      focusLostCount: telemetry.focusLostCount,
-      blurredMs: telemetry.blurredMs,
-      foregroundMs: telemetry.foregroundMs,
+      keystrokes: effectiveTelemetry.keystrokes,
+      backspaces: effectiveTelemetry.backspaces,
+      pasteBlockedCount: effectiveTelemetry.pasteBlockedCount,
+      pasteBlockedChars: effectiveTelemetry.pasteBlockedChars,
+      unexplainedBurstCount: effectiveTelemetry.unexplainedBurstCount,
+      maxBurstChars: effectiveTelemetry.maxBurstChars,
+      focusLostCount: effectiveTelemetry.focusLostCount,
+      blurredMs: effectiveTelemetry.blurredMs,
+      foregroundMs: effectiveTelemetry.foregroundMs,
       solveDurationMs: elapsedServerMs,
       changedChars: integrityVerdict.changedChars,
       unfocusedRatio: integrityVerdict.unfocusedRatio,
+      lastWarning: prevServerTelemetry?.lastWarning ?? null,
+      lastWarningSeverity: prevServerTelemetry?.lastWarningSeverity,
+      warningDismissed: prevServerTelemetry?.warningDismissed ?? false,
+      lastCheckpointAtMs: now.getTime(),
     };
 
     const shouldVoidElo = integrityVerdict.action === "FLAG_AND_VOID_ELO";
@@ -321,7 +344,7 @@ export async function POST(
           userId: currentUserId,
           username: user.username,
           verdict: integrityVerdict,
-          telemetry,
+          telemetry: effectiveTelemetry,
         });
       }
 

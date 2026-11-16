@@ -174,6 +174,30 @@ export default function DuelSpectatorPage() {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const blockCopy = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const blockKeys = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "a" || key === "c" || key === "x") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("selectstart", blockCopy, { capture: true });
+    document.addEventListener("copy", blockCopy, { capture: true });
+    document.addEventListener("keydown", blockKeys, { capture: true });
+    return () => {
+      document.removeEventListener("selectstart", blockCopy, { capture: true });
+      document.removeEventListener("copy", blockCopy, { capture: true });
+      document.removeEventListener("keydown", blockKeys, { capture: true });
+    };
+  }, []);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -505,7 +529,23 @@ export default function DuelSpectatorPage() {
 
       {/* ── Public Problem Statement ──────────────────────────────────────── */}
       {problem && (
-        <div className="p-6 bg-[#11131A] border border-[#252936] rounded-xl space-y-6">
+        <div
+          className="p-6 bg-[#11131A] border border-[#252936] rounded-xl space-y-6 select-none [&_*]:select-none"
+          onCopyCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onCutCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onContextMenuCapture={(e) => e.preventDefault()}
+          onDragStartCapture={(e) => e.preventDefault()}
+          style={{
+            userSelect: "none",
+            ...({ WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties),
+          }}
+        >
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-4 border-b border-[#252936]">
             <div>
               <span className="section-label block mb-1">CURRENT ROUND CHALLENGE</span>

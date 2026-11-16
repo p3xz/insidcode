@@ -6,11 +6,11 @@
  * automatically require existing users to review and re-consent.
  */
 
-export const CURRENT_PRIVACY_POLICY_VERSION = "2026-09-20";
-export const CURRENT_TERMS_VERSION = "2026-09-20";
+export const CURRENT_PRIVACY_POLICY_VERSION = "2026-11-17";
+export const CURRENT_TERMS_VERSION = "2026-11-17";
 export const CURRENT_COOKIE_POLICY_VERSION = "2026-09-20";
 
-export const LEGAL_EFFECTIVE_DATE = "September 20, 2026";
+export const LEGAL_EFFECTIVE_DATE = "November 17, 2026";
 
 export const LEGAL_DOCUMENT_ROUTES = {
   PRIVACY: "/privacy",

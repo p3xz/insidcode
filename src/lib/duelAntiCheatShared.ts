@@ -47,6 +47,27 @@ export interface DuelTelemetrySummary {
   solveDurationMs: number;
   changedChars: number;
   unfocusedRatio: number;
+  lastWarning?: string | null;
+  lastWarningSeverity?: "info" | "warning" | "danger";
+  warningDismissed?: boolean;
+  lastCheckpointAtMs?: number;
+}
+
+export interface DuelTelemetryCheckpoint {
+  keystrokes: number;
+  backspaces: number;
+  pasteBlockedCount: number;
+  pasteBlockedChars: number;
+  unexplainedBurstCount: number;
+  maxBurstChars: number;
+  focusLostCount: number;
+  blurredMs: number;
+  foregroundMs: number;
+  idleGapsCount: number;
+  lastWarning?: string | null;
+  lastWarningSeverity?: "info" | "warning" | "danger";
+  warningDismissed?: boolean;
+  lastCheckpointAtMs?: number;
 }
 
 export interface DuelIntegrityVerdict {
@@ -385,5 +406,67 @@ export function evaluateDuelTelemetryIntegrity(input: {
     remainingFloorSec,
     changedChars,
     unfocusedRatio,
+  };
+}
+
+/**
+ * Monotonically merges two telemetry checkpoints so closing/reopening tabs or tampering
+ * with local storage can never decrease paste, blur, burst, or focus-loss counts.
+ */
+export function mergeMonotonicTelemetry(
+  primary?: Partial<DuelTelemetryCheckpoint> | null,
+  secondary?: Partial<DuelTelemetryCheckpoint> | null
+): DuelTelemetryCheckpoint {
+  const a: Partial<DuelTelemetryCheckpoint> = primary || {};
+  const b: Partial<DuelTelemetryCheckpoint> = secondary || {};
+
+  const aTs = a.lastCheckpointAtMs ?? 0;
+  const bTs = b.lastCheckpointAtMs ?? 0;
+  const latest = bTs > aTs ? b : a;
+  const fallback = bTs > aTs ? a : b;
+
+  const warningDismissed =
+    typeof latest.warningDismissed === "boolean"
+      ? latest.warningDismissed
+      : Boolean(fallback.warningDismissed);
+
+  const rawWarning = latest.lastWarning ?? fallback.lastWarning ?? null;
+  const lastWarning = warningDismissed ? null : rawWarning;
+
+  return {
+    keystrokes: Math.max(0, Math.round(a.keystrokes ?? 0), Math.round(b.keystrokes ?? 0)),
+    backspaces: Math.max(0, Math.round(a.backspaces ?? 0), Math.round(b.backspaces ?? 0)),
+    pasteBlockedCount: Math.max(
+      0,
+      Math.round(a.pasteBlockedCount ?? 0),
+      Math.round(b.pasteBlockedCount ?? 0)
+    ),
+    pasteBlockedChars: Math.max(
+      0,
+      Math.round(a.pasteBlockedChars ?? 0),
+      Math.round(b.pasteBlockedChars ?? 0)
+    ),
+    unexplainedBurstCount: Math.max(
+      0,
+      Math.round(a.unexplainedBurstCount ?? 0),
+      Math.round(b.unexplainedBurstCount ?? 0)
+    ),
+    maxBurstChars: Math.max(
+      0,
+      Math.round(a.maxBurstChars ?? 0),
+      Math.round(b.maxBurstChars ?? 0)
+    ),
+    focusLostCount: Math.max(
+      0,
+      Math.round(a.focusLostCount ?? 0),
+      Math.round(b.focusLostCount ?? 0)
+    ),
+    blurredMs: Math.max(0, Math.round(a.blurredMs ?? 0), Math.round(b.blurredMs ?? 0)),
+    foregroundMs: Math.max(0, Math.round(a.foregroundMs ?? 0), Math.round(b.foregroundMs ?? 0)),
+    idleGapsCount: Math.max(0, Math.round(a.idleGapsCount ?? 0), Math.round(b.idleGapsCount ?? 0)),
+    lastWarning,
+    lastWarningSeverity: latest.lastWarningSeverity ?? fallback.lastWarningSeverity ?? "warning",
+    warningDismissed,
+    lastCheckpointAtMs: Math.max(0, aTs, bTs) || undefined,
   };
 }
