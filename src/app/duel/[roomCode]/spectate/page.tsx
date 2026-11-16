@@ -505,7 +505,23 @@ export default function DuelSpectatorPage() {
 
       {/* ── Public Problem Statement ──────────────────────────────────────── */}
       {problem && (
-        <div className="p-6 bg-[#11131A] border border-[#252936] rounded-xl space-y-6">
+        <div
+          className="p-6 bg-[#11131A] border border-[#252936] rounded-xl space-y-6 select-none [&_*]:select-none"
+          onCopyCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onCutCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onContextMenuCapture={(e) => e.preventDefault()}
+          onDragStartCapture={(e) => e.preventDefault()}
+          style={{
+            userSelect: "none",
+            ...({ WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties),
+          }}
+        >
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-4 border-b border-[#252936]">
             <div>
               <span className="section-label block mb-1">CURRENT ROUND CHALLENGE</span>

@@ -335,12 +335,34 @@ test("Practice workspace does NOT restrict paste (duelMode not enabled in Proble
     "utf8"
   );
   assert.strictEqual(workspaceCode.includes("duelMode"), false, "Regular ProblemWorkspace must remain unrestricted");
+  assert.strictEqual(workspaceCode.includes("onCopyCapture"), false, "Practice must allow copying questions");
+  assert.strictEqual(workspaceCode.includes("useDuelAntiCheat"), false, "Practice must not load duel anti-cheat");
 
   const duelPageCode = fs.readFileSync(
     path.join(process.cwd(), "src/app/duel/[roomCode]/page.tsx"),
     "utf8"
   );
   assert.ok(duelPageCode.includes("duelMode={true}"), "DuelArenaPage must enable duelMode anti-cheat");
+  assert.ok(
+    duelPageCode.includes("WebkitTouchCallout") && duelPageCode.includes("onCopyCapture"),
+    "DuelArenaPage must block copying questions across desktop & mobile"
+  );
+
+  const spectateCode = fs.readFileSync(
+    path.join(process.cwd(), "src/app/duel/[roomCode]/spectate/page.tsx"),
+    "utf8"
+  );
+  assert.ok(
+    spectateCode.includes("WebkitTouchCallout") && spectateCode.includes("onCopyCapture"),
+    "Spectator view must also prevent copying questions"
+  );
+
+  const editorCode = fs.readFileSync(
+    path.join(process.cwd(), "src/components/editor/CodeEditor.tsx"),
+    "utf8"
+  );
+  assert.ok(editorCode.includes("insertFromPaste"), "CodeEditor must guard mobile beforeinput insertFromPaste");
+  assert.ok(editorCode.includes("nonWhitespaceChars >= 18"), "CodeEditor must guard against mobile keyboard clipboard dumps");
 });
 
 test("Duel create & join routes permit same-IP / new-account / rematch local testing as requested", () => {

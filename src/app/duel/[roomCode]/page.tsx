@@ -73,6 +73,8 @@ export default function DuelArenaPage() {
     tabSwitchesTotal,
     unfocusedPercent,
     markSystemCodeUpdate,
+    isSystemCodeUpdate,
+    reportQuestionCopyAttempt,
     handlePasteBlocked,
     handleEditorKeystroke,
     handleEditorContentDelta,
@@ -777,11 +779,27 @@ export default function DuelArenaPage() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
         {/* Left Pane: Problem Description (col-span-5) */}
         <div
-          className={`h-full flex-col overflow-y-auto p-5 lg:col-span-5 ${
+          className={`h-full flex-col overflow-y-auto p-5 lg:col-span-5 select-none [&_*]:select-none ${
             activeMobileTab === "problem" ? "flex" : "hidden lg:flex"
           }`}
+          onCopyCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            reportQuestionCopyAttempt();
+          }}
+          onCutCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onContextMenuCapture={(e) => {
+            e.preventDefault();
+            reportQuestionCopyAttempt();
+          }}
+          onDragStartCapture={(e) => e.preventDefault()}
           style={{
             borderRight: "1px solid var(--border)",
+            userSelect: "none",
+            ...({ WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties),
             backgroundColor: "var(--bg)",
           }}
         >
@@ -1030,6 +1048,7 @@ export default function DuelArenaPage() {
               language={selectedLanguage}
               code={code}
               duelMode={true}
+              isSystemCodeUpdate={isSystemCodeUpdate}
               onPasteBlocked={handlePasteBlocked}
               onEditorKeystroke={handleEditorKeystroke}
               onEditorContentDelta={handleEditorContentDelta}

@@ -13,6 +13,7 @@ interface CodeEditorProps {
   fontSize?: number;
   minimap?: boolean;
   duelMode?: boolean;
+  isSystemCodeUpdate?: () => boolean;
   onPasteBlocked?: (info: { chars: number; timestamp: number }) => void;
   onEditorKeystroke?: (info: { isBackspace: boolean; timestamp: number }) => void;
   onEditorContentDelta?: (info: { insertedChars: number; deletedChars: number; timestamp: number }) => void;
@@ -25,30 +26,36 @@ export function CodeEditor({
   fontSize = 14,
   minimap = false,
   duelMode = false,
+  isSystemCodeUpdate,
   onPasteBlocked,
   onEditorKeystroke,
   onEditorContentDelta,
 }: CodeEditorProps) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
   const { resolvedTheme } = useTheme();
   const lastInternalCopyRef = useRef<string>("");
   const approvedInternalPasteUntilRef = useRef<number>(0);
+  const lastBlockedReportAtRef = useRef<number>(0);
   const duelDisposablesRef = useRef<Array<{ dispose: () => void }>>([]);
   const duelCallbacksRef = useRef({
     duelMode,
+    isSystemCodeUpdate,
     onPasteBlocked,
     onEditorKeystroke,
     onEditorContentDelta,
   });
+
   useEffect(() => {
     duelCallbacksRef.current = {
       duelMode,
+      isSystemCodeUpdate,
       onPasteBlocked,
       onEditorKeystroke,
       onEditorContentDelta,
     };
-  }, [duelMode, onPasteBlocked, onEditorKeystroke, onEditorContentDelta]);
+  }, [duelMode, isSystemCodeUpdate, onPasteBlocked, onEditorKeystroke, onEditorContentDelta]);
 
   useEffect(() => {
     return () => {
@@ -63,6 +70,60 @@ export function CodeEditor({
       resolvedTheme === "light" ? "insidcode-light" : "insidcode-dark"
     );
   }, [resolvedTheme]);
+
+  // Capture-phase beforeinput guard for mobile soft-keyboard clipboard bars (Android Gboard, iOS QuickType)
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!duelMode || !el) return;
+
+    const handleBeforeInput = (ev: Event) => {
+      const inputEvent = ev as InputEvent;
+      const inputType = inputEvent.inputType;
+      if (
+        inputType !== "insertFromPaste" &&
+        inputType !== "insertFromPasteAsQuotation" &&
+        inputType !== "insertFromDrop"
+      ) {
+        return;
+      }
+
+      const incomingText =
+        inputEvent.data ?? inputEvent.dataTransfer?.getData("text/plain") ?? "";
+
+      if (incomingText && lastInternalCopyRef.current && incomingText === lastInternalCopyRef.current) {
+        approvedInternalPasteUntilRef.current = Date.now() + 250;
+        return;
+      }
+
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      const now = Date.now();
+      if (now - lastBlockedReportAtRef.current > 150) {
+        lastBlockedReportAtRef.current = now;
+        duelCallbacksRef.current.onPasteBlocked?.({
+          chars: incomingText.length || 1,
+          timestamp: now,
+        });
+      }
+    };
+
+    el.addEventListener("beforeinput", handleBeforeInput, { capture: true });
+    return () => {
+      el.removeEventListener("beforeinput", handleBeforeInput, { capture: true });
+    };
+  }, [duelMode]);
+
+  const reportPasteBlocked = (chars: number) => {
+    const now = Date.now();
+    if (now - lastBlockedReportAtRef.current > 150) {
+      lastBlockedReportAtRef.current = now;
+      duelCallbacksRef.current.onPasteBlocked?.({
+        chars: Math.max(1, chars),
+        timestamp: now,
+      });
+    }
+  };
 
   const handleEditorDidMount: OnMount = (editorInstance, monaco) => {
     editorRef.current = editorInstance;
@@ -146,18 +207,51 @@ export function CodeEditor({
       duelDisposablesRef.current.push(
         editorInstance.onDidChangeModelContent((e) => {
           if (e.isFlush || e.isUndoing || e.isRedoing) return;
+
           let insertedChars = 0;
           let deletedChars = 0;
+          let insertedText = "";
           for (const change of e.changes) {
             insertedChars += change.text.length;
             deletedChars += change.rangeLength;
+            if (change.text.length > 0) {
+              insertedText += change.text;
+            }
           }
+
+          const now = Date.now();
           if (insertedChars > 0 || deletedChars > 0) {
             duelCallbacksRef.current.onEditorContentDelta?.({
               insertedChars,
               deletedChars,
-              timestamp: Date.now(),
+              timestamp: now,
             });
+          }
+
+          // Block & undo unexpected multi-character external paste insertions (e.g. mobile Gboard clipboard chips / DevTools)
+          if (
+            insertedChars > 0 &&
+            !duelCallbacksRef.current.isSystemCodeUpdate?.() &&
+            now > approvedInternalPasteUntilRef.current
+          ) {
+            const nonWhitespaceChars = insertedText.replace(/\s+/g, "").length;
+            const nonEmptyLines = insertedText
+              .split(/\r?\n/)
+              .filter((line) => line.trim().length > 0).length;
+
+            if (nonWhitespaceChars >= 18 || nonEmptyLines >= 2) {
+              if (
+                lastInternalCopyRef.current &&
+                insertedText === lastInternalCopyRef.current
+              ) {
+                return;
+              }
+
+              setTimeout(() => {
+                editorInstance.trigger("duel-anticheat", "undo", null);
+              }, 0);
+              reportPasteBlocked(insertedChars);
+            }
           }
         })
       );
@@ -178,10 +272,7 @@ export function CodeEditor({
             setTimeout(() => {
               editorInstance.trigger("duel-anticheat", "undo", null);
             }, 0);
-            duelCallbacksRef.current.onPasteBlocked?.({
-              chars: pastedText.length,
-              timestamp: now,
-            });
+            reportPasteBlocked(pastedText.length);
           }
         })
       );
@@ -222,16 +313,17 @@ export function CodeEditor({
   const handlePasteCapture = (e: React.ClipboardEvent<HTMLDivElement>) => {
     if (!duelMode) return;
     const text = e.clipboardData?.getData("text/plain") || "";
-    if (!text) return;
+    const hasTypes = Boolean(e.clipboardData?.types && e.clipboardData.types.length > 0);
+    if (!text && !hasTypes) return;
 
-    if (lastInternalCopyRef.current && text === lastInternalCopyRef.current) {
+    if (text && lastInternalCopyRef.current && text === lastInternalCopyRef.current) {
       approvedInternalPasteUntilRef.current = Date.now() + 250;
       return;
     }
 
     e.preventDefault();
     e.stopPropagation();
-    onPasteBlocked?.({ chars: text.length, timestamp: Date.now() });
+    reportPasteBlocked(text.length || 1);
   };
 
   const handleDropCapture = (e: React.DragEvent<HTMLDivElement>) => {
@@ -247,11 +339,12 @@ export function CodeEditor({
 
     e.preventDefault();
     e.stopPropagation();
-    onPasteBlocked?.({ chars: text.length || 1, timestamp: Date.now() });
+    reportPasteBlocked(text.length || 1);
   };
 
   return (
     <div
+      ref={wrapperRef}
       className="h-full w-full overflow-hidden"
       style={{ backgroundColor: bgColor }}
       onCopyCapture={captureInternalSelection}

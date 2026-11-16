@@ -94,7 +94,19 @@ export function useDuelAntiCheat({
    * Prevents starter templates, resets, and language switches from counting as sudden bursts.
    */
   const markSystemCodeUpdate = useCallback(() => {
-    metricsRef.current.systemUpdateUntilMs = Date.now() + 500;
+    metricsRef.current.systemUpdateUntilMs = Date.now() + 600;
+  }, []);
+
+  const isSystemCodeUpdate = useCallback(() => {
+    return Date.now() <= metricsRef.current.systemUpdateUntilMs;
+  }, []);
+
+  const reportQuestionCopyAttempt = useCallback(() => {
+    setWarning({
+      message: "Copying the problem statement is disabled during active Duels.",
+      severity: "warning",
+      timestamp: Date.now(),
+    });
   }, []);
 
   // Track window blur & visibility changes only while the duel round is ACTIVE
@@ -196,6 +208,21 @@ export function useDuelAntiCheat({
       }
 
       // Large single-tick text insertion outside normal typing cadence (e.g. DevTools setValue or drop bypass)
+      // Mobile virtual keyboards (Android Gboard / iOS IME) often commit short word suggestions
+      // directly via composition/input without discrete onKeyDown events per letter.
+      if (
+        info.insertedChars > 0 &&
+        info.insertedChars <= 14 &&
+        info.timestamp - m.lastKeystrokeAtMs > 40
+      ) {
+        if (m.lastKeystrokeAtMs > 0 && info.timestamp - m.lastKeystrokeAtMs >= 1500) {
+          m.idleGapsCount += 1;
+        }
+        m.lastKeystrokeAtMs = info.timestamp;
+        m.keystrokes += Math.min(info.insertedChars, 10);
+        return;
+      }
+
       if (info.insertedChars >= 35) {
         m.unexplainedBurstCount += 1;
         m.maxBurstChars = Math.max(m.maxBurstChars, info.insertedChars);
@@ -285,6 +312,8 @@ export function useDuelAntiCheat({
     tabSwitchesTotal,
     unfocusedPercent,
     markSystemCodeUpdate,
+    isSystemCodeUpdate,
+    reportQuestionCopyAttempt,
     handlePasteBlocked,
     handleEditorKeystroke,
     handleEditorContentDelta,
