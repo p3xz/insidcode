@@ -551,6 +551,12 @@ test("Admin duel spectating is strictly isolated from public spectator routes", 
     "Admin duel spectate API must enforce requireAdminUser() and compute adminIntegrity"
   );
 
+  const guardLib = fs.readFileSync(
+    path.join(process.cwd(), "src/lib/adminPageGuard.ts"),
+    "utf8"
+  );
+  assert.ok(guardLib.includes("requireAdminUser()"), "enforceAdminPageAccess must call requireAdminUser()");
+
   const adminDuelsPage = fs.readFileSync(
     path.join(process.cwd(), "src/app/admin/duels/page.tsx"),
     "utf8"
@@ -560,8 +566,8 @@ test("Admin duel spectating is strictly isolated from public spectator routes", 
     "utf8"
   );
   assert.ok(
-    adminDuelsPage.includes("requireAdminUser()") && adminSpectatePage.includes("requireAdminUser()"),
-    "Both /admin/duels and /admin/duels/[roomCode] server pages must enforce requireAdminUser()"
+    adminDuelsPage.includes("enforceAdminPageAccess") && adminSpectatePage.includes("enforceAdminPageAccess"),
+    "Both /admin/duels and /admin/duels/[roomCode] server pages must enforce enforceAdminPageAccess"
   );
 });
 

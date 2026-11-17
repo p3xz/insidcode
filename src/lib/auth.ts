@@ -288,6 +288,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // OnboardingGuard bounce consent-outdated users between
             // /problems and /onboarding in an infinite redirect loop.
             token.onboardingCompleted = Boolean(dbUser.onboardingCompleted);
+          } else {
+            // Revoke stale token permissions if user record was removed
+            token.userId = "";
+            token.role = "user";
+            token.isBanned = true;
           }
         } catch (error) {
           console.error("[Auth] JWT database sync error:", error);
@@ -370,6 +375,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // OnboardingGuard bounce consent-outdated users between
             // /problems and /onboarding in an infinite redirect loop.
             token.onboardingCompleted = Boolean(dbUser.onboardingCompleted);
+          } else {
+            // Revoke stale token permissions if user record was removed
+            token.userId = "";
+            token.role = "user";
+            token.isBanned = true;
           }
         } catch (error) {
           console.error("[Auth] JWT auto-sync error:", error);

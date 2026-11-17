@@ -1,7 +1,6 @@
-import { requireAdminUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { AdminNavHeader } from "@/components/admin/AdminNavHeader";
+import { enforceAdminPageAccess } from "@/lib/adminPageGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,26 +17,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const authResult = await requireAdminUser();
-
-  // If unauthenticated, redirect to login with callback
-  if (authResult.status === 401) {
-    redirect("/login?callbackUrl=/admin");
-  }
-
-  // If authenticated but account is suspended
-  if (authResult.user?.isBanned) {
-    redirect("/suspended");
-  }
-
-  // If authenticated but not an admin (status === 403), safely redirect to home
-  if (authResult.status === 403 || !authResult.admin) {
-    redirect("/");
-  }
+  const admin = await enforceAdminPageAccess("/admin");
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}>
-      <AdminNavHeader adminUsername={authResult.admin.username} />
+      <AdminNavHeader adminUsername={admin.username} />
       <main className="flex-1 w-full pb-16">{children}</main>
     </div>
   );
