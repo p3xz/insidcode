@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -20,6 +20,13 @@ const inter = Inter({
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+  display: "swap",
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -148,7 +155,7 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} min-h-screen antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} ${plusJakarta.variable} min-h-screen antialiased`}
         style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}
       >
         <ThemeProvider>

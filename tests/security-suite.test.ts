@@ -215,4 +215,24 @@ assert.ok(
 
 console.log(`✓ PASS: Exhaustive admin lockdown verified across ${adminPageFiles.length} pages, ${adminApiFiles.length} APIs, middleware, and headers`);
 
+// ==========================================
+// Test 7: Guest Welcome & Member Login Gate Separation
+// ==========================================
+for (const memberRoute of ['"/problems"', '"/duel"', '"/leaderboard"', '"/stats"', '"/settings"', '"/login"']) {
+  assert.ok(
+    middlewareSrc.includes(memberRoute),
+    `Middleware must gate member/auth route ${memberRoute}`
+  );
+}
+
+const rootPageSrc = fs.readFileSync(path.join(process.cwd(), "src/app/page.tsx"), "utf8");
+assert.ok(
+  rootPageSrc.includes("await auth()") &&
+    rootPageSrc.includes("GuestWelcomePage") &&
+    rootPageSrc.includes("AuthenticatedHomeView"),
+  "Root page must serve distinct GuestWelcomePage and AuthenticatedHomeView based on session"
+);
+
+console.log("✓ PASS: Guest Welcome vs Authenticated Home and member route login gates verified");
+
 console.log("\nAll security suite assertions PASSED successfully!");

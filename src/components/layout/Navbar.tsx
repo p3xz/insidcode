@@ -111,6 +111,7 @@ export function Navbar() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!session?.user) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setIsSearchOpen((prev) => !prev);
@@ -118,7 +119,7 @@ export function Navbar() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [session?.user]);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -209,6 +210,14 @@ export function Navbar() {
     { href: "/stats", label: "Stats" },
   ];
 
+  const guestLinks = [
+    { href: "/#features", label: "Features" },
+    { href: "/#curriculum", label: "Curriculum" },
+    { href: "/about", label: "About" },
+  ];
+
+  const displayedNavLinks = session?.user ? navLinks : guestLinks;
+
   return (
     <>
       <header
@@ -230,8 +239,9 @@ export function Navbar() {
 
             {/* Desktop nav links */}
             <nav className="hidden md:flex items-center gap-0.5">
-              {navLinks.map((link) => {
-                const isActive = pathname.startsWith(link.href);
+              {displayedNavLinks.map((link) => {
+                const isActive =
+                  !link.href.startsWith("/#") && pathname.startsWith(link.href);
                 return (
                   <Link
                     key={link.href}
@@ -257,48 +267,52 @@ export function Navbar() {
 
           {/* Right action bar */}
           <div className="flex items-center gap-2">
-            {/* Search trigger */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              aria-label="Search problems and users"
-              className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 text-[12px] transition-colors"
-              style={{
-                border: "1px solid var(--border-strong)",
-                borderRadius: "3px",
-                backgroundColor: "var(--bg-subtle)",
-                color: "var(--fg-muted)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg)")}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "var(--fg-muted)")
-              }
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span>Search</span>
-              <kbd
-                className="mono"
-                style={{
-                  fontSize: "10px",
-                  padding: "1px 5px",
-                  borderRadius: "2px",
-                  backgroundColor: "var(--bg-elevated)",
-                  color: "var(--fg-dimmed)",
-                  border: "1px solid var(--border-strong)",
-                }}
-              >
-                Ctrl K
-              </kbd>
-            </button>
+            {session?.user && (
+              <>
+                {/* Search trigger */}
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  aria-label="Search problems and users"
+                  className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 text-[12px] transition-colors"
+                  style={{
+                    border: "1px solid var(--border-strong)",
+                    borderRadius: "3px",
+                    backgroundColor: "var(--bg-subtle)",
+                    color: "var(--fg-muted)",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg)")}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "var(--fg-muted)")
+                  }
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  <span>Search</span>
+                  <kbd
+                    className="mono"
+                    style={{
+                      fontSize: "10px",
+                      padding: "1px 5px",
+                      borderRadius: "2px",
+                      backgroundColor: "var(--bg-elevated)",
+                      color: "var(--fg-dimmed)",
+                      border: "1px solid var(--border-strong)",
+                    }}
+                  >
+                    Ctrl K
+                  </kbd>
+                </button>
 
-            {/* Mobile search icon */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              aria-label="Search"
-              className="sm:hidden flex h-8 w-8 items-center justify-center"
-              style={{ color: "var(--fg-muted)" }}
-            >
-              <Search className="h-4 w-4" />
-            </button>
+                {/* Mobile search icon */}
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  aria-label="Search"
+                  className="sm:hidden flex h-8 w-8 items-center justify-center"
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </>
+            )}
 
             {session?.user ? (
               <>
@@ -550,7 +564,7 @@ export function Navbar() {
       </header>
 
       {/* Global Search Modal */}
-      {isSearchOpen && (
+      {session?.user && isSearchOpen && (
         <GlobalSearchModal onClose={() => setIsSearchOpen(false)} />
       )}
     </>
