@@ -10,7 +10,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  if (session?.user?.isBanned || pathname === "/suspended") return null;
+  if (!session?.user || session.user.isBanned || pathname === "/suspended") return null;
 
   const isCodingPage =
     pathname.startsWith("/problems/") && pathname !== "/problems";
@@ -22,8 +22,8 @@ export function BottomNav() {
     { href: "/leaderboard", label: "Rank", icon: Trophy },
     { href: "/stats", label: "Stats", icon: BarChart3 },
     {
-      href: session?.user ? `/profile/${session.user.username}` : "/login",
-      label: session?.user ? "Profile" : "Sign In",
+      href: `/profile/${session.user.username}`,
+      label: "Profile",
       icon: UserIcon,
     },
   ];
