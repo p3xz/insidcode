@@ -148,7 +148,7 @@ Contributions are welcome. Open an issue first to discuss the change, then submi
 
 Built by **Namish Yadav**
 - GitHub: [https://github.com/p3xz](https://github.com/p3xz)
-- LinkedIn: [https://www.linkedin.com/in/namish-yadav-639769408/](https://www.linkedin.com/in/namish-yadav-639769408/)
+- LinkedIn: [https://www.linkedin.com/in/namishyadav/](https://www.linkedin.com/in/namishyadav/)
 - Instagram: [https://instagram.com/nam7sh](https://instagram.com/nam7sh)
 
 ## License

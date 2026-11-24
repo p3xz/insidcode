@@ -21,7 +21,7 @@ const CREATOR_LINKS: SocialLinkItem[] = [
   },
   {
     name: "LinkedIn",
-    href: "https://www.linkedin.com/in/namish-yadav-639769408/",
+    href: "https://www.linkedin.com/in/namishyadav/",
     icon: <Linkedin className="h-4 w-4" />,
     handle: "namish-yadav",
     delay: "50ms",

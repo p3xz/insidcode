@@ -131,7 +131,7 @@ export default function CreditsPage() {
           >
             {[
               { label: "Portfolio", href: "https://namishhh.vercel.app/" },
-              { label: "LinkedIn", href: "https://www.linkedin.com/in/namish-yadav-639769408/" },
+              { label: "LinkedIn", href: "https://www.linkedin.com/in/namishyadav/" },
               { label: "GitHub", href: "https://github.com/p3xz" },
               { label: "Instagram", href: "https://instagram.com/nam7sh" },
             ].map((link) => (
